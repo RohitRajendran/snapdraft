@@ -97,6 +97,26 @@ export function DrawingCanvas() {
         e.preventDefault();
         useFloorplanStore.getState().redo();
       }
+      // Arrow keys: move selected elements — 1 ft, or 0.5 ft with Shift
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        const ids = useToolStore.getState().selectedIds;
+        if (ids.size === 0) return;
+        e.preventDefault();
+        const step = e.shiftKey ? 0.5 : 1;
+        const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+        const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+        const store = useFloorplanStore.getState();
+        const allEls = store.activePlan()?.elements ?? [];
+        ids.forEach(id => {
+          const el = allEls.find(e => e.id === id);
+          if (!el) return;
+          if (el.type === 'wall') {
+            store.updateElement(id, { points: el.points.map(p => ({ x: p.x + dx, y: p.y + dy })) });
+          } else if (el.type === 'box') {
+            store.updateElement(id, { x: el.x + dx, y: el.y + dy });
+          }
+        });
+      }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
