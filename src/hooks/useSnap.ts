@@ -12,6 +12,11 @@ function collectEndpoints(elements: Element[]): Point[] {
   return pts;
 }
 
+type SnapResult = {
+  point: Point;
+  snappedToEndpoint: boolean;
+};
+
 export function useSnap(elements: Element[]) {
   const snap = useCallback(
     (rawPoint: Point, halfSnap = false): Point => {
@@ -23,5 +28,18 @@ export function useSnap(elements: Element[]) {
     [elements]
   );
 
-  return { snap };
+  // Like snap(), but also tells you whether it snapped to an existing endpoint
+  const snapWithInfo = useCallback(
+    (rawPoint: Point, halfSnap = false): SnapResult => {
+      const gridSnapped = snapPointToGrid(rawPoint, halfSnap);
+      const endpoints = collectEndpoints(elements);
+      const nearest = findNearestEndpoint(gridSnapped, endpoints);
+      return nearest
+        ? { point: nearest, snappedToEndpoint: true }
+        : { point: gridSnapped, snappedToEndpoint: false };
+    },
+    [elements]
+  );
+
+  return { snap, snapWithInfo };
 }

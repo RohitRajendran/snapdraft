@@ -28,7 +28,6 @@ function elementOverlapsRect(el: Element, rx: number, ry: number, rw: number, rh
   if (el.type === 'box') {
     return rectsOverlap(el.x, el.y, el.width, el.height, rx, ry, rw, rh);
   }
-  // Wall: check if any segment endpoint is inside the rect
   return el.points.some(p =>
     p.x >= rx && p.x <= rx + rw && p.y >= ry && p.y <= ry + rh
   );
@@ -39,6 +38,7 @@ export function DrawingCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [cursor, setCursor] = useState<Point | null>(null);
+  const [cursorSnappedToEndpoint, setCursorSnappedToEndpoint] = useState(false);
   const [pointerDown, setPointerDown] = useState<{ pos: Point; time: number } | null>(null);
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const lastTapRef = useRef<number>(0);
@@ -52,9 +52,8 @@ export function DrawingCanvas() {
 
   const plan = activePlan();
   const elements = plan?.elements ?? [];
-  const { snap } = useSnap(elements);
+  const { snap, snapWithInfo } = useSnap(elements);
 
-  // Resize observer
   useEffect(() => {
     const ro = new ResizeObserver(() => {
       if (containerRef.current) {
@@ -68,7 +67,6 @@ export function DrawingCanvas() {
     return () => ro.disconnect();
   }, []);
 
-  // Keyboard handlers
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement) return;
@@ -99,25 +97,33 @@ export function DrawingCanvas() {
   }), []);
 
   // ── Pointer events ──────────────────────────────────────────────
+
   function handlePointerDown(e: Konva.KonvaEventObject<PointerEvent>) {
-    if (e.target !== stageRef.current && activeTool !== 'select') return;
     const world = getPointerWorld();
     if (!world) return;
-    if (activeTool === 'select' && e.target === stageRef.current) {
-      clearSelection();
+
+    if (activeTool === 'select') {
+      // Only clear selection when clicking empty canvas
+      if (e.target === stageRef.current) clearSelection();
+      setPointerDown({ pos: world, time: Date.now() });
+      return;
     }
+
+    // Wall and box tools: allow starting on any point including over elements.
+    // Elements in drawing mode only respond to select-tool taps.
     setPointerDown({ pos: world, time: Date.now() });
   }
 
   function handlePointerMove() {
     const world = getPointerWorld();
     if (!world) return;
-    setCursor(snap(world));
 
-    // Update marquee for drag-select
+    const { point, snappedToEndpoint } = snapWithInfo(world);
+    setCursor(point);
+    setCursorSnappedToEndpoint(snappedToEndpoint);
+
     if (activeTool === 'select' && pointerDown) {
-      const dragDist = distance(pointerDown.pos, world);
-      if (dragDist > DRAG_THRESHOLD_FT) {
+      if (distance(pointerDown.pos, world) > DRAG_THRESHOLD_FT) {
         setMarquee({ start: pointerDown.pos, end: world });
       }
     }
@@ -143,12 +149,11 @@ export function DrawingCanvas() {
     lastTapRef.current = now;
 
     if (activeTool === 'wall') {
-      handleWallInput(snappedEnd, isDrag, snap(pointerDown.pos));
+      handleWallInput(snappedEnd, snap(pointerDown.pos));
     } else if (activeTool === 'box') {
       if (isDrag) handleBoxDraw(snap(pointerDown.pos), snappedEnd);
     } else if (activeTool === 'select') {
       if (isDrag && marquee) {
-        // Finalize marquee selection
         const rx = Math.min(marquee.start.x, marquee.end.x);
         const ry = Math.min(marquee.start.y, marquee.end.y);
         const rw = Math.abs(marquee.end.x - marquee.start.x);
@@ -164,11 +169,12 @@ export function DrawingCanvas() {
     setPointerDown(null);
   }
 
-  function handleWallInput(endPt: Point, _isDrag: boolean, startPt: Point) {
+  function handleWallInput(endPt: Point, startPt: Point) {
     if (isChainArmed && chainPoints.length > 0) {
       const lastPt = chainPoints[chainPoints.length - 1];
       const firstPt = chainPoints[0];
 
+      // Close the shape if end is near the chain's first point
       if (distance(endPt, firstPt) < CLOSE_CHAIN_RADIUS_FT && chainPoints.length >= 2) {
         commitWall([lastPt, firstPt]);
         endChain();
@@ -178,6 +184,7 @@ export function DrawingCanvas() {
       commitWall([lastPt, endPt]);
       addChainPoint(endPt);
     } else {
+      // Start a new chain — startPt is already snapped, may be an existing endpoint
       commitWall([startPt, endPt]);
       addChainPoint(startPt);
       addChainPoint(endPt);
@@ -223,13 +230,23 @@ export function DrawingCanvas() {
     setZoom(newZoom);
   }
 
-  // ── Ghost line ──────────────────────────────────────────────────
+  // ── Ghost line (wall tool, chain armed) ──────────────────────────
   const ghostPoints = (() => {
     if (activeTool !== 'wall' || !cursor || !isChainArmed || chainPoints.length === 0) return null;
     const last = chainPoints[chainPoints.length - 1];
     const s = worldToBase(last);
     const c = worldToBase(cursor);
     return [s.x, s.y, c.x, c.y];
+  })();
+
+  // ── Ghost length label on ghost line ────────────────────────────
+  const ghostLength = (() => {
+    if (!ghostPoints || !isChainArmed || chainPoints.length === 0 || !cursor) return null;
+    const last = chainPoints[chainPoints.length - 1];
+    const len = distance(last, cursor);
+    if (len < 0.1) return null;
+    const mid = worldToBase({ x: (last.x + cursor.x) / 2, y: (last.y + cursor.y) / 2 });
+    return { x: mid.x, y: mid.y, label: formatFeet(len) };
   })();
 
   // ── Ghost box ───────────────────────────────────────────────────
@@ -261,6 +278,9 @@ export function DrawingCanvas() {
       height: Math.abs(be.y - bs.y),
     };
   })();
+
+  // Show endpoint snap indicator when wall tool is active and cursor snapped to an existing endpoint
+  const showEndpointSnap = activeTool === 'wall' && cursorSnappedToEndpoint && cursor;
 
   const cursorStyle = activeTool === 'select' ? (marquee ? 'crosshair' : 'default') : 'crosshair';
 
@@ -317,6 +337,19 @@ export function DrawingCanvas() {
             />
           )}
 
+          {/* Ghost line length label */}
+          {ghostLength && (
+            <Text
+              x={ghostLength.x + 4 / zoom}
+              y={ghostLength.y - 14 / zoom}
+              text={ghostLength.label}
+              fontSize={11 / zoom}
+              fontFamily="Courier New"
+              fill="#6a8fb5"
+              listening={false}
+            />
+          )}
+
           {/* Ghost box */}
           {ghostBox && ghostBox.width > 0 && ghostBox.height > 0 && (
             <Group listening={false}>
@@ -351,8 +384,21 @@ export function DrawingCanvas() {
           {isChainArmed && chainPoints.length > 0 && (() => {
             const last = chainPoints[chainPoints.length - 1];
             const b = worldToBase(last);
+            return <Circle x={b.x} y={b.y} radius={5 / zoom} fill="#2c2c2c" listening={false} />;
+          })()}
+
+          {/* Endpoint snap indicator — ring around existing endpoint when cursor is near it */}
+          {showEndpointSnap && (() => {
+            const b = worldToBase(cursor!);
             return (
-              <Circle x={b.x} y={b.y} radius={5 / zoom} fill="#2c2c2c" listening={false} />
+              <Circle
+                x={b.x} y={b.y}
+                radius={8 / zoom}
+                stroke="#0066cc"
+                strokeWidth={2 / zoom}
+                fill="rgba(0,102,204,0.12)"
+                listening={false}
+              />
             );
           })()}
         </Layer>
