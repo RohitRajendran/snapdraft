@@ -164,6 +164,7 @@ export function DrawingCanvas() {
     lastTapRef.current = now;
 
     if (activeTool === 'wall') {
+      setDimInput(''); // clear typed value when placing via click
       handleWallInput(snappedEnd, snap(pointerDown.pos));
     } else if (activeTool === 'box') {
       if (isDrag) handleBoxDraw(snap(pointerDown.pos), snappedEnd);
@@ -337,12 +338,21 @@ export function DrawingCanvas() {
   const showEndpointSnap = activeTool === 'wall' && cursorSnappedToEndpoint && cursor;
   const showSegmentSnap = activeTool === 'wall' && cursorSnappedToSegment && cursor;
 
-  // Dimension input — position near the cursor in screen coords
-  const showDimInput = activeTool === 'wall' && isChainArmed && cursor;
-  const dimInputScreenPos = showDimInput ? {
-    x: cursor!.x * PIXELS_PER_FOOT * zoom + pan.x + 14,
-    y: cursor!.y * PIXELS_PER_FOOT * zoom + pan.y - 36,
+  // Dimension input — anchored to the last chain point so it stays still while typing
+  const showDimInput = activeTool === 'wall' && isChainArmed && chainPoints.length > 0;
+  const lastChainPt = chainPoints[chainPoints.length - 1] ?? null;
+  const dimInputScreenPos = showDimInput && lastChainPt ? {
+    x: lastChainPt.x * PIXELS_PER_FOOT * zoom + pan.x + 14,
+    y: lastChainPt.y * PIXELS_PER_FOOT * zoom + pan.y - 36,
   } : null;
+
+  // Auto-focus the dim input whenever the chain gains a new point
+  useEffect(() => {
+    if (showDimInput && dimInputRef.current) {
+      dimInputRef.current.focus();
+      dimInputRef.current.select();
+    }
+  }, [showDimInput, chainPoints.length]);
 
   // Current ghost length as placeholder
   const ghostLengthFt = (isChainArmed && chainPoints.length > 0 && cursor)
