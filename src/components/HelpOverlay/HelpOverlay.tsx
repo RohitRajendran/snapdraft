@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import styles from './HelpOverlay.module.css';
 
 type Props = {
@@ -20,6 +21,14 @@ const SHORTCUTS = [
 ];
 
 export function HelpOverlay({ onClose }: Props) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
     <div
       className={styles.backdrop}

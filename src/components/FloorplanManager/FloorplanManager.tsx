@@ -14,6 +14,7 @@ export function FloorplanManager({ onClose }: Props) {
 
   function handleCreate() {
     createPlan('Untitled Plan');
+    onClose();
   }
 
   function handleSelect(id: string) {

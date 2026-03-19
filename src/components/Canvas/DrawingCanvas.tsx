@@ -9,11 +9,30 @@ import { Grid } from './Grid';
 import { WallElement } from './WallElement';
 import { BoxElement } from './BoxElement';
 import { ftToPx, pxToFt, distance, formatFeet, WALL_THICKNESS_FT } from '../../utils/geometry';
-import type { Point } from '../../types';
+import type { Point, Element } from '../../types';
 
-const DRAG_THRESHOLD_PX = 8;
+const DRAG_THRESHOLD_FT = 0.3;
 const CLOSE_CHAIN_RADIUS_FT = 0.5;
 const DOUBLE_TAP_MS = 300;
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 6;
+
+function rectsOverlap(
+  ax: number, ay: number, aw: number, ah: number,
+  bx: number, by: number, bw: number, bh: number
+): boolean {
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function elementOverlapsRect(el: Element, rx: number, ry: number, rw: number, rh: number): boolean {
+  if (el.type === 'box') {
+    return rectsOverlap(el.x, el.y, el.width, el.height, rx, ry, rw, rh);
+  }
+  // Wall: check if any segment endpoint is inside the rect
+  return el.points.some(p =>
+    p.x >= rx && p.x <= rx + rw && p.y >= ry && p.y <= ry + rh
+  );
+}
 
 export function DrawingCanvas() {
   const stageRef = useRef<Konva.Stage>(null);
@@ -21,13 +40,14 @@ export function DrawingCanvas() {
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [cursor, setCursor] = useState<Point | null>(null);
   const [pointerDown, setPointerDown] = useState<{ pos: Point; time: number } | null>(null);
+  const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const lastTapRef = useRef<number>(0);
 
   const { activePlan, addElement } = useFloorplanStore();
   const {
-    activeTool, selectedId, setSelectedId,
+    activeTool, selectedIds, setSelectedIds, clearSelection,
     chainPoints, isChainArmed, addChainPoint, endChain,
-    scale, setScale, offset, setOffset,
+    zoom, setZoom, pan, setPan,
   } = useToolStore();
 
   const plan = activePlan();
@@ -48,130 +68,125 @@ export function DrawingCanvas() {
     return () => ro.disconnect();
   }, []);
 
-  // Keyboard: Escape ends chain, Delete removes selection
+  // Keyboard handlers
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement) return;
-      if (e.key === 'Escape') endChain();
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
-        useFloorplanStore.getState().deleteElement(selectedId);
-        setSelectedId(null);
+      if (e.key === 'Escape') { endChain(); clearSelection(); }
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const ids = useToolStore.getState().selectedIds;
+        if (ids.size > 0) {
+          ids.forEach(id => useFloorplanStore.getState().deleteElement(id));
+          clearSelection();
+        }
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedId, endChain, setSelectedId]);
-
-  const stageToWorld = useCallback((stageX: number, stageY: number): Point => {
-    return {
-      x: pxToFt(stageX - offset.x),
-      y: pxToFt(stageY - offset.y),
-    };
-  }, [offset]);
-
-  const worldToStage = useCallback((worldPt: Point): { x: number; y: number } => {
-    return {
-      x: ftToPx(worldPt.x) + offset.x,
-      y: ftToPx(worldPt.y) + offset.y,
-    };
-  }, [offset]);
+  }, [endChain, clearSelection]);
 
   const getPointerWorld = useCallback((): Point | null => {
     const stage = stageRef.current;
     if (!stage) return null;
-    const pos = stage.getPointerPosition();
+    const pos = stage.getRelativePointerPosition();
     if (!pos) return null;
-    return stageToWorld(pos.x, pos.y);
-  }, [stageToWorld]);
+    return { x: pxToFt(pos.x), y: pxToFt(pos.y) };
+  }, []);
+
+  const worldToBase = useCallback((pt: Point) => ({
+    x: ftToPx(pt.x),
+    y: ftToPx(pt.y),
+  }), []);
 
   // ── Pointer events ──────────────────────────────────────────────
   function handlePointerDown(e: Konva.KonvaEventObject<PointerEvent>) {
     if (e.target !== stageRef.current && activeTool !== 'select') return;
     const world = getPointerWorld();
     if (!world) return;
+    if (activeTool === 'select' && e.target === stageRef.current) {
+      clearSelection();
+    }
     setPointerDown({ pos: world, time: Date.now() });
   }
 
   function handlePointerMove() {
     const world = getPointerWorld();
     if (!world) return;
-    const snapped = snap(world, false);
-    setCursor(snapped);
+    setCursor(snap(world));
+
+    // Update marquee for drag-select
+    if (activeTool === 'select' && pointerDown) {
+      const dragDist = distance(pointerDown.pos, world);
+      if (dragDist > DRAG_THRESHOLD_FT) {
+        setMarquee({ start: pointerDown.pos, end: world });
+      }
+    }
   }
 
   function handlePointerUp(e: Konva.KonvaEventObject<PointerEvent>) {
     const world = getPointerWorld();
-    if (!world || !pointerDown) { setPointerDown(null); return; }
+    if (!world || !pointerDown) { setPointerDown(null); setMarquee(null); return; }
 
-    const dragDist = distance(pointerDown.pos, world) * ftToPx(1);
-    const isDrag = dragDist > DRAG_THRESHOLD_PX;
+    const dragDist = distance(pointerDown.pos, world);
+    const isDrag = dragDist > DRAG_THRESHOLD_FT;
     const snappedEnd = snap(world);
 
-    // Double-tap detection to end chain
+    // Double-tap to end chain
     const now = Date.now();
     if (now - lastTapRef.current < DOUBLE_TAP_MS) {
       endChain();
       setPointerDown(null);
+      setMarquee(null);
       lastTapRef.current = 0;
       return;
     }
     lastTapRef.current = now;
 
     if (activeTool === 'wall') {
-      handleWallInput(snappedEnd, isDrag, pointerDown.pos);
+      handleWallInput(snappedEnd, isDrag, snap(pointerDown.pos));
     } else if (activeTool === 'box') {
       if (isDrag) handleBoxDraw(snap(pointerDown.pos), snappedEnd);
     } else if (activeTool === 'select') {
-      if (e.target === stageRef.current) setSelectedId(null);
+      if (isDrag && marquee) {
+        // Finalize marquee selection
+        const rx = Math.min(marquee.start.x, marquee.end.x);
+        const ry = Math.min(marquee.start.y, marquee.end.y);
+        const rw = Math.abs(marquee.end.x - marquee.start.x);
+        const rh = Math.abs(marquee.end.y - marquee.start.y);
+        const hit = elements.filter(el => elementOverlapsRect(el, rx, ry, rw, rh));
+        setSelectedIds(new Set(hit.map(el => el.id)));
+      } else if (e.target === stageRef.current) {
+        clearSelection();
+      }
+      setMarquee(null);
     }
 
     setPointerDown(null);
   }
 
-  function handleWallInput(endPt: Point, isDrag: boolean, startRaw: Point) {
-    const startPt = snap(startRaw);
-
+  function handleWallInput(endPt: Point, _isDrag: boolean, startPt: Point) {
     if (isChainArmed && chainPoints.length > 0) {
-      // Continue chain from last point
       const lastPt = chainPoints[chainPoints.length - 1];
-      const segStart = lastPt;
-      const segEnd = endPt;
-
-      // Check if closing the chain
       const firstPt = chainPoints[0];
-      if (distance(segEnd, firstPt) < CLOSE_CHAIN_RADIUS_FT && chainPoints.length >= 2) {
-        // Close the shape
-        commitWall([...chainPoints, firstPt]);
+
+      if (distance(endPt, firstPt) < CLOSE_CHAIN_RADIUS_FT && chainPoints.length >= 2) {
+        commitWall([lastPt, firstPt]);
         endChain();
         return;
       }
 
-      addChainPoint(segEnd);
-      // If we have 2+ points, commit a wall segment
-      if (chainPoints.length >= 1) {
-        commitWall([segStart, segEnd]);
-      }
+      commitWall([lastPt, endPt]);
+      addChainPoint(endPt);
     } else {
-      // Start a new chain
-      if (isDrag) {
-        commitWall([startPt, endPt]);
-        addChainPoint(endPt);
-      } else {
-        addChainPoint(startPt);
-        addChainPoint(endPt);
-        commitWall([startPt, endPt]);
-      }
+      commitWall([startPt, endPt]);
+      addChainPoint(startPt);
+      addChainPoint(endPt);
     }
   }
 
   function commitWall(points: Point[]) {
     if (points.length < 2) return;
-    addElement({
-      id: nanoid(),
-      type: 'wall',
-      points,
-      thickness: WALL_THICKNESS_FT,
-    });
+    addElement({ id: nanoid(), type: 'wall', points, thickness: WALL_THICKNESS_FT });
   }
 
   function handleBoxDraw(start: Point, end: Point) {
@@ -180,70 +195,74 @@ export function DrawingCanvas() {
     const width = Math.abs(end.x - start.x);
     const height = Math.abs(end.y - start.y);
     if (width < 0.5 || height < 0.5) return;
-    addElement({
-      id: nanoid(),
-      type: 'box',
-      x, y, width, height,
-      rotation: 0,
-    });
+    addElement({ id: nanoid(), type: 'box', x, y, width, height, rotation: 0 });
   }
 
   // ── Wheel zoom ───────────────────────────────────────────────────
   function handleWheel(e: Konva.KonvaEventObject<WheelEvent>) {
     e.evt.preventDefault();
-    const scaleBy = 1.08;
     const stage = stageRef.current;
     if (!stage) return;
-    const oldScale = scale;
     const pointer = stage.getPointerPosition();
     if (!pointer) return;
 
-    const newScale = e.evt.deltaY < 0
-      ? Math.min(oldScale * scaleBy, 200)
-      : Math.max(oldScale / scaleBy, 10);
+    const scaleBy = 1.08;
+    const newZoom = e.evt.deltaY < 0
+      ? Math.min(zoom * scaleBy, MAX_ZOOM)
+      : Math.max(zoom / scaleBy, MIN_ZOOM);
 
-    const mousePointTo = {
-      x: (pointer.x - offset.x) / oldScale,
-      y: (pointer.y - offset.y) / oldScale,
+    const worldUnderCursor = {
+      x: (pointer.x - pan.x) / zoom,
+      y: (pointer.y - pan.y) / zoom,
     };
 
-    setScale(newScale);
-    setOffset({
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
+    setPan({
+      x: pointer.x - worldUnderCursor.x * newZoom,
+      y: pointer.y - worldUnderCursor.y * newZoom,
     });
+    setZoom(newZoom);
   }
 
-  // Ghost line while drawing
+  // ── Ghost line ──────────────────────────────────────────────────
   const ghostPoints = (() => {
     if (activeTool !== 'wall' || !cursor || !isChainArmed || chainPoints.length === 0) return null;
     const last = chainPoints[chainPoints.length - 1];
-    const s = worldToStage(last);
-    const e = worldToStage(cursor);
-    return [s.x, s.y, e.x, e.y];
+    const s = worldToBase(last);
+    const c = worldToBase(cursor);
+    return [s.x, s.y, c.x, c.y];
   })();
 
-  // Ghost box while drawing
+  // ── Ghost box ───────────────────────────────────────────────────
   const ghostBox = (() => {
     if (activeTool !== 'box' || !cursor || !pointerDown) return null;
     const start = snap(pointerDown.pos);
     const end = cursor;
-    const stageStart = worldToStage(start);
-    const stageEnd = worldToStage(end);
+    const bs = worldToBase(start);
+    const be = worldToBase(end);
     return {
-      x: Math.min(stageStart.x, stageEnd.x),
-      y: Math.min(stageStart.y, stageEnd.y),
-      width: Math.abs(stageEnd.x - stageStart.x),
-      height: Math.abs(stageEnd.y - stageStart.y),
+      x: Math.min(bs.x, be.x),
+      y: Math.min(bs.y, be.y),
+      width: Math.abs(be.x - bs.x),
+      height: Math.abs(be.y - bs.y),
       labelW: formatFeet(Math.abs(end.x - start.x)),
       labelH: formatFeet(Math.abs(end.y - start.y)),
     };
   })();
 
-  const cursorStyle =
-    activeTool === 'select' ? 'default'
-    : activeTool === 'wall' ? 'crosshair'
-    : 'crosshair';
+  // ── Marquee rect ─────────────────────────────────────────────────
+  const marqueeRect = (() => {
+    if (!marquee) return null;
+    const bs = worldToBase(marquee.start);
+    const be = worldToBase(marquee.end);
+    return {
+      x: Math.min(bs.x, be.x),
+      y: Math.min(bs.y, be.y),
+      width: Math.abs(be.x - bs.x),
+      height: Math.abs(be.y - bs.y),
+    };
+  })();
+
+  const cursorStyle = activeTool === 'select' ? (marquee ? 'crosshair' : 'default') : 'crosshair';
 
   return (
     <div
@@ -255,19 +274,17 @@ export function DrawingCanvas() {
         ref={stageRef}
         width={size.width}
         height={size.height}
+        x={pan.x}
+        y={pan.y}
+        scaleX={zoom}
+        scaleY={zoom}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
-        draggable={false}
       >
         <Layer>
-          <Grid
-            width={size.width}
-            height={size.height}
-            scale={scale}
-            offset={offset}
-          />
+          <Grid width={size.width} height={size.height} zoom={zoom} pan={pan} />
         </Layer>
 
         <Layer>
@@ -276,19 +293,15 @@ export function DrawingCanvas() {
               <WallElement
                 key={el.id}
                 wall={el}
-                selected={selectedId === el.id}
-                scale={scale}
-                offset={offset}
-                onSelect={() => activeTool === 'select' && setSelectedId(el.id)}
+                selected={selectedIds.has(el.id)}
+                onSelect={() => activeTool === 'select' && useToolStore.getState().setSelectedId(el.id)}
               />
             ) : (
               <BoxElement
                 key={el.id}
                 box={el}
-                selected={selectedId === el.id}
-                scale={scale}
-                offset={offset}
-                onSelect={() => activeTool === 'select' && setSelectedId(el.id)}
+                selected={selectedIds.has(el.id)}
+                onSelect={() => activeTool === 'select' && useToolStore.getState().setSelectedId(el.id)}
               />
             )
           )}
@@ -298,8 +311,8 @@ export function DrawingCanvas() {
             <Line
               points={ghostPoints}
               stroke="#b8c9e0"
-              strokeWidth={2}
-              dash={[6, 4]}
+              strokeWidth={2 / zoom}
+              dash={[6 / zoom, 4 / zoom]}
               listening={false}
             />
           )}
@@ -308,38 +321,38 @@ export function DrawingCanvas() {
           {ghostBox && ghostBox.width > 0 && ghostBox.height > 0 && (
             <Group listening={false}>
               <Rect
-                x={ghostBox.x}
-                y={ghostBox.y}
-                width={ghostBox.width}
-                height={ghostBox.height}
-                stroke="#4a6fa5"
-                strokeWidth={1.5}
-                dash={[6, 4]}
+                x={ghostBox.x} y={ghostBox.y}
+                width={ghostBox.width} height={ghostBox.height}
+                stroke="#4a6fa5" strokeWidth={1.5 / zoom}
+                dash={[6 / zoom, 4 / zoom]}
                 fill="rgba(74,111,165,0.05)"
               />
               <Text
-                x={ghostBox.x + 4}
-                y={ghostBox.y + 4}
+                x={ghostBox.x + 4 / zoom} y={ghostBox.y + 4 / zoom}
                 text={`${ghostBox.labelW} × ${ghostBox.labelH}`}
-                fontSize={11}
-                fontFamily="Courier New"
-                fill="#4a6fa5"
+                fontSize={11 / zoom} fontFamily="Courier New" fill="#4a6fa5"
               />
             </Group>
+          )}
+
+          {/* Marquee selection rect */}
+          {marqueeRect && (
+            <Rect
+              x={marqueeRect.x} y={marqueeRect.y}
+              width={marqueeRect.width} height={marqueeRect.height}
+              stroke="#0066cc" strokeWidth={1 / zoom}
+              dash={[4 / zoom, 3 / zoom]}
+              fill="rgba(0,102,204,0.06)"
+              listening={false}
+            />
           )}
 
           {/* Armed chain dot */}
           {isChainArmed && chainPoints.length > 0 && (() => {
             const last = chainPoints[chainPoints.length - 1];
-            const s = worldToStage(last);
+            const b = worldToBase(last);
             return (
-              <Circle
-                x={s.x}
-                y={s.y}
-                radius={5}
-                fill="#2c2c2c"
-                listening={false}
-              />
+              <Circle x={b.x} y={b.y} radius={5 / zoom} fill="#2c2c2c" listening={false} />
             );
           })()}
         </Layer>

@@ -1,0 +1,48 @@
+.bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(44, 44, 44, 0.95);
+  backdrop-filter: blur(8px);
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Courier New', monospace;
+  z-index: 150;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.count {
+  font-size: 11px;
+  color: #d0ccc4;
+  letter-spacing: 0.05em;
+}
+
+.deleteBtn {
+  background: #cc4444;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 6px 12px;
+  cursor: pointer;
+  min-height: 36px;
+  touch-action: manipulation;
+}
+
+.clearBtn {
+  background: none;
+  border: 1px solid #6a6a6a;
+  border-radius: 6px;
+  color: #d0ccc4;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 6px 12px;
+  cursor: pointer;
+  min-height: 36px;
+  touch-action: manipulation;
+}

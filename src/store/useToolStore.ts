@@ -11,24 +11,29 @@ type ToolStore = {
   addChainPoint: (point: Point) => void;
   endChain: () => void;
 
-  // Selected element
+  // Single + multi-select
   selectedId: string | null;
   setSelectedId: (id: string | null) => void;
+  selectedIds: Set<string>;
+  setSelectedIds: (ids: Set<string>) => void;
+  clearSelection: () => void;
 
-  // View
-  scale: number; // pixels per foot
-  setScale: (scale: number) => void;
-  offset: { x: number; y: number };
-  setOffset: (offset: { x: number; y: number }) => void;
-
-  // First-use hints
-  shownHints: Set<ToolType>;
-  markHintShown: (tool: ToolType) => void;
+  // View — zoom is a multiplier (1 = default, 2 = 2x zoom in)
+  zoom: number;
+  setZoom: (zoom: number) => void;
+  pan: { x: number; y: number };
+  setPan: (pan: { x: number; y: number }) => void;
 };
 
 export const useToolStore = create<ToolStore>((set) => ({
-  activeTool: 'select',
-  setActiveTool: (activeTool) => set({ activeTool, selectedId: null }),
+  activeTool: 'wall', // Default to wall tool on new session
+  setActiveTool: (activeTool) => set({
+    activeTool,
+    selectedId: null,
+    selectedIds: new Set(),
+    chainPoints: [],
+    isChainArmed: false,
+  }),
 
   chainPoints: [],
   isChainArmed: false,
@@ -40,14 +45,21 @@ export const useToolStore = create<ToolStore>((set) => ({
   endChain: () => set({ chainPoints: [], isChainArmed: false }),
 
   selectedId: null,
-  setSelectedId: (selectedId) => set({ selectedId }),
+  setSelectedId: (selectedId) => set({
+    selectedId,
+    selectedIds: selectedId ? new Set([selectedId]) : new Set(),
+  }),
 
-  scale: 40,
-  setScale: (scale) => set({ scale }),
-  offset: { x: 0, y: 0 },
-  setOffset: (offset) => set({ offset }),
+  selectedIds: new Set(),
+  setSelectedIds: (selectedIds) => set({
+    selectedIds,
+    selectedId: selectedIds.size === 1 ? [...selectedIds][0] : null,
+  }),
 
-  shownHints: new Set(),
-  markHintShown: (tool) =>
-    set(state => ({ shownHints: new Set([...state.shownHints, tool]) })),
+  clearSelection: () => set({ selectedId: null, selectedIds: new Set() }),
+
+  zoom: 1,
+  setZoom: (zoom) => set({ zoom }),
+  pan: { x: 0, y: 0 },
+  setPan: (pan) => set({ pan }),
 }));
