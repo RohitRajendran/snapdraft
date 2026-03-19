@@ -8,7 +8,7 @@ import { useSnap } from '../../hooks/useSnap';
 import { Grid } from './Grid';
 import { WallElement } from './WallElement';
 import { BoxElement } from './BoxElement';
-import { ftToPx, pxToFt, distance, formatFeet, WALL_THICKNESS_FT } from '../../utils/geometry';
+import { ftToPx, pxToFt, distance, formatFeet, parseFtIn, WALL_THICKNESS_FT, PIXELS_PER_FOOT } from '../../utils/geometry';
 import type { Point, Element } from '../../types';
 
 const DRAG_THRESHOLD_FT = 0.3;
@@ -42,6 +42,8 @@ export function DrawingCanvas() {
   const [cursorSnappedToSegment, setCursorSnappedToSegment] = useState(false);
   const [pointerDown, setPointerDown] = useState<{ pos: Point; time: number } | null>(null);
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
+  const [dimInput, setDimInput] = useState('');
+  const dimInputRef = useRef<HTMLInputElement>(null);
   const lastTapRef = useRef<number>(0);
 
   const { activePlan, addElement, updateElement } = useFloorplanStore();
@@ -71,7 +73,7 @@ export function DrawingCanvas() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement) return;
-      if (e.key === 'Escape') { endChain(); clearSelection(); }
+      if (e.key === 'Escape') { endChain(); clearSelection(); setDimInput(''); }
       if (e.key === 'Delete' || e.key === 'Backspace') {
         const ids = useToolStore.getState().selectedIds;
         if (ids.size > 0) {
@@ -209,6 +211,27 @@ export function DrawingCanvas() {
     addElement({ id: nanoid(), type: 'wall', points, thickness: WALL_THICKNESS_FT });
   }
 
+  // Commit a wall at an exact typed length, in the direction of the current cursor from the last chain point.
+  function commitWallAtTypedLength(lengthFt: number) {
+    if (!isChainArmed || chainPoints.length === 0) return;
+    const lastPt = chainPoints[chainPoints.length - 1];
+
+    // Direction: toward cursor, or horizontal if no cursor movement
+    let dx = 1, dy = 0;
+    if (cursor) {
+      const rawDx = cursor.x - lastPt.x;
+      const rawDy = cursor.y - lastPt.y;
+      const mag = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+      if (mag > 0.01) { dx = rawDx / mag; dy = rawDy / mag; }
+    }
+
+    const endPt: Point = { x: lastPt.x + dx * lengthFt, y: lastPt.y + dy * lengthFt };
+    commitWall([lastPt, endPt]);
+    addChainPoint(endPt);
+    setCursor(endPt);
+    setDimInput('');
+  }
+
   function handleBoxDraw(start: Point, end: Point) {
     const x = Math.min(start.x, end.x);
     const y = Math.min(start.y, end.y);
@@ -314,12 +337,24 @@ export function DrawingCanvas() {
   const showEndpointSnap = activeTool === 'wall' && cursorSnappedToEndpoint && cursor;
   const showSegmentSnap = activeTool === 'wall' && cursorSnappedToSegment && cursor;
 
+  // Dimension input — position near the cursor in screen coords
+  const showDimInput = activeTool === 'wall' && isChainArmed && cursor;
+  const dimInputScreenPos = showDimInput ? {
+    x: cursor!.x * PIXELS_PER_FOOT * zoom + pan.x + 14,
+    y: cursor!.y * PIXELS_PER_FOOT * zoom + pan.y - 36,
+  } : null;
+
+  // Current ghost length as placeholder
+  const ghostLengthFt = (isChainArmed && chainPoints.length > 0 && cursor)
+    ? distance(chainPoints[chainPoints.length - 1], cursor)
+    : null;
+
   const cursorStyle = activeTool === 'select' ? (marquee ? 'crosshair' : 'default') : 'crosshair';
 
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '100%', cursor: cursorStyle }}
+      style={{ width: '100%', height: '100%', cursor: cursorStyle, position: 'relative' }}
       data-testid="drawing-canvas"
     >
       <Stage
@@ -453,6 +488,52 @@ export function DrawingCanvas() {
           })()}
         </Layer>
       </Stage>
+
+      {/* Dimension input — type exact length while drawing a wall */}
+      {showDimInput && dimInputScreenPos && (
+        <input
+          ref={dimInputRef}
+          type="text"
+          value={dimInput}
+          placeholder={ghostLengthFt != null && ghostLengthFt > 0.05 ? formatFeet(ghostLengthFt) : "length"}
+          onChange={e => setDimInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const ft = parseFtIn(dimInput);
+              if (ft != null && ft > 0) {
+                commitWallAtTypedLength(ft);
+              }
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              setDimInput('');
+              dimInputRef.current?.blur();
+            }
+            // Don't let other keys (S/W/B) change the tool while typing
+            e.stopPropagation();
+          }}
+          style={{
+            position: 'absolute',
+            left: Math.max(4, Math.min(dimInputScreenPos.x, size.width - 120)),
+            top: Math.max(4, dimInputScreenPos.y),
+            width: 100,
+            fontFamily: "'Courier New', monospace",
+            fontSize: 12,
+            fontWeight: 700,
+            background: 'rgba(255,255,255,0.97)',
+            border: '1.5px solid #2d5490',
+            borderRadius: 4,
+            padding: '4px 8px',
+            color: '#2c2c2c',
+            outline: 'none',
+            pointerEvents: 'auto',
+            zIndex: 200,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+          data-testid="dim-input"
+        />
+      )}
     </div>
   );
 }

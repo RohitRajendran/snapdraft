@@ -6,7 +6,7 @@ import { useFloorplanStore } from '../../store/useFloorplanStore';
 import type { Box } from '../../types';
 import { ftToPx, pxToFt, snapToGrid, formatFeet } from '../../utils/geometry';
 
-const HANDLE_OFFSET_PX = 22; // distance above top-center for rotation handle (screen px, divided by zoom)
+const HANDLE_OFFSET_PX = 22;
 
 type Props = {
   box: Box;
@@ -19,13 +19,22 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
   const { updateElement } = useFloorplanStore();
   const { activeTool, zoom } = useToolStore();
   const groupRef = useRef<Konva.Group>(null);
+  const isRotatingRef = useRef(false);
 
   const bx = ftToPx(box.x);
   const by = ftToPx(box.y);
   const bw = ftToPx(box.width);
   const bh = ftToPx(box.height);
 
+  function handleDragStart() {
+    // Cancel the drag if the rotation handle initiated this interaction
+    if (isRotatingRef.current) {
+      groupRef.current?.stopDrag();
+    }
+  }
+
   function handleDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
+    if (isRotatingRef.current) return;
     const node = e.target;
     const dxFt = pxToFt(node.x()) - box.x;
     const dyFt = pxToFt(node.y()) - box.y;
@@ -45,22 +54,22 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
   }
 
   function handleRotatePointerDown(e: Konva.KonvaEventObject<PointerEvent>) {
-    e.cancelBubble = true; // prevent group drag
+    e.cancelBubble = true;
+    isRotatingRef.current = true;
+
     const stage = e.target.getStage();
     const group = groupRef.current;
     if (!stage || !group) return;
 
     function computeRotation() {
       const pos = stage!.getPointerPosition();
-      if (!pos) return;
+      if (!pos) return null;
       const abs = group!.getAbsolutePosition();
-      const s = stage!.scaleX(); // zoom
+      const s = stage!.scaleX();
       const cx = abs.x + (bw / 2) * s;
       const cy = abs.y + (bh / 2) * s;
       const rawAngle = Math.atan2(pos.y - cy, pos.x - cx) * 180 / Math.PI + 90;
-      // Snap to 5° increments; hold Shift to snap to 15°
-      const snap = 5;
-      return Math.round(rawAngle / snap) * snap;
+      return Math.round(rawAngle / 5) * 5;
     }
 
     function onMove() {
@@ -69,6 +78,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
     }
 
     function onUp() {
+      isRotatingRef.current = false;
       stage!.off('pointermove.rot');
       stage!.off('pointerup.rot');
     }
@@ -87,6 +97,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
       y={by}
       rotation={box.rotation}
       draggable={activeTool === 'select'}
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={onSelect}
       onTap={onSelect}
@@ -108,10 +119,8 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
         fontFamily="Courier New"
         fill={selected ? '#0066cc' : '#2d5490'}
       />
-      {/* Rotation handle — appears above the box when selected */}
       {selected && activeTool === 'select' && (
         <>
-          {/* Stem line from top-center to handle */}
           <Line
             points={[bw / 2, 0, bw / 2, -handleOffset]}
             stroke="#0066cc"
