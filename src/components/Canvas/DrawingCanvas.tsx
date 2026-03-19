@@ -40,6 +40,7 @@ export function DrawingCanvas() {
   const [cursor, setCursor] = useState<Point | null>(null);
   const [cursorSnappedToEndpoint, setCursorSnappedToEndpoint] = useState(false);
   const [cursorSnappedToSegment, setCursorSnappedToSegment] = useState(false);
+  const [cursorSnappedToAxis, setCursorSnappedToAxis] = useState(false);
   const [pointerDown, setPointerDown] = useState<{ pos: Point; time: number } | null>(null);
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const [dimInput, setDimInput] = useState('');
@@ -55,7 +56,11 @@ export function DrawingCanvas() {
 
   const plan = activePlan();
   const elements = plan?.elements ?? [];
-  const { snap, snapWithInfo } = useSnap(elements);
+  // Pass the last chain point so useSnap can axis-snap off-grid walls to H/V
+  const chainOrigin = (isChainArmed && chainPoints.length > 0)
+    ? chainPoints[chainPoints.length - 1]
+    : null;
+  const { snap, snapWithInfo } = useSnap(elements, chainOrigin);
 
   useEffect(() => {
     const ro = new ResizeObserver(() => {
@@ -132,10 +137,11 @@ export function DrawingCanvas() {
     const world = getPointerWorld();
     if (!world) return;
 
-    const { point, snappedToEndpoint, snappedToSegment } = snapWithInfo(world);
+    const { point, snappedToEndpoint, snappedToSegment, snappedToAxis } = snapWithInfo(world);
     setCursor(point);
     setCursorSnappedToEndpoint(snappedToEndpoint);
     setCursorSnappedToSegment(snappedToSegment);
+    setCursorSnappedToAxis(snappedToAxis);
 
     if (activeTool === 'select' && pointerDown) {
       if (distance(pointerDown.pos, world) > DRAG_THRESHOLD_FT) {
@@ -337,6 +343,7 @@ export function DrawingCanvas() {
   // Show snap indicators only when wall tool is active
   const showEndpointSnap = activeTool === 'wall' && cursorSnappedToEndpoint && cursor;
   const showSegmentSnap = activeTool === 'wall' && cursorSnappedToSegment && cursor;
+  const showAxisSnap = activeTool === 'wall' && cursorSnappedToAxis && cursor;
 
   // Dimension input — anchored to the last chain point so it stays still while typing
   const showDimInput = activeTool === 'wall' && isChainArmed && chainPoints.length > 0;
@@ -492,6 +499,22 @@ export function DrawingCanvas() {
                 stroke="#e07b00"
                 strokeWidth={2 / zoom}
                 fill="rgba(224,123,0,0.15)"
+                listening={false}
+              />
+            );
+          })()}
+
+          {/* Axis snap indicator — diamond when cursor is locked to H or V from chain origin */}
+          {showAxisSnap && (() => {
+            const b = worldToBase(cursor!);
+            const r = 6 / zoom;
+            return (
+              <Line
+                points={[b.x, b.y - r, b.x + r, b.y, b.x, b.y + r, b.x - r, b.y, b.x, b.y - r]}
+                stroke="#22aa55"
+                strokeWidth={2 / zoom}
+                fill="rgba(34,170,85,0.15)"
+                closed
                 listening={false}
               />
             );

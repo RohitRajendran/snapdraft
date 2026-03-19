@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { collectEndpoints, findNearestOnSegments } from '../../hooks/useSnap';
+import { collectEndpoints, findNearestOnSegments, axisSnap } from '../../hooks/useSnap';
 import { findNearestEndpoint } from '../../utils/geometry';
 import type { Element } from '../../types';
 
@@ -94,5 +94,46 @@ describe('snap priority', () => {
     const endpointPts = collectEndpoints(elements);
     const ep = findNearestEndpoint({ x: 5, y: 0.05 }, endpointPts);
     expect(ep).toEqual({ x: 5, y: 0 }); // endpoint wins
+  });
+});
+
+describe('axisSnap', () => {
+  const origin = { x: 6 + 4 / 12, y: 0 }; // 6'4" = 6.333 ft — off grid
+
+  it('locks Y to origin when cursor is nearly horizontal', () => {
+    // cursor at (10, 0.2) — dy=0.2 < SNAP_RADIUS, dx=3.666 >> dy
+    const result = axisSnap({ x: 10, y: 0.2 }, origin);
+    expect(result).not.toBeNull();
+    expect(result!.y).toBeCloseTo(origin.y); // Y locked to off-grid value
+    expect(result!.x).toBeCloseTo(10);       // X grid-snapped
+  });
+
+  it('locks X to origin when cursor is nearly vertical', () => {
+    // cursor at (6.4, 5) — dx=0.067 < SNAP_RADIUS, dy=5 >> dx
+    const result = axisSnap({ x: 6.4, y: 5 }, origin);
+    expect(result).not.toBeNull();
+    expect(result!.x).toBeCloseTo(origin.x); // X locked to off-grid value
+    expect(result!.y).toBeCloseTo(5);        // Y grid-snapped
+  });
+
+  it('returns null when cursor is clearly diagonal', () => {
+    // cursor at (10, 5) — neither dy nor dx is small enough
+    expect(axisSnap({ x: 10, y: 5 }, origin)).toBeNull();
+  });
+
+  it('returns null when cursor is at the origin', () => {
+    expect(axisSnap(origin, origin)).toBeNull();
+  });
+
+  it('does not apply horizontal lock when dy > SNAP_RADIUS', () => {
+    // dy=0.5 > SNAP_RADIUS_FT(0.4), dx=5 — should not axis-snap
+    expect(axisSnap({ x: 11, y: 0.5 }, origin)).toBeNull();
+  });
+
+  it('horizontal lock preserves off-grid Y exactly', () => {
+    const offGridOrigin = { x: 0, y: 76 / 12 }; // 76" off-grid
+    const result = axisSnap({ x: 5, y: 6.4 }, offGridOrigin);
+    expect(result).not.toBeNull();
+    expect(result!.y).toBeCloseTo(76 / 12); // exact off-grid value preserved
   });
 });
