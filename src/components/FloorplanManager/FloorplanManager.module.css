@@ -1,0 +1,145 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.panel {
+  background: #f5f0e8;
+  border: 1px solid #c8c4bc;
+  border-radius: 12px;
+  padding: 24px;
+  width: 360px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  font-family: 'Courier New', monospace;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2c2c2c;
+}
+
+.close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #6a6a6a;
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.empty {
+  font-size: 12px;
+  color: #8a8a8a;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.item.active {
+  background: #ece8e0;
+  border-color: #c0bbb2;
+}
+
+.name {
+  flex: 1;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: #2c2c2c;
+  cursor: pointer;
+  text-align: left;
+  padding: 4px;
+  min-height: 44px;
+}
+
+.nameInput {
+  flex: 1;
+  background: white;
+  border: 1px solid #b8c9e0;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 4px 8px;
+  color: #2c2c2c;
+  outline: none;
+  min-height: 44px;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  color: #8a8a8a;
+  padding: 4px 8px;
+  min-height: 44px;
+  min-width: 36px;
+  touch-action: manipulation;
+  border-radius: 4px;
+}
+
+.actionBtn:hover {
+  background: #e0dcd4;
+  color: #2c2c2c;
+}
+
+.createBtn {
+  background: #2c2c2c;
+  color: #f5f0e8;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.createBtn:hover {
+  background: #3a3a3a;
+}

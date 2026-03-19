@@ -1,0 +1,85 @@
+.panel {
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  width: 220px;
+  background: rgba(245, 240, 232, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid #c8c4bc;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  font-family: 'Courier New', monospace;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2c2c2c;
+}
+
+.deleteBtn {
+  background: none;
+  border: 1px solid #cc4444;
+  border-radius: 4px;
+  color: #cc4444;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 4px 8px;
+  cursor: pointer;
+  min-height: 32px;
+  touch-action: manipulation;
+  letter-spacing: 0.05em;
+}
+
+.deleteBtn:hover {
+  background: #cc4444;
+  color: white;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7a7a7a;
+}
+
+.input {
+  background: white;
+  border: 1px solid #c8c4bc;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #2c2c2c;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 36px;
+}
+
+.input:focus {
+  border-color: #4a6fa5;
+}

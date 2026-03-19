@@ -1,0 +1,71 @@
+.toolbar {
+  position: fixed;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid #d0ccc4;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  user-select: none;
+}
+
+.tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: #4a4a4a;
+  transition: background 0.15s, color 0.15s;
+  min-width: 52px;
+  min-height: 52px; /* 44pt minimum touch target */
+  touch-action: manipulation;
+}
+
+.tool:hover {
+  background: #f0ede8;
+}
+
+.tool.active {
+  background: #2c2c2c;
+  color: #f5f0e8;
+}
+
+.icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.label {
+  font-size: 9px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.divider {
+  height: 1px;
+  background: #d0ccc4;
+  margin: 2px 0;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    top: auto;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+  }
+}
