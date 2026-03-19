@@ -4,6 +4,7 @@ import { Toolbar } from './components/Toolbar/Toolbar';
 import { TopBar } from './components/Canvas/TopBar';
 import { PropertiesPanel } from './components/PropertiesPanel/PropertiesPanel';
 import { HelpOverlay } from './components/HelpOverlay/HelpOverlay';
+import { ScaleBar } from './components/Canvas/ScaleBar';
 import { MultiSelectBar } from './components/Canvas/MultiSelectBar';
 import { useFloorplanStore } from './store/useFloorplanStore';
 import styles from './App.module.css';
@@ -52,6 +53,7 @@ export default function App() {
       </main>
       <Toolbar onHelpOpen={() => setShowHelp(true)} />
       <PropertiesPanel />
+      <ScaleBar />
       <MultiSelectBar />
       {showHelp && <HelpOverlay onClose={() => setShowHelp(false)} />}
     </div>
