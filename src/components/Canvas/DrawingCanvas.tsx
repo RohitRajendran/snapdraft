@@ -345,7 +345,7 @@ export function DrawingCanvas() {
               text={ghostLength.label}
               fontSize={11 / zoom}
               fontFamily="Courier New"
-              fill="#6a8fb5"
+              fill="#2d5490"
               listening={false}
             />
           )}
@@ -356,14 +356,14 @@ export function DrawingCanvas() {
               <Rect
                 x={ghostBox.x} y={ghostBox.y}
                 width={ghostBox.width} height={ghostBox.height}
-                stroke="#4a6fa5" strokeWidth={1.5 / zoom}
+                stroke="#2d5490" strokeWidth={1.5 / zoom}
                 dash={[6 / zoom, 4 / zoom]}
                 fill="rgba(74,111,165,0.05)"
               />
               <Text
                 x={ghostBox.x + 4 / zoom} y={ghostBox.y + 4 / zoom}
                 text={`${ghostBox.labelW} × ${ghostBox.labelH}`}
-                fontSize={11 / zoom} fontFamily="Courier New" fill="#4a6fa5"
+                fontSize={11 / zoom} fontFamily="Courier New" fill="#2d5490"
               />
             </Group>
           )}

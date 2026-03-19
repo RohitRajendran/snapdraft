@@ -42,7 +42,7 @@
   border: none;
   font-size: 16px;
   cursor: pointer;
-  color: #6a6a6a;
+  color: #4a4a4a;
   min-height: 44px;
   min-width: 44px;
   touch-action: manipulation;
@@ -58,7 +58,7 @@
 
 .empty {
   font-size: 12px;
-  color: #8a8a8a;
+  color: #5a5a5a;
   text-align: center;
   padding: 20px 0;
 }
@@ -113,7 +113,7 @@
   border: none;
   font-size: 13px;
   cursor: pointer;
-  color: #8a8a8a;
+  color: #5a5a5a;
   padding: 4px 8px;
   min-height: 44px;
   min-width: 36px;

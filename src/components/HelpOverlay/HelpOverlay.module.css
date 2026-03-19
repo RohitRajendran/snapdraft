@@ -39,7 +39,7 @@
   border: none;
   font-size: 16px;
   cursor: pointer;
-  color: #6a6a6a;
+  color: #4a4a4a;
   padding: 4px 8px;
   min-height: 44px;
   min-width: 44px;
@@ -77,6 +77,6 @@
   margin-top: 20px;
   text-align: center;
   font-size: 10px;
-  color: #8a8a8a;
+  color: #5a5a5a;
   letter-spacing: 0.05em;
 }

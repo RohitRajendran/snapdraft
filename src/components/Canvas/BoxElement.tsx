@@ -46,7 +46,7 @@ export function BoxElement({ box, selected, onSelect }: Props) {
       <Rect
         width={bw}
         height={bh}
-        stroke={selected ? '#0066cc' : '#4a6fa5'}
+        stroke={selected ? '#0066cc' : '#2d5490'}
         strokeWidth={(selected ? 2 : 1.5) / zoom}
         fill={selected ? 'rgba(0,102,204,0.06)' : 'rgba(74,111,165,0.06)'}
         dash={selected ? undefined : [4 / zoom, 3 / zoom]}
@@ -58,7 +58,7 @@ export function BoxElement({ box, selected, onSelect }: Props) {
         text={label}
         fontSize={11 / zoom}
         fontFamily="Courier New"
-        fill={selected ? '#0066cc' : '#4a6fa5'}
+        fill={selected ? '#0066cc' : '#2d5490'}
       />
     </Group>
   );
