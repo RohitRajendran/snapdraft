@@ -5,13 +5,13 @@
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.92);
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
-  border: 1px solid #d0ccc4;
-  border-radius: 12px;
+  border: 1px solid #c8c4bc;
+  border-radius: 14px;
   padding: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
   z-index: 100;
   user-select: none;
 }
@@ -20,16 +20,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 10px 12px;
+  gap: 4px;
+  padding: 10px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
   cursor: pointer;
-  color: #4a4a4a;
+  color: #3a3a3a;
   transition: background 0.15s, color 0.15s;
-  min-width: 52px;
-  min-height: 52px; /* 44pt minimum touch target */
+  min-width: 60px;
+  min-height: 60px;
   touch-action: manipulation;
 }
 
@@ -43,21 +43,22 @@
 }
 
 .icon {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
 }
 
 .label {
-  font-size: 9px;
+  font-size: 11px;
   font-family: 'Courier New', monospace;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .divider {
   height: 1px;
   background: #d0ccc4;
-  margin: 2px 0;
+  margin: 4px 0;
 }
 
 @media (max-width: 768px) {

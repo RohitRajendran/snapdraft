@@ -50,6 +50,18 @@ export function segmentLength(a: Point, b: Point): number {
   return distance(a, b);
 }
 
+/**
+ * Returns the nearest point on segment a→b to point p.
+ */
+export function nearestPointOnSegment(p: Point, a: Point, b: Point): Point {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return { x: a.x, y: a.y };
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq));
+  return { x: a.x + t * dx, y: a.y + t * dy };
+}
+
 export function formatFeet(ft: number): string {
   const wholeFeet = Math.floor(ft);
   const inches = Math.round((ft - wholeFeet) * 12);

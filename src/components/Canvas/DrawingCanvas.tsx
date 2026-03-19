@@ -39,6 +39,7 @@ export function DrawingCanvas() {
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [cursor, setCursor] = useState<Point | null>(null);
   const [cursorSnappedToEndpoint, setCursorSnappedToEndpoint] = useState(false);
+  const [cursorSnappedToSegment, setCursorSnappedToSegment] = useState(false);
   const [pointerDown, setPointerDown] = useState<{ pos: Point; time: number } | null>(null);
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const lastTapRef = useRef<number>(0);
@@ -118,9 +119,10 @@ export function DrawingCanvas() {
     const world = getPointerWorld();
     if (!world) return;
 
-    const { point, snappedToEndpoint } = snapWithInfo(world);
+    const { point, snappedToEndpoint, snappedToSegment } = snapWithInfo(world);
     setCursor(point);
     setCursorSnappedToEndpoint(snappedToEndpoint);
+    setCursorSnappedToSegment(snappedToSegment);
 
     if (activeTool === 'select' && pointerDown) {
       if (distance(pointerDown.pos, world) > DRAG_THRESHOLD_FT) {
@@ -279,8 +281,9 @@ export function DrawingCanvas() {
     };
   })();
 
-  // Show endpoint snap indicator when wall tool is active and cursor snapped to an existing endpoint
+  // Show snap indicators only when wall tool is active
   const showEndpointSnap = activeTool === 'wall' && cursorSnappedToEndpoint && cursor;
+  const showSegmentSnap = activeTool === 'wall' && cursorSnappedToSegment && cursor;
 
   const cursorStyle = activeTool === 'select' ? (marquee ? 'crosshair' : 'default') : 'crosshair';
 
@@ -397,6 +400,22 @@ export function DrawingCanvas() {
                 stroke="#0066cc"
                 strokeWidth={2 / zoom}
                 fill="rgba(0,102,204,0.12)"
+                listening={false}
+              />
+            );
+          })()}
+
+          {/* Segment snap indicator — small square when cursor snaps to a point along a wall */}
+          {showSegmentSnap && (() => {
+            const b = worldToBase(cursor!);
+            const s = 7 / zoom;
+            return (
+              <Rect
+                x={b.x - s / 2} y={b.y - s / 2}
+                width={s} height={s}
+                stroke="#e07b00"
+                strokeWidth={2 / zoom}
+                fill="rgba(224,123,0,0.15)"
                 listening={false}
               />
             );
