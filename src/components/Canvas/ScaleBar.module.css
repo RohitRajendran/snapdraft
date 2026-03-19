@@ -8,9 +8,15 @@
   gap: 4px;
   font-family: 'Courier New', monospace;
   font-size: 12px;
-  color: #4a4a4a;
+  font-weight: 700;
+  color: #2c2c2c;
   pointer-events: none;
   z-index: 50;
+  background: rgba(245, 240, 232, 0.85);
+  backdrop-filter: blur(4px);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #c8c4bc;
 }
 
 .label {
@@ -19,9 +25,9 @@
 
 .bar {
   height: 3px;
-  background: #4a4a4a;
-  border-left: 2px solid #4a4a4a;
-  border-right: 2px solid #4a4a4a;
+  background: #2c2c2c;
+  border-left: 2px solid #2c2c2c;
+  border-right: 2px solid #2c2c2c;
   min-width: 20px;
   max-width: 200px;
   transition: width 0.15s ease;
@@ -29,5 +35,7 @@
 
 .unit {
   letter-spacing: 0.03em;
-  color: #5a5a5a;
+  color: #4a4a4a;
+  font-size: 11px;
+  font-weight: 400;
 }

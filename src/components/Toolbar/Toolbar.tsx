@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useToolStore } from '../../store/useToolStore';
+import { useFloorplanStore } from '../../store/useFloorplanStore';
 import type { ToolType } from '../../types';
 import styles from './Toolbar.module.css';
 
@@ -15,6 +16,7 @@ type Props = {
 
 export function Toolbar({ onHelpOpen }: Props) {
   const { activeTool, setActiveTool } = useToolStore();
+  const { undo, redo, past, future } = useFloorplanStore();
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -42,6 +44,29 @@ export function Toolbar({ onHelpOpen }: Props) {
           <span className={styles.label}>{tool.label}</span>
         </button>
       ))}
+      <div className={styles.divider} />
+      <button
+        className={styles.tool}
+        onClick={undo}
+        disabled={past.length === 0}
+        title="Undo (⌘Z)"
+        aria-label="Undo"
+        data-testid="tool-undo"
+      >
+        <span className={styles.icon}>↩</span>
+        <span className={styles.label}>Undo</span>
+      </button>
+      <button
+        className={styles.tool}
+        onClick={redo}
+        disabled={future.length === 0}
+        title="Redo (⌘⇧Z)"
+        aria-label="Redo"
+        data-testid="tool-redo"
+      >
+        <span className={styles.icon}>↪</span>
+        <span className={styles.label}>Redo</span>
+      </button>
       <div className={styles.divider} />
       <button
         className={styles.tool}

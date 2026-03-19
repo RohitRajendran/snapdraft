@@ -1,19 +1,19 @@
 import { Line, Circle } from 'react-konva';
-import type Konva from 'konva'
+import type Konva from 'konva';
 import { useToolStore } from '../../store/useToolStore';
 import { useFloorplanStore } from '../../store/useFloorplanStore';
-import type { Wall } from '../../types';
+import type { Wall, Point } from '../../types';
 import { ftToPx, pxToFt, snapToGrid, findNearestEndpoint, distance, SNAP_RADIUS_FT } from '../../utils/geometry';
-import type { Point } from '../../types';
 
 type Props = {
   wall: Wall;
   selected: boolean;
   onSelect: () => void;
+  onGroupDrag?: (id: string, dxFt: number, dyFt: number) => void;
   onEndpointDrag?: (wallId: string, pointIndex: number, newPos: Point) => void;
 };
 
-export function WallElement({ wall, selected, onSelect, onEndpointDrag }: Props) {
+export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointDrag }: Props) {
   const { zoom, activeTool } = useToolStore();
   const { updateElement } = useFloorplanStore();
 
@@ -23,11 +23,18 @@ export function WallElement({ wall, selected, onSelect, onEndpointDrag }: Props)
     const node = e.target;
     const dxFt = pxToFt(node.x());
     const dyFt = pxToFt(node.y());
+    node.position({ x: 0, y: 0 });
 
-    // Compute candidate positions after drag
+    const ids = useToolStore.getState().selectedIds;
+
+    // Multi-select: delegate all movement to parent handler
+    if (ids.size > 1 && onGroupDrag) {
+      onGroupDrag(wall.id, snapToGrid(dxFt), snapToGrid(dyFt));
+      return;
+    }
+
+    // Single wall drag — try to snap endpoints to nearby wall endpoints
     const candidates = wall.points.map(p => ({ x: p.x + dxFt, y: p.y + dyFt }));
-
-    // Gather other walls' endpoints to snap to
     const allElements = useFloorplanStore.getState().activePlan()?.elements ?? [];
     const otherEndpoints: Point[] = [];
     for (const el of allElements) {
@@ -36,7 +43,6 @@ export function WallElement({ wall, selected, onSelect, onEndpointDrag }: Props)
       }
     }
 
-    // Find the best endpoint-to-endpoint snap across all candidate points
     let adjustment: Point | null = null;
     let bestDist = SNAP_RADIUS_FT;
     for (const candidate of candidates) {
@@ -54,18 +60,13 @@ export function WallElement({ wall, selected, onSelect, onEndpointDrag }: Props)
     if (adjustment) {
       finalPoints = candidates.map(p => ({ x: p.x + adjustment!.x, y: p.y + adjustment!.y }));
     } else {
-      // Fall back to grid-snapped delta
       const snappedDx = snapToGrid(dxFt);
       const snappedDy = snapToGrid(dyFt);
-      if (snappedDx === 0 && snappedDy === 0) {
-        node.position({ x: 0, y: 0 });
-        return;
-      }
+      if (snappedDx === 0 && snappedDy === 0) return;
       finalPoints = wall.points.map(p => ({ x: p.x + snappedDx, y: p.y + snappedDy }));
     }
 
     updateElement(wall.id, { points: finalPoints });
-    node.position({ x: 0, y: 0 });
   }
 
   return (
@@ -99,30 +100,44 @@ export function WallElement({ wall, selected, onSelect, onEndpointDrag }: Props)
             draggable
             onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
               const node = e.target;
-              // node position is absolute in base coords
               const rawFt = { x: pxToFt(node.x()), y: pxToFt(node.y()) };
 
-              // Snap to other endpoints first, then grid
               const allElements = useFloorplanStore.getState().activePlan()?.elements ?? [];
+
+              // Check if the dragged endpoint is shared with another wall
+              const draggedPt = wall.points[idx];
+              const isConnected = allElements.some(el =>
+                el.type === 'wall' && el.id !== wall.id &&
+                el.points.some(p => distance(p, draggedPt) < 0.05)
+              );
+
+              // If connected, redirect the resize to the OTHER (free) endpoint
+              const targetIdx = isConnected ? (idx === 0 ? wall.points.length - 1 : 0) : idx;
+
+              // Gather snap candidates (all other endpoints + own non-target points)
               const otherEndpoints: Point[] = [];
               for (const el of allElements) {
                 if (el.type === 'wall' && el.id !== wall.id) {
                   otherEndpoints.push(...el.points);
                 } else if (el.type === 'wall' && el.id === wall.id) {
-                  // Can snap to own other endpoints
-                  el.points.forEach((p, i) => { if (i !== idx) otherEndpoints.push(p); });
+                  el.points.forEach((p, i) => { if (i !== targetIdx) otherEndpoints.push(p); });
                 }
               }
 
               const snapped = findNearestEndpoint(rawFt, otherEndpoints) ??
                 { x: snapToGrid(rawFt.x), y: snapToGrid(rawFt.y) };
 
-              const newPoints = wall.points.map((p, i) => i === idx ? snapped : p);
+              const newPoints = wall.points.map((p, i) => i === targetIdx ? snapped : p);
               updateElement(wall.id, { points: newPoints });
-              // Reset handle position — wall will rerender with correct coords
-              node.position({ x: ftToPx(snapped.x), y: ftToPx(snapped.y) });
 
-              onEndpointDrag?.(wall.id, idx, snapped);
+              // Reset handle to its unchanged position if we redirected the drag
+              if (isConnected) {
+                node.position({ x: ftToPx(draggedPt.x), y: ftToPx(draggedPt.y) });
+              } else {
+                node.position({ x: ftToPx(snapped.x), y: ftToPx(snapped.y) });
+              }
+
+              onEndpointDrag?.(wall.id, targetIdx, snapped);
             }}
             hitStrokeWidth={12 / zoom}
           />

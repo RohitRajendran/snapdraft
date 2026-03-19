@@ -44,7 +44,7 @@ export function DrawingCanvas() {
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const lastTapRef = useRef<number>(0);
 
-  const { activePlan, addElement } = useFloorplanStore();
+  const { activePlan, addElement, updateElement } = useFloorplanStore();
   const {
     activeTool, selectedIds, setSelectedIds, clearSelection,
     chainPoints, isChainArmed, addChainPoint, endChain,
@@ -78,6 +78,17 @@ export function DrawingCanvas() {
           ids.forEach(id => useFloorplanStore.getState().deleteElement(id));
           clearSelection();
         }
+      }
+      // Undo: Cmd+Z (Mac) / Ctrl+Z (Win)
+      if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        e.preventDefault();
+        useFloorplanStore.getState().undo();
+      }
+      // Redo: Cmd+Shift+Z / Ctrl+Shift+Z / Ctrl+Y
+      if ((e.key === 'z' && (e.metaKey || e.ctrlKey) && e.shiftKey) ||
+          (e.key === 'y' && e.ctrlKey)) {
+        e.preventDefault();
+        useFloorplanStore.getState().redo();
       }
     }
     window.addEventListener('keydown', onKey);
@@ -232,6 +243,24 @@ export function DrawingCanvas() {
     setZoom(newZoom);
   }
 
+  // ── Multi-select group drag ───────────────────────────────────────
+  // Called by WallElement / BoxElement when a selected element is dragged.
+  // If multiple elements are selected, apply the same delta to all of them.
+  const handleGroupDrag = useCallback((draggedId: string, dxFt: number, dyFt: number) => {
+    const ids = useToolStore.getState().selectedIds;
+    const targets = ids.size > 1 ? ids : new Set([draggedId]);
+    const allEls = useFloorplanStore.getState().activePlan()?.elements ?? [];
+    targets.forEach(id => {
+      const el = allEls.find(e => e.id === id);
+      if (!el) return;
+      if (el.type === 'wall') {
+        updateElement(id, { points: el.points.map(p => ({ x: p.x + dxFt, y: p.y + dyFt })) });
+      } else if (el.type === 'box') {
+        updateElement(id, { x: el.x + dxFt, y: el.y + dyFt });
+      }
+    });
+  }, [updateElement]);
+
   // ── Ghost line (wall tool, chain armed) ──────────────────────────
   const ghostPoints = (() => {
     if (activeTool !== 'wall' || !cursor || !isChainArmed || chainPoints.length === 0) return null;
@@ -318,6 +347,7 @@ export function DrawingCanvas() {
                 wall={el}
                 selected={selectedIds.has(el.id)}
                 onSelect={() => activeTool === 'select' && useToolStore.getState().setSelectedId(el.id)}
+                onGroupDrag={handleGroupDrag}
               />
             ) : (
               <BoxElement
@@ -325,6 +355,7 @@ export function DrawingCanvas() {
                 box={el}
                 selected={selectedIds.has(el.id)}
                 onSelect={() => activeTool === 'select' && useToolStore.getState().setSelectedId(el.id)}
+                onGroupDrag={handleGroupDrag}
               />
             )
           )}

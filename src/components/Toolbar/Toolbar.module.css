@@ -55,6 +55,15 @@
   text-transform: uppercase;
 }
 
+.tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tool:disabled:hover {
+  background: transparent;
+}
+
 .divider {
   height: 1px;
   background: #d0ccc4;
