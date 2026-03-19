@@ -53,7 +53,50 @@ export function segmentLength(a: Point, b: Point): number {
 export function formatFeet(ft: number): string {
   const wholeFeet = Math.floor(ft);
   const inches = Math.round((ft - wholeFeet) * 12);
+  if (inches === 12) return `${wholeFeet + 1}'`;
   if (inches === 0) return `${wholeFeet}'`;
   if (wholeFeet === 0) return `${inches}"`;
   return `${wholeFeet}' ${inches}"`;
+}
+
+/**
+ * Format feet as an editable ft/in string for input fields.
+ * e.g. 5.5 → "5' 6""
+ */
+export function ftToInput(ft: number): string {
+  return formatFeet(ft);
+}
+
+/**
+ * Parse a ft/in string entered by the user into decimal feet.
+ * Supports: 5'6", 5' 6", 5'6, 5', 6", 5.5, 5 6
+ * Returns null if unparseable.
+ */
+export function parseFtIn(input: string): number | null {
+  const s = input.trim().replace(/\u2019/g, "'").replace(/\u201D/g, '"');
+  if (!s) return null;
+
+  // 5'6" or 5' 6" or 5'6 (feet and inches)
+  const feetAndInches = s.match(/^(\d+(?:\.\d+)?)['']\s*(\d+(?:\.\d+)?)["""]?$/);
+  if (feetAndInches) {
+    return parseFloat(feetAndInches[1]) + parseFloat(feetAndInches[2]) / 12;
+  }
+
+  // 5' (feet only, with apostrophe)
+  const feetOnly = s.match(/^(\d+(?:\.\d+)?)[''']$/);
+  if (feetOnly) return parseFloat(feetOnly[1]);
+
+  // 6" (inches only)
+  const inchesOnly = s.match(/^(\d+(?:\.\d+)?)["""]$/);
+  if (inchesOnly) return parseFloat(inchesOnly[1]) / 12;
+
+  // "5 6" — two numbers separated by space, treat as feet + inches
+  const spaced = s.match(/^(\d+)\s+(\d+)$/);
+  if (spaced) return parseInt(spaced[1]) + parseInt(spaced[2]) / 12;
+
+  // Plain decimal or integer (interpreted as feet)
+  const decimal = parseFloat(s);
+  if (!isNaN(decimal)) return decimal;
+
+  return null;
 }

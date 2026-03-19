@@ -1,0 +1,36 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7a7a7a;
+  font-family: 'Courier New', monospace;
+}
+
+.input {
+  background: white;
+  border: 1px solid #c8c4bc;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #2c2c2c;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 36px;
+}
+
+.input:focus {
+  border-color: #4a6fa5;
+}
+
+.invalid {
+  border-color: #cc4444;
+  background: #fff5f5;
+}

@@ -7,6 +7,7 @@ import {
   distance,
   findNearestEndpoint,
   formatFeet,
+  parseFtIn,
   PIXELS_PER_FOOT,
 } from '../../utils/geometry';
 
@@ -78,5 +79,52 @@ describe('formatFeet', () => {
   it('formats feet and inches', () => {
     expect(formatFeet(5.5)).toBe("5' 6\"");
     expect(formatFeet(0.5)).toBe('6"');
+  });
+
+  it('handles rounding to 12 inches correctly', () => {
+    expect(formatFeet(4 + 11.9 / 12)).toBe("5'"); // 11.9" rounds to 12" → next foot
+  });
+});
+
+describe('parseFtIn', () => {
+  it('parses feet and inches with quote marks', () => {
+    expect(parseFtIn("5'6\"")).toBeCloseTo(5.5);
+    expect(parseFtIn("5' 6\"")).toBeCloseTo(5.5);
+    expect(parseFtIn("5'6")).toBeCloseTo(5.5);
+  });
+
+  it('parses feet only', () => {
+    expect(parseFtIn("5'")).toBe(5);
+    expect(parseFtIn("10'")).toBe(10);
+  });
+
+  it('parses inches only', () => {
+    expect(parseFtIn('6"')).toBeCloseTo(0.5);
+    expect(parseFtIn('12"')).toBeCloseTo(1);
+  });
+
+  it('parses space-separated feet and inches', () => {
+    expect(parseFtIn('5 6')).toBeCloseTo(5.5);
+    expect(parseFtIn('10 0')).toBe(10);
+  });
+
+  it('parses plain decimal (interpreted as feet)', () => {
+    expect(parseFtIn('5.5')).toBe(5.5);
+    expect(parseFtIn('10')).toBe(10);
+  });
+
+  it('returns null for empty or invalid input', () => {
+    expect(parseFtIn('')).toBeNull();
+    expect(parseFtIn('abc')).toBeNull();
+  });
+
+  it('round-trips through formatFeet', () => {
+    const values = [1, 5, 5.5, 10.25, 0.5];
+    for (const v of values) {
+      const formatted = formatFeet(v);
+      const parsed = parseFtIn(formatted);
+      expect(parsed).not.toBeNull();
+      expect(parsed!).toBeCloseTo(v, 1);
+    }
   });
 });
