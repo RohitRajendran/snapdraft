@@ -13,7 +13,7 @@ const TAPE_YELLOW = '#f5c518';
 const TAPE_EDGE = '#c4961a';
 const BODY_OUTLINE = '#5a4000';
 
-/** Small tape measure body icon centered at origin, tape slot facing +x. */
+/** Small tape measure body icon with tape slot at origin (+x), body extending -x. */
 function TapeBody({
   bw,
   bh,
@@ -29,9 +29,9 @@ function TapeBody({
 }) {
   return (
     <>
-      {/* Main yellow housing */}
+      {/* Main yellow housing — right edge (tape exit) at x=0 */}
       <Rect
-        x={-bw / 2}
+        x={-bw}
         y={-bh / 2}
         width={bw}
         height={bh}
@@ -42,7 +42,7 @@ function TapeBody({
       />
       {/* Dark grip strip on right side */}
       <Rect
-        x={bw / 2 - bw * 0.28}
+        x={-bw * 0.28}
         y={-bh / 2 + br}
         width={bw * 0.28}
         height={bh - br * 2}
@@ -50,7 +50,7 @@ function TapeBody({
       />
       {/* Tape slot (dark slot the tape exits from on the right) */}
       <Rect
-        x={bw / 2 - bw * 0.28 - 1 / zoom}
+        x={-bw * 0.28 - 1 / zoom}
         y={-sw / 2}
         width={2 / zoom}
         height={sw}
