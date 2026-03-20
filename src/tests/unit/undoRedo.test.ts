@@ -5,8 +5,20 @@ import type { Element } from '../../types';
 const wall = (id: string): Element => ({
   id,
   type: 'wall',
-  points: [{ x: 0, y: 0 }, { x: 5, y: 0 }],
-  thickness: 0.5,
+  points: [
+    { x: 0, y: 0 },
+    { x: 5, y: 0 },
+  ],
+});
+
+const box = (id: string): Element => ({
+  id,
+  type: 'box',
+  x: 1,
+  y: 1,
+  width: 4,
+  height: 3,
+  rotation: 0,
 });
 
 beforeEach(() => {
@@ -78,16 +90,84 @@ describe('undo / redo — deleteElement', () => {
     expect(getElements()).toHaveLength(1);
     expect(getElements()[0].id).toBe('w1');
   });
+
+  it('bulk delete is undone in a single step', () => {
+    const { addElement, deleteElements, undo, redo } = useFloorplanStore.getState();
+    addElement(wall('w1'));
+    addElement(wall('w2'));
+    addElement(box('b1'));
+
+    deleteElements(['w1', 'b1']);
+    expect(getElements().map((el) => el.id)).toEqual(['w2']);
+
+    undo();
+    expect(getElements().map((el) => el.id)).toEqual(['w1', 'w2', 'b1']);
+
+    redo();
+    expect(getElements().map((el) => el.id)).toEqual(['w2']);
+  });
 });
 
 describe('undo / redo — updateElement', () => {
   it('undo reverts an update', () => {
     const { addElement, updateElement, undo } = useFloorplanStore.getState();
     addElement(wall('w1'));
-    updateElement('w1', { points: [{ x: 0, y: 0 }, { x: 10, y: 0 }] });
+    updateElement('w1', {
+      points: [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ],
+    });
     undo();
     const el = getElements()[0] as Extract<Element, { type: 'wall' }>;
     expect(el.points[1].x).toBe(5);
+  });
+
+  it('undo reverts one multi-element update in a single step', () => {
+    const { addElement, updateElements, undo, redo } = useFloorplanStore.getState();
+    addElement(wall('w1'));
+    addElement(box('b1'));
+
+    updateElements({
+      w1: {
+        points: [
+          { x: 2, y: 3 },
+          { x: 7, y: 3 },
+        ],
+      },
+      b1: { x: 6, y: 8 },
+    });
+
+    undo();
+
+    const [undoneWall, undoneBox] = getElements();
+    expect((undoneWall as Extract<Element, { type: 'wall' }>).points[0]).toEqual({ x: 0, y: 0 });
+    expect((undoneBox as Extract<Element, { type: 'box' }>).x).toBe(1);
+    expect((undoneBox as Extract<Element, { type: 'box' }>).y).toBe(1);
+
+    redo();
+
+    const [redoneWall, redoneBox] = getElements();
+    expect((redoneWall as Extract<Element, { type: 'wall' }>).points[0]).toEqual({ x: 2, y: 3 });
+    expect((redoneBox as Extract<Element, { type: 'box' }>).x).toBe(6);
+    expect((redoneBox as Extract<Element, { type: 'box' }>).y).toBe(8);
+  });
+
+  it('does not create history entries for no-op updates', () => {
+    const { addElement, updateElements } = useFloorplanStore.getState();
+    addElement(wall('w1'));
+    const pastBefore = useFloorplanStore.getState().past.length;
+
+    updateElements({
+      w1: {
+        points: [
+          { x: 0, y: 0 },
+          { x: 5, y: 0 },
+        ],
+      },
+    });
+
+    expect(useFloorplanStore.getState().past).toHaveLength(pastBefore);
   });
 });
 

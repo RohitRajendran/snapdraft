@@ -8,8 +8,25 @@ import { useSnap } from '../../hooks/useSnap';
 import { Grid } from './Grid';
 import { WallElement } from './WallElement';
 import { BoxElement } from './BoxElement';
-import { ftToPx, pxToFt, distance, formatFeet, parseFtIn, WALL_THICKNESS_FT, PIXELS_PER_FOOT } from '../../utils/geometry';
+import { MeasureOverlay } from './MeasureOverlay';
+import styles from './DrawingCanvas.module.css';
+import {
+  ftToPx,
+  pxToFt,
+  distance,
+  formatFeet,
+  parseFtIn,
+  PIXELS_PER_FOOT,
+  NUDGE_FT,
+  FINE_NUDGE_FT,
+} from '../../utils/geometry';
 import type { Point, Element } from '../../types';
+import {
+  FIT_CONTENT_PADDING_PX,
+  MOBILE_OVERLAY_CLEARANCE_PX,
+  MOBILE_TOOLBAR_INSET_PX,
+  shouldUseMobileOverlayLayout,
+} from './layout';
 
 const DRAG_THRESHOLD_FT = 0.3;
 const CLOSE_CHAIN_RADIUS_FT = 0.5;
@@ -18,8 +35,14 @@ const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 6;
 
 function rectsOverlap(
-  ax: number, ay: number, aw: number, ah: number,
-  bx: number, by: number, bw: number, bh: number
+  ax: number,
+  ay: number,
+  aw: number,
+  ah: number,
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number,
 ): boolean {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
@@ -28,9 +51,7 @@ function elementOverlapsRect(el: Element, rx: number, ry: number, rw: number, rh
   if (el.type === 'box') {
     return rectsOverlap(el.x, el.y, el.width, el.height, rx, ry, rw, rh);
   }
-  return el.points.some(p =>
-    p.x >= rx && p.x <= rx + rw && p.y >= ry && p.y <= ry + rh
-  );
+  return el.points.some((p) => p.x >= rx && p.x <= rx + rw && p.y >= ry && p.y <= ry + rh);
 }
 
 export function DrawingCanvas() {
@@ -44,22 +65,87 @@ export function DrawingCanvas() {
   const [pointerDown, setPointerDown] = useState<{ pos: Point; time: number } | null>(null);
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const [dimInput, setDimInput] = useState('');
+  const [dimInputError, setDimInputError] = useState(false);
   const dimInputRef = useRef<HTMLInputElement>(null);
   const lastTapRef = useRef<number>(0);
 
-  const { activePlan, addElement, updateElement } = useFloorplanStore();
+  const { activePlan, addElement, updateElements, deleteElements } = useFloorplanStore();
   const {
-    activeTool, selectedIds, setSelectedIds, clearSelection,
-    chainPoints, isChainArmed, addChainPoint, endChain,
-    zoom, setZoom, pan, setPan,
+    activeTool,
+    selectedIds,
+    setSelectedIds,
+    clearSelection,
+    chainPoints,
+    isChainArmed,
+    addChainPoint,
+    endChain,
+    measureStart,
+    measureEnd,
+    startMeasurement,
+    completeMeasurement,
+    clearMeasurement,
+    zoom,
+    setZoom,
+    pan,
+    setPan,
   } = useToolStore();
 
   const plan = activePlan();
   const elements = plan?.elements ?? [];
+
+  // Reads from refs/store so it can be called from inside the keydown useEffect
+  // without needing to be added to its dependency array.
+  const fitToContent = useCallback(() => {
+    const els = useFloorplanStore.getState().activePlan()?.elements ?? [];
+    if (els.length === 0 || !containerRef.current) return;
+
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    for (const el of els) {
+      if (el.type === 'wall') {
+        for (const p of el.points) {
+          minX = Math.min(minX, p.x);
+          minY = Math.min(minY, p.y);
+          maxX = Math.max(maxX, p.x);
+          maxY = Math.max(maxY, p.y);
+        }
+      } else {
+        minX = Math.min(minX, el.x);
+        minY = Math.min(minY, el.y);
+        maxX = Math.max(maxX, el.x + el.width);
+        maxY = Math.max(maxY, el.y + el.height);
+      }
+    }
+
+    const width = containerRef.current.offsetWidth;
+    const height = containerRef.current.offsetHeight;
+    const usesMobileOverlayLayout = shouldUseMobileOverlayLayout(width);
+    const bottomInset = usesMobileOverlayLayout ? MOBILE_TOOLBAR_INSET_PX : 0;
+    const contentW = ftToPx(maxX - minX) || 1;
+    const contentH = ftToPx(maxY - minY) || 1;
+    const newZoom = Math.max(
+      MIN_ZOOM,
+      Math.min(
+        MAX_ZOOM,
+        Math.min(
+          (width - FIT_CONTENT_PADDING_PX * 2) / contentW,
+          (height - FIT_CONTENT_PADDING_PX * 2 - bottomInset) / contentH,
+        ),
+      ),
+    );
+    useToolStore.setState({
+      zoom: newZoom,
+      pan: {
+        x: (width - contentW * newZoom) / 2 - ftToPx(minX) * newZoom,
+        y: (height - bottomInset - contentH * newZoom) / 2 - ftToPx(minY) * newZoom,
+      },
+    });
+  }, []);
   // Pass the last chain point so useSnap can axis-snap off-grid walls to H/V
-  const chainOrigin = (isChainArmed && chainPoints.length > 0)
-    ? chainPoints[chainPoints.length - 1]
-    : null;
+  const chainOrigin =
+    isChainArmed && chainPoints.length > 0 ? chainPoints[chainPoints.length - 1] : null;
   const { snap, snapWithInfo } = useSnap(elements, chainOrigin);
 
   useEffect(() => {
@@ -75,14 +161,35 @@ export function DrawingCanvas() {
     return () => ro.disconnect();
   }, []);
 
+  // On mount: if the active plan has content, fit it to screen and switch to select tool.
+  // Otherwise leave the default wall tool so the user can start drawing immediately.
+  useEffect(() => {
+    const els = useFloorplanStore.getState().activePlan()?.elements ?? [];
+    if (els.length > 0) {
+      useToolStore.getState().setActiveTool('select');
+      fitToContent();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.target instanceof HTMLInputElement) return;
-      if (e.key === 'Escape') { endChain(); clearSelection(); setDimInput(''); }
+      // Escape always cancels regardless of focus
+      if (e.key === 'Escape') {
+        endChain();
+        clearSelection();
+        clearMeasurement();
+        setDimInput('');
+        return;
+      }
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'f' || e.key === 'F') {
+        fitToContent();
+      }
       if (e.key === 'Delete' || e.key === 'Backspace') {
         const ids = useToolStore.getState().selectedIds;
         if (ids.size > 0) {
-          ids.forEach(id => useFloorplanStore.getState().deleteElement(id));
+          deleteElements(ids);
           clearSelection();
         }
       }
@@ -92,35 +199,39 @@ export function DrawingCanvas() {
         useFloorplanStore.getState().undo();
       }
       // Redo: Cmd+Shift+Z / Ctrl+Shift+Z / Ctrl+Y
-      if ((e.key === 'z' && (e.metaKey || e.ctrlKey) && e.shiftKey) ||
-          (e.key === 'y' && e.ctrlKey)) {
+      if (
+        (e.key === 'z' && (e.metaKey || e.ctrlKey) && e.shiftKey) ||
+        (e.key === 'y' && e.ctrlKey)
+      ) {
         e.preventDefault();
         useFloorplanStore.getState().redo();
       }
-      // Arrow keys: move selected elements — 1 ft, or 0.5 ft with Shift
+      // Arrow keys: move selected elements — 1/4" default, 1/16" with Shift
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
         const ids = useToolStore.getState().selectedIds;
         if (ids.size === 0) return;
         e.preventDefault();
-        const step = e.shiftKey ? 0.5 : 1;
+        const step = e.shiftKey ? FINE_NUDGE_FT : NUDGE_FT;
         const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
         const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
         const store = useFloorplanStore.getState();
         const allEls = store.activePlan()?.elements ?? [];
-        ids.forEach(id => {
-          const el = allEls.find(e => e.id === id);
+        const updates: Record<string, Partial<Element>> = {};
+        ids.forEach((id) => {
+          const el = allEls.find((e) => e.id === id);
           if (!el) return;
           if (el.type === 'wall') {
-            store.updateElement(id, { points: el.points.map(p => ({ x: p.x + dx, y: p.y + dy })) });
+            updates[id] = { points: el.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
           } else if (el.type === 'box') {
-            store.updateElement(id, { x: el.x + dx, y: el.y + dy });
+            updates[id] = { x: el.x + dx, y: el.y + dy };
           }
         });
+        store.updateElements(updates);
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [endChain, clearSelection]);
+  }, [endChain, clearSelection, clearMeasurement, deleteElements, fitToContent]);
 
   const getPointerWorld = useCallback((): Point | null => {
     const stage = stageRef.current;
@@ -130,10 +241,13 @@ export function DrawingCanvas() {
     return { x: pxToFt(pos.x), y: pxToFt(pos.y) };
   }, []);
 
-  const worldToBase = useCallback((pt: Point) => ({
-    x: ftToPx(pt.x),
-    y: ftToPx(pt.y),
-  }), []);
+  const worldToBase = useCallback(
+    (pt: Point) => ({
+      x: ftToPx(pt.x),
+      y: ftToPx(pt.y),
+    }),
+    [],
+  );
 
   // ── Pointer events ──────────────────────────────────────────────
 
@@ -157,11 +271,19 @@ export function DrawingCanvas() {
     const world = getPointerWorld();
     if (!world) return;
 
-    const { point, snappedToEndpoint, snappedToSegment, snappedToAxis } = snapWithInfo(world);
-    setCursor(point);
-    setCursorSnappedToEndpoint(snappedToEndpoint);
-    setCursorSnappedToSegment(snappedToSegment);
-    setCursorSnappedToAxis(snappedToAxis);
+    if (activeTool === 'measure') {
+      // Measure tool: fully free — no snapping of any kind
+      setCursor(measureEnd ? null : world);
+      setCursorSnappedToEndpoint(false);
+      setCursorSnappedToSegment(false);
+      setCursorSnappedToAxis(false);
+    } else {
+      const { point, snappedToEndpoint, snappedToSegment, snappedToAxis } = snapWithInfo(world);
+      setCursor(point);
+      setCursorSnappedToEndpoint(snappedToEndpoint);
+      setCursorSnappedToSegment(snappedToSegment);
+      setCursorSnappedToAxis(snappedToAxis);
+    }
 
     if (activeTool === 'select' && pointerDown) {
       if (distance(pointerDown.pos, world) > DRAG_THRESHOLD_FT) {
@@ -172,36 +294,53 @@ export function DrawingCanvas() {
 
   function handlePointerUp(e: Konva.KonvaEventObject<PointerEvent>) {
     const world = getPointerWorld();
-    if (!world || !pointerDown) { setPointerDown(null); setMarquee(null); return; }
+    if (!world || !pointerDown) {
+      setPointerDown(null);
+      setMarquee(null);
+      return;
+    }
 
     const dragDist = distance(pointerDown.pos, world);
     const isDrag = dragDist > DRAG_THRESHOLD_FT;
     const snappedEnd = snap(world);
 
-    // Double-tap to end chain
-    const now = Date.now();
-    if (now - lastTapRef.current < DOUBLE_TAP_MS) {
-      endChain();
+    if (activeTool === 'measure') {
+      // Use raw world coords — measure tool intentionally bypasses snapping
+      if (!measureStart || measureEnd) {
+        startMeasurement(world);
+      } else {
+        completeMeasurement(world);
+        setCursor(null);
+      }
       setPointerDown(null);
-      setMarquee(null);
-      lastTapRef.current = 0;
       return;
     }
-    lastTapRef.current = now;
 
     if (activeTool === 'wall') {
+      // Double-tap to end wall chain
+      const now = Date.now();
+      if (now - lastTapRef.current < DOUBLE_TAP_MS) {
+        endChain();
+        setPointerDown(null);
+        setMarquee(null);
+        lastTapRef.current = 0;
+        return;
+      }
+      lastTapRef.current = now;
       setDimInput(''); // clear typed value when placing via click
       handleWallInput(snappedEnd, snap(pointerDown.pos));
     } else if (activeTool === 'box') {
+      lastTapRef.current = 0;
       if (isDrag) handleBoxDraw(snap(pointerDown.pos), snappedEnd);
     } else if (activeTool === 'select') {
+      lastTapRef.current = 0;
       if (isDrag && marquee) {
         const rx = Math.min(marquee.start.x, marquee.end.x);
         const ry = Math.min(marquee.start.y, marquee.end.y);
         const rw = Math.abs(marquee.end.x - marquee.start.x);
         const rh = Math.abs(marquee.end.y - marquee.start.y);
-        const hit = elements.filter(el => elementOverlapsRect(el, rx, ry, rw, rh));
-        setSelectedIds(new Set(hit.map(el => el.id)));
+        const hit = elements.filter((el) => elementOverlapsRect(el, rx, ry, rw, rh));
+        setSelectedIds(new Set(hit.map((el) => el.id)));
       } else if (e.target === stageRef.current) {
         clearSelection();
       }
@@ -216,6 +355,12 @@ export function DrawingCanvas() {
       const lastPt = chainPoints[chainPoints.length - 1];
       const firstPt = chainPoints[0];
 
+      // Click on the last placed endpoint → end the chain (no new wall)
+      if (distance(endPt, lastPt) < CLOSE_CHAIN_RADIUS_FT) {
+        endChain();
+        return;
+      }
+
       // Close the shape if end is near the chain's first point
       if (distance(endPt, firstPt) < CLOSE_CHAIN_RADIUS_FT && chainPoints.length >= 2) {
         commitWall([lastPt, firstPt]);
@@ -226,16 +371,22 @@ export function DrawingCanvas() {
       commitWall([lastPt, endPt]);
       addChainPoint(endPt);
     } else {
-      // Start a new chain — startPt is already snapped, may be an existing endpoint
-      commitWall([startPt, endPt]);
-      addChainPoint(startPt);
-      addChainPoint(endPt);
+      // Start a new chain
+      if (distance(startPt, endPt) > DRAG_THRESHOLD_FT) {
+        // Drag: create first wall segment immediately
+        commitWall([startPt, endPt]);
+        addChainPoint(startPt);
+        addChainPoint(endPt);
+      } else {
+        // Click: just arm the chain — wait for a second point before committing
+        addChainPoint(endPt);
+      }
     }
   }
 
   function commitWall(points: Point[]) {
     if (points.length < 2) return;
-    addElement({ id: nanoid(), type: 'wall', points, thickness: WALL_THICKNESS_FT });
+    addElement({ id: nanoid(), type: 'wall', points });
   }
 
   // Commit a wall at an exact typed length, in the direction of the current cursor from the last chain point.
@@ -244,12 +395,16 @@ export function DrawingCanvas() {
     const lastPt = chainPoints[chainPoints.length - 1];
 
     // Direction: toward cursor, or horizontal if no cursor movement
-    let dx = 1, dy = 0;
+    let dx = 1,
+      dy = 0;
     if (cursor) {
       const rawDx = cursor.x - lastPt.x;
       const rawDy = cursor.y - lastPt.y;
       const mag = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
-      if (mag > 0.01) { dx = rawDx / mag; dy = rawDy / mag; }
+      if (mag > 0.01) {
+        dx = rawDx / mag;
+        dy = rawDy / mag;
+      }
     }
 
     const endPt: Point = { x: lastPt.x + dx * lengthFt, y: lastPt.y + dy * lengthFt };
@@ -268,48 +423,71 @@ export function DrawingCanvas() {
     addElement({ id: nanoid(), type: 'box', x, y, width, height, rotation: 0 });
   }
 
-  // ── Wheel zoom ───────────────────────────────────────────────────
+  // ── Wheel: pinch/Ctrl+scroll → zoom, two-finger scroll → pan ────
   function handleWheel(e: Konva.KonvaEventObject<WheelEvent>) {
     e.evt.preventDefault();
     const stage = stageRef.current;
     if (!stage) return;
-    const pointer = stage.getPointerPosition();
-    if (!pointer) return;
 
-    const scaleBy = 1.08;
-    const newZoom = e.evt.deltaY < 0
-      ? Math.min(zoom * scaleBy, MAX_ZOOM)
-      : Math.max(zoom / scaleBy, MIN_ZOOM);
-
-    const worldUnderCursor = {
-      x: (pointer.x - pan.x) / zoom,
-      y: (pointer.y - pan.y) / zoom,
-    };
-
-    setPan({
-      x: pointer.x - worldUnderCursor.x * newZoom,
-      y: pointer.y - worldUnderCursor.y * newZoom,
-    });
-    setZoom(newZoom);
+    if (e.evt.ctrlKey) {
+      // Pinch gesture on trackpad or Ctrl+scroll on mouse → zoom toward cursor
+      const pointer = stage.getPointerPosition();
+      if (!pointer) return;
+      const scaleBy = 1.08;
+      const newZoom =
+        e.evt.deltaY < 0 ? Math.min(zoom * scaleBy, MAX_ZOOM) : Math.max(zoom / scaleBy, MIN_ZOOM);
+      const worldUnderCursor = {
+        x: (pointer.x - pan.x) / zoom,
+        y: (pointer.y - pan.y) / zoom,
+      };
+      setPan({
+        x: pointer.x - worldUnderCursor.x * newZoom,
+        y: pointer.y - worldUnderCursor.y * newZoom,
+      });
+      setZoom(newZoom);
+    } else {
+      // Two-finger scroll on trackpad or scroll wheel → pan
+      setPan({
+        x: pan.x - e.evt.deltaX,
+        y: pan.y - e.evt.deltaY,
+      });
+    }
   }
 
   // ── Multi-select group drag ───────────────────────────────────────
   // Called by WallElement / BoxElement when a selected element is dragged.
   // If multiple elements are selected, apply the same delta to all of them.
-  const handleGroupDrag = useCallback((draggedId: string, dxFt: number, dyFt: number) => {
-    const ids = useToolStore.getState().selectedIds;
-    const targets = ids.size > 1 ? ids : new Set([draggedId]);
-    const allEls = useFloorplanStore.getState().activePlan()?.elements ?? [];
-    targets.forEach(id => {
-      const el = allEls.find(e => e.id === id);
-      if (!el) return;
-      if (el.type === 'wall') {
-        updateElement(id, { points: el.points.map(p => ({ x: p.x + dxFt, y: p.y + dyFt })) });
-      } else if (el.type === 'box') {
-        updateElement(id, { x: el.x + dxFt, y: el.y + dyFt });
+  const handleGroupDrag = useCallback(
+    (draggedId: string, dxFt: number, dyFt: number, targetIds?: Set<string>) => {
+      const ids = targetIds && targetIds.size > 0 ? targetIds : useToolStore.getState().selectedIds;
+      const targets = ids.size > 1 ? ids : new Set([draggedId]);
+      const allEls = useFloorplanStore.getState().activePlan()?.elements ?? [];
+      const updates: Record<string, Partial<Element>> = {};
+      for (const id of targets) {
+        const el = allEls.find((e) => e.id === id);
+        if (!el) continue;
+        if (el.type === 'wall') {
+          updates[id] = { points: el.points.map((p) => ({ x: p.x + dxFt, y: p.y + dyFt })) };
+        } else if (el.type === 'box') {
+          updates[id] = { x: el.x + dxFt, y: el.y + dyFt };
+        }
       }
-    });
-  }, [updateElement]);
+      // Reset wall node translations after the store commit. Box nodes are already at
+      // their absolute positions during the live drag, so zeroing them here corrupts the view.
+      const stage = stageRef.current;
+      if (stage) {
+        for (const id of targets) {
+          if (id === draggedId) continue;
+          const el = allEls.find((element) => element.id === id);
+          if (!el || el.type !== 'wall') continue;
+          const node = stage.findOne(`#sd-${id}`);
+          if (node) node.position({ x: 0, y: 0 });
+        }
+      }
+      updateElements(updates);
+    },
+    [updateElements],
+  );
 
   // ── Ghost line (wall tool, chain armed) ──────────────────────────
   const ghostPoints = (() => {
@@ -368,10 +546,13 @@ export function DrawingCanvas() {
   // Dimension input — anchored to the last chain point so it stays still while typing
   const showDimInput = activeTool === 'wall' && isChainArmed && chainPoints.length > 0;
   const lastChainPt = chainPoints[chainPoints.length - 1] ?? null;
-  const dimInputScreenPos = showDimInput && lastChainPt ? {
-    x: lastChainPt.x * PIXELS_PER_FOOT * zoom + pan.x + 14,
-    y: lastChainPt.y * PIXELS_PER_FOOT * zoom + pan.y - 36,
-  } : null;
+  const dimInputScreenPos =
+    showDimInput && lastChainPt
+      ? {
+          x: lastChainPt.x * PIXELS_PER_FOOT * zoom + pan.x + 14,
+          y: lastChainPt.y * PIXELS_PER_FOOT * zoom + pan.y - 36,
+        }
+      : null;
 
   // Auto-focus the dim input whenever the chain gains a new point
   useEffect(() => {
@@ -381,17 +562,25 @@ export function DrawingCanvas() {
     }
   }, [showDimInput, chainPoints.length]);
 
+  const measurePreviewEnd = activeTool === 'measure' && measureStart && !measureEnd ? cursor : null;
+
   // Current ghost length as placeholder
-  const ghostLengthFt = (isChainArmed && chainPoints.length > 0 && cursor)
-    ? distance(chainPoints[chainPoints.length - 1], cursor)
-    : null;
+  const ghostLengthFt =
+    isChainArmed && chainPoints.length > 0 && cursor
+      ? distance(chainPoints[chainPoints.length - 1], cursor)
+      : null;
 
   const cursorStyle = activeTool === 'select' ? (marquee ? 'crosshair' : 'default') : 'crosshair';
+  const usesMobileOverlayLayout = shouldUseMobileOverlayLayout(size.width);
 
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '100%', cursor: cursorStyle, position: 'relative' }}
+      className={styles.canvas}
+      style={{ cursor: cursorStyle }}
+      role="application"
+      aria-label="Floor plan canvas. Use toolbar to select drawing tools."
+      tabIndex={0}
       data-testid="drawing-canvas"
     >
       <Stage
@@ -412,13 +601,21 @@ export function DrawingCanvas() {
         </Layer>
 
         <Layer>
-          {elements.map(el =>
+          {elements.map((el) =>
             el.type === 'wall' ? (
               <WallElement
                 key={el.id}
                 wall={el}
                 selected={selectedIds.has(el.id)}
-                onSelect={() => activeTool === 'select' && useToolStore.getState().setSelectedId(el.id)}
+                onSelect={(extendSelection) => {
+                  if (activeTool !== 'select') return;
+                  const toolStore = useToolStore.getState();
+                  if (extendSelection) {
+                    toolStore.toggleSelectedId(el.id);
+                  } else {
+                    toolStore.setSelectedId(el.id);
+                  }
+                }}
                 onGroupDrag={handleGroupDrag}
               />
             ) : (
@@ -426,18 +623,28 @@ export function DrawingCanvas() {
                 key={el.id}
                 box={el}
                 selected={selectedIds.has(el.id)}
-                onSelect={() => activeTool === 'select' && useToolStore.getState().setSelectedId(el.id)}
+                onSelect={(extendSelection) => {
+                  if (activeTool !== 'select') return;
+                  const toolStore = useToolStore.getState();
+                  if (extendSelection) {
+                    toolStore.toggleSelectedId(el.id);
+                  } else {
+                    toolStore.setSelectedId(el.id);
+                  }
+                }}
                 onGroupDrag={handleGroupDrag}
               />
-            )
+            ),
           )}
 
-          {/* Ghost line */}
+          {/* Ghost line — wall preview */}
           {ghostPoints && (
             <Line
               points={ghostPoints}
               stroke="#b8c9e0"
-              strokeWidth={2 / zoom}
+              strokeWidth={3 / zoom}
+              lineCap="square"
+              lineJoin="miter"
               dash={[6 / zoom, 4 / zoom]}
               listening={false}
             />
@@ -460,16 +667,22 @@ export function DrawingCanvas() {
           {ghostBox && ghostBox.width > 0 && ghostBox.height > 0 && (
             <Group listening={false}>
               <Rect
-                x={ghostBox.x} y={ghostBox.y}
-                width={ghostBox.width} height={ghostBox.height}
-                stroke="#2d5490" strokeWidth={1.5 / zoom}
+                x={ghostBox.x}
+                y={ghostBox.y}
+                width={ghostBox.width}
+                height={ghostBox.height}
+                stroke="#2d5490"
+                strokeWidth={1.5 / zoom}
                 dash={[6 / zoom, 4 / zoom]}
                 fill="rgba(74,111,165,0.05)"
               />
               <Text
-                x={ghostBox.x + 4 / zoom} y={ghostBox.y + 4 / zoom}
+                x={ghostBox.x + 4 / zoom}
+                y={ghostBox.y + 4 / zoom}
                 text={`${ghostBox.labelW} × ${ghostBox.labelH}`}
-                fontSize={11 / zoom} fontFamily="Courier New" fill="#2d5490"
+                fontSize={11 / zoom}
+                fontFamily="Courier New"
+                fill="#2d5490"
               />
             </Group>
           )}
@@ -477,9 +690,12 @@ export function DrawingCanvas() {
           {/* Marquee selection rect */}
           {marqueeRect && (
             <Rect
-              x={marqueeRect.x} y={marqueeRect.y}
-              width={marqueeRect.width} height={marqueeRect.height}
-              stroke="#0066cc" strokeWidth={1 / zoom}
+              x={marqueeRect.x}
+              y={marqueeRect.y}
+              width={marqueeRect.width}
+              height={marqueeRect.height}
+              stroke="#0066cc"
+              strokeWidth={1 / zoom}
               dash={[4 / zoom, 3 / zoom]}
               fill="rgba(0,102,204,0.06)"
               listening={false}
@@ -487,58 +703,75 @@ export function DrawingCanvas() {
           )}
 
           {/* Armed chain dot */}
-          {isChainArmed && chainPoints.length > 0 && (() => {
-            const last = chainPoints[chainPoints.length - 1];
-            const b = worldToBase(last);
-            return <Circle x={b.x} y={b.y} radius={5 / zoom} fill="#2c2c2c" listening={false} />;
-          })()}
+          {isChainArmed &&
+            chainPoints.length > 0 &&
+            (() => {
+              const last = chainPoints[chainPoints.length - 1];
+              const b = worldToBase(last);
+              return <Circle x={b.x} y={b.y} radius={5 / zoom} fill="#2c2c2c" listening={false} />;
+            })()}
 
           {/* Endpoint snap indicator — ring around existing endpoint when cursor is near it */}
-          {showEndpointSnap && (() => {
-            const b = worldToBase(cursor!);
-            return (
-              <Circle
-                x={b.x} y={b.y}
-                radius={8 / zoom}
-                stroke="#0066cc"
-                strokeWidth={2 / zoom}
-                fill="rgba(0,102,204,0.12)"
-                listening={false}
-              />
-            );
-          })()}
+          {showEndpointSnap &&
+            (() => {
+              const b = worldToBase(cursor!);
+              return (
+                <Circle
+                  x={b.x}
+                  y={b.y}
+                  radius={8 / zoom}
+                  stroke="#0066cc"
+                  strokeWidth={2 / zoom}
+                  fill="rgba(0,102,204,0.12)"
+                  listening={false}
+                />
+              );
+            })()}
 
           {/* Segment snap indicator — small square when cursor snaps to a point along a wall */}
-          {showSegmentSnap && (() => {
-            const b = worldToBase(cursor!);
-            const s = 7 / zoom;
-            return (
-              <Rect
-                x={b.x - s / 2} y={b.y - s / 2}
-                width={s} height={s}
-                stroke="#e07b00"
-                strokeWidth={2 / zoom}
-                fill="rgba(224,123,0,0.15)"
-                listening={false}
-              />
-            );
-          })()}
+          {showSegmentSnap &&
+            (() => {
+              const b = worldToBase(cursor!);
+              const s = 7 / zoom;
+              return (
+                <Rect
+                  x={b.x - s / 2}
+                  y={b.y - s / 2}
+                  width={s}
+                  height={s}
+                  stroke="#e07b00"
+                  strokeWidth={2 / zoom}
+                  fill="rgba(224,123,0,0.15)"
+                  listening={false}
+                />
+              );
+            })()}
 
           {/* Axis snap indicator — diamond when cursor is locked to H or V from chain origin */}
-          {showAxisSnap && (() => {
-            const b = worldToBase(cursor!);
-            const r = 6 / zoom;
-            return (
-              <Line
-                points={[b.x, b.y - r, b.x + r, b.y, b.x, b.y + r, b.x - r, b.y, b.x, b.y - r]}
-                stroke="#22aa55"
-                strokeWidth={2 / zoom}
-                fill="rgba(34,170,85,0.15)"
-                closed
-                listening={false}
-              />
-            );
-          })()}
+          {showAxisSnap &&
+            (() => {
+              const b = worldToBase(cursor!);
+              const r = 6 / zoom;
+              return (
+                <Line
+                  points={[b.x, b.y - r, b.x + r, b.y, b.x, b.y + r, b.x - r, b.y, b.x, b.y - r]}
+                  stroke="#22aa55"
+                  strokeWidth={2 / zoom}
+                  fill="rgba(34,170,85,0.15)"
+                  closed
+                  listening={false}
+                />
+              );
+            })()}
+
+          {activeTool === 'measure' && measureStart && (
+            <MeasureOverlay
+              start={measureStart}
+              end={measurePreviewEnd ?? measureEnd}
+              zoom={zoom}
+              worldToBase={worldToBase}
+            />
+          )}
         </Layer>
       </Stage>
 
@@ -546,47 +779,59 @@ export function DrawingCanvas() {
       {showDimInput && dimInputScreenPos && (
         <input
           ref={dimInputRef}
+          className={`${styles.dimInput} ${dimInputError ? styles.dimInputError : styles.dimInputOk}`}
           type="text"
           value={dimInput}
-          placeholder={ghostLengthFt != null && ghostLengthFt > 0.05 ? formatFeet(ghostLengthFt) : "length"}
-          onChange={e => setDimInput(e.target.value)}
-          onKeyDown={e => {
+          placeholder={
+            ghostLengthFt != null && ghostLengthFt > 0.05 ? formatFeet(ghostLengthFt) : 'length'
+          }
+          onChange={(e) => {
+            setDimInput(e.target.value);
+            setDimInputError(false);
+          }}
+          onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
               const ft = parseFtIn(dimInput);
               if (ft != null && ft > 0) {
+                setDimInputError(false);
                 commitWallAtTypedLength(ft);
+              } else if (dimInput.trim() !== '') {
+                setDimInputError(true);
+                setTimeout(() => setDimInputError(false), 800);
               }
             }
             if (e.key === 'Escape') {
               e.preventDefault();
               setDimInput('');
+              setDimInputError(false);
               dimInputRef.current?.blur();
             }
             // Don't let other keys (S/W/B) change the tool while typing
             e.stopPropagation();
           }}
           style={{
-            position: 'absolute',
             left: Math.max(4, Math.min(dimInputScreenPos.x, size.width - 120)),
             top: Math.max(4, dimInputScreenPos.y),
-            width: 100,
-            fontFamily: "'Courier New', monospace",
-            fontSize: 12,
-            fontWeight: 700,
-            background: 'rgba(255,255,255,0.97)',
-            border: '1.5px solid #2d5490',
-            borderRadius: 4,
-            padding: '4px 8px',
-            color: '#2c2c2c',
-            outline: 'none',
-            pointerEvents: 'auto',
-            zIndex: 200,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}
           data-testid="dim-input"
         />
       )}
+
+      {/* Fit-to-content button — always visible so it works even when keyboard focus is elsewhere */}
+      <button
+        className={styles.fitButton}
+        onClick={fitToContent}
+        title="Fit all content in view (F)"
+        aria-label="Fit all content in view"
+        style={{
+          bottom: usesMobileOverlayLayout ? MOBILE_OVERLAY_CLEARANCE_PX : 20,
+          left: usesMobileOverlayLayout ? 12 : 20,
+        }}
+        data-testid="fit-to-content"
+      >
+        ⤢ Fit
+      </button>
     </div>
   );
 }

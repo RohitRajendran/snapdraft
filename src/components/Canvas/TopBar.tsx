@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useFloorplanStore } from '../../store/useFloorplanStore';
 import { FloorplanManager } from '../FloorplanManager/FloorplanManager';
 import styles from './TopBar.module.css';
@@ -8,6 +8,7 @@ export function TopBar() {
   const [showManager, setShowManager] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
+  const lastTapRef = useRef(0);
 
   const plan = activePlan();
 
@@ -28,6 +29,7 @@ export function TopBar() {
         <button
           className={styles.logo}
           onClick={() => setShowManager(true)}
+          aria-label="SnapDraft — open floor plans"
           data-testid="open-manager"
         >
           SnapDraft
@@ -39,9 +41,10 @@ export function TopBar() {
               className={styles.nameInput}
               value={name}
               autoFocus
-              onChange={e => setName(e.target.value)}
+              aria-label="Plan name"
+              onChange={(e) => setName(e.target.value)}
               onBlur={commitEdit}
-              onKeyDown={e => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter') commitEdit();
                 if (e.key === 'Escape') setEditing(false);
               }}
@@ -51,14 +54,14 @@ export function TopBar() {
             <button
               className={styles.nameBtn}
               onDoubleClick={startEdit}
-              onTouchStart={(e) => {
-                // double-tap on touch
+              onTouchStart={() => {
                 const now = Date.now();
-                if (now - (Number(e.currentTarget.dataset.lastTap) || 0) < 300) startEdit();
-                e.currentTarget.dataset.lastTap = String(now);
+                if (now - lastTapRef.current < 300) startEdit();
+                lastTapRef.current = now;
               }}
               title="Double-click to rename"
-              data-testid="plan-name"
+              aria-label={`Current plan: ${plan?.name ?? 'No plan selected'}. Double-click to rename.`}
+              data-testid="plan-name-btn"
             >
               {plan?.name ?? 'No plan selected'}
             </button>
@@ -68,6 +71,7 @@ export function TopBar() {
         <button
           className={styles.plansBtn}
           onClick={() => setShowManager(true)}
+          aria-label="Manage floor plans"
           data-testid="plans-button"
         >
           Plans ▾

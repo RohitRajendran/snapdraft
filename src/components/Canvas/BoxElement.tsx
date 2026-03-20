@@ -4,15 +4,15 @@ import type Konva from 'konva';
 import { useToolStore } from '../../store/useToolStore';
 import { useFloorplanStore } from '../../store/useFloorplanStore';
 import type { Box } from '../../types';
-import { ftToPx, pxToFt, snapToGrid, formatFeet } from '../../utils/geometry';
+import { ftToPx, pxToFt, formatFeet } from '../../utils/geometry';
 
 const HANDLE_OFFSET_PX = 22;
 
 type Props = {
   box: Box;
   selected: boolean;
-  onSelect: () => void;
-  onGroupDrag?: (id: string, dxFt: number, dyFt: number) => void;
+  onSelect: (extendSelection: boolean) => void;
+  onGroupDrag?: (id: string, dxFt: number, dyFt: number, targetIds?: Set<string>) => void;
 };
 
 export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
@@ -20,6 +20,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
   const { activeTool, zoom } = useToolStore();
   const groupRef = useRef<Konva.Group>(null);
   const isRotatingRef = useRef(false);
+  const dragSelectionRef = useRef<Set<string>>(new Set());
 
   const bx = ftToPx(box.x);
   const by = ftToPx(box.y);
@@ -27,30 +28,58 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
   const bh = ftToPx(box.height);
 
   function handleDragStart() {
-    // Cancel the drag if the rotation handle initiated this interaction
     if (isRotatingRef.current) {
       groupRef.current?.stopDrag();
+      return;
+    }
+
+    dragSelectionRef.current = new Set(useToolStore.getState().selectedIds);
+  }
+
+  function handleDragMove(e: Konva.KonvaEventObject<DragEvent>) {
+    if (isRotatingRef.current) return;
+    const ids = dragSelectionRef.current;
+    if (ids.size <= 1) return;
+    const node = e.target;
+    const dxFt = pxToFt(node.x()) - (box.x + box.width / 2);
+    const dyFt = pxToFt(node.y()) - (box.y + box.height / 2);
+    const stage = node.getStage();
+    if (!stage) return;
+    const allEls = useFloorplanStore.getState().activePlan()?.elements ?? [];
+    for (const id of ids) {
+      if (id === box.id) continue;
+      const el = allEls.find((e) => e.id === id);
+      if (!el) continue;
+      const other = stage.findOne(`#sd-${id}`);
+      if (!other) continue;
+      if (el.type === 'box') {
+        other.x(ftToPx(el.x + el.width / 2 + dxFt));
+        other.y(ftToPx(el.y + el.height / 2 + dyFt));
+      } else if (el.type === 'wall') {
+        other.x(ftToPx(dxFt));
+        other.y(ftToPx(dyFt));
+      }
     }
   }
 
   function handleDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
     if (isRotatingRef.current) return;
     const node = e.target;
-    const dxFt = pxToFt(node.x()) - box.x;
-    const dyFt = pxToFt(node.y()) - box.y;
+    // node.x()/y() is the center (anchor) — subtract half-size to get top-left
+    const rawXFt = pxToFt(node.x()) - box.width / 2;
+    const rawYFt = pxToFt(node.y()) - box.height / 2;
 
-    const ids = useToolStore.getState().selectedIds;
+    const ids = dragSelectionRef.current;
+    dragSelectionRef.current = new Set();
 
     if (ids.size > 1 && onGroupDrag) {
-      node.position({ x: ftToPx(box.x), y: ftToPx(box.y) });
-      onGroupDrag(box.id, snapToGrid(dxFt), snapToGrid(dyFt));
+      node.position({ x: ftToPx(box.x + box.width / 2), y: ftToPx(box.y + box.height / 2) });
+      onGroupDrag(box.id, rawXFt - box.x, rawYFt - box.y, ids);
       return;
     }
 
-    const newXFt = snapToGrid(pxToFt(node.x()), false);
-    const newYFt = snapToGrid(pxToFt(node.y()), false);
-    updateElement(box.id, { x: newXFt, y: newYFt });
-    node.position({ x: ftToPx(newXFt), y: ftToPx(newYFt) });
+    updateElement(box.id, { x: rawXFt, y: rawYFt });
+    node.position({ x: ftToPx(rawXFt + box.width / 2), y: ftToPx(rawYFt + box.height / 2) });
   }
 
   function handleRotatePointerDown(e: Konva.KonvaEventObject<PointerEvent>) {
@@ -68,7 +97,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
       const s = stage!.scaleX();
       const cx = abs.x + (bw / 2) * s;
       const cy = abs.y + (bh / 2) * s;
-      const rawAngle = Math.atan2(pos.y - cy, pos.x - cx) * 180 / Math.PI + 90;
+      const rawAngle = (Math.atan2(pos.y - cy, pos.x - cx) * 180) / Math.PI + 90;
       return Math.round(rawAngle / 5) * 5;
     }
 
@@ -93,14 +122,18 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
   return (
     <Group
       ref={groupRef}
-      x={bx}
-      y={by}
+      id={`sd-${box.id}`}
+      x={bx + bw / 2}
+      y={by + bh / 2}
+      offsetX={bw / 2}
+      offsetY={bh / 2}
       rotation={box.rotation}
       draggable={activeTool === 'select'}
       onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
-      onClick={onSelect}
-      onTap={onSelect}
+      onClick={(e) => onSelect(Boolean(e.evt.shiftKey))}
+      onTap={() => onSelect(false)}
     >
       <Rect
         width={bw}

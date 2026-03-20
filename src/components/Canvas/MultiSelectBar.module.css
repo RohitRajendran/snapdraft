@@ -30,8 +30,18 @@
   font-size: 11px;
   padding: 6px 12px;
   cursor: pointer;
-  min-height: 36px;
+  min-height: 44px;
+  min-width: 44px;
   touch-action: manipulation;
+}
+
+.deleteBtn:hover {
+  background: #b83333;
+}
+
+.deleteBtn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .clearBtn {
@@ -43,6 +53,33 @@
   font-size: 11px;
   padding: 6px 12px;
   cursor: pointer;
-  min-height: 36px;
+  min-height: 44px;
+  min-width: 44px;
   touch-action: manipulation;
+}
+
+.clearBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.clearBtn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 730px) {
+  .bar {
+    left: 12px;
+    right: 12px;
+    bottom: 116px;
+    transform: none;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .count {
+    min-width: 0;
+    flex: 1;
+  }
 }

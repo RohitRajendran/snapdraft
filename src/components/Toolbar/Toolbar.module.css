@@ -26,7 +26,7 @@
   border-radius: 10px;
   background: transparent;
   cursor: pointer;
-  color: #3a3a3a;
+  color: #262626;
   transition: background 0.15s, color 0.15s;
   min-width: 60px;
   min-height: 60px;
@@ -43,15 +43,15 @@
 }
 
 .icon {
-  font-size: 20px;
+  font-size: 21px;
   line-height: 1;
 }
 
 .label {
-  font-size: 11px;
+  font-size: 12px;
   font-family: 'Courier New', monospace;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -62,6 +62,11 @@
 
 .tool:disabled:hover {
   background: transparent;
+}
+
+.tool:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
 }
 
 .divider {
@@ -78,4 +83,38 @@
     transform: translateX(-50%);
     flex-direction: row;
   }
+}
+
+@media (max-width: 480px) {
+  .toolbar {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+    width: auto;
+    padding: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .tool {
+    flex: 0 0 auto;
+  }
+
+  .divider {
+    display: block;
+    width: 1px;
+    height: auto;
+    align-self: stretch;
+    margin: 0 4px;
+  }
+}
+
+.toolbar::-webkit-scrollbar {
+  display: none;
 }

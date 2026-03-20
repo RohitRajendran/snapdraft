@@ -27,7 +27,17 @@
   cursor: pointer;
   padding: 4px 8px;
   min-height: 44px;
+  border-radius: 6px;
   touch-action: manipulation;
+}
+
+.logo:hover {
+  background: #ece8e0;
+}
+
+.logo:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
 }
 
 .planName {
@@ -40,8 +50,9 @@
   background: none;
   border: none;
   font-family: inherit;
-  font-size: 15px;
-  color: #4a4a4a;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
   cursor: pointer;
   padding: 4px 12px;
   min-height: 44px;
@@ -53,6 +64,11 @@
   background: #ece8e0;
 }
 
+.nameBtn:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
 .nameInput {
   background: white;
   border: 1px solid #b8c9e0;
@@ -61,25 +77,95 @@
   font-size: 13px;
   padding: 4px 12px;
   color: #2c2c2c;
-  outline: none;
-  min-height: 36px;
+  min-height: 44px;
   width: 200px;
   text-align: center;
 }
 
+.nameInput:focus {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 1px;
+}
+
 .plansBtn {
   background: none;
-  border: 1px solid #c8c4bc;
+  border: 1px solid #b8b4ac;
   border-radius: 6px;
   font-family: inherit;
-  font-size: 13px;
-  color: #4a4a4a;
+  font-size: 14px;
+  color: #1a1a1a;
   cursor: pointer;
-  padding: 6px 12px;
-  min-height: 36px;
+  padding: 6px 14px;
+  min-height: 44px;
+  min-width: 44px;
   touch-action: manipulation;
 }
 
 .plansBtn:hover {
   background: #ece8e0;
+}
+
+.plansBtn:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
+@media (max-width: 730px) {
+  .bar {
+    height: 56px;
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .logo {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    padding: 4px 6px;
+  }
+
+  .planName {
+    min-width: 0;
+  }
+
+  .nameBtn {
+    width: 100%;
+    min-width: 0;
+    padding: 4px 6px;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nameInput {
+    width: min(100%, 220px);
+    min-width: 0;
+    padding: 4px 8px;
+  }
+
+  .plansBtn {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bar {
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .logo {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  .nameBtn {
+    font-size: 13px;
+  }
+
+  .plansBtn {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
 }

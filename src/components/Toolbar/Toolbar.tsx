@@ -8,6 +8,7 @@ const TOOLS: { type: ToolType; label: string; icon: string; key: string }[] = [
   { type: 'select', label: 'Select', icon: '↖', key: 'S' },
   { type: 'wall', label: 'Wall', icon: '✏', key: 'W' },
   { type: 'box', label: 'Box', icon: '▭', key: 'B' },
+  { type: 'measure', label: 'Measure', icon: '⌖', key: 'M' },
 ];
 
 type Props = {
@@ -24,6 +25,7 @@ export function Toolbar({ onHelpOpen }: Props) {
       if (e.key === 's' || e.key === 'S') setActiveTool('select');
       if (e.key === 'w' || e.key === 'W') setActiveTool('wall');
       if (e.key === 'b' || e.key === 'B') setActiveTool('box');
+      if (e.key === 'm' || e.key === 'M') setActiveTool('measure');
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -31,7 +33,7 @@ export function Toolbar({ onHelpOpen }: Props) {
 
   return (
     <div className={styles.toolbar} role="toolbar" aria-label="Drawing tools">
-      {TOOLS.map(tool => (
+      {TOOLS.map((tool) => (
         <button
           key={tool.type}
           className={`${styles.tool} ${activeTool === tool.type ? styles.active : ''}`}
@@ -76,6 +78,7 @@ export function Toolbar({ onHelpOpen }: Props) {
         data-testid="tool-help"
       >
         <span className={styles.icon}>?</span>
+        <span className={styles.label}>Help</span>
       </button>
     </div>
   );

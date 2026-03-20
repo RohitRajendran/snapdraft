@@ -4,22 +4,35 @@ import styles from './MultiSelectBar.module.css';
 
 export function MultiSelectBar() {
   const { selectedIds, clearSelection } = useToolStore();
-  const { deleteElement } = useFloorplanStore();
+  const { deleteElements } = useFloorplanStore();
 
   if (selectedIds.size < 2) return null;
 
   function handleDeleteAll() {
-    selectedIds.forEach(id => deleteElement(id));
+    deleteElements(selectedIds);
     clearSelection();
   }
 
   return (
-    <div className={styles.bar} data-testid="multi-select-bar">
-      <span className={styles.count}>{selectedIds.size} items selected</span>
-      <button className={styles.deleteBtn} onClick={handleDeleteAll} data-testid="delete-selected">
+    <div
+      className={styles.bar}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-testid="multi-select-bar"
+    >
+      <span className={styles.count} aria-label={`${selectedIds.size} items selected`}>
+        {selectedIds.size} items selected
+      </span>
+      <button
+        className={styles.deleteBtn}
+        onClick={handleDeleteAll}
+        aria-label="Delete all selected items"
+        data-testid="delete-selected"
+      >
         Delete all
       </button>
-      <button className={styles.clearBtn} onClick={clearSelection}>
+      <button className={styles.clearBtn} onClick={clearSelection} aria-label="Clear selection">
         Clear
       </button>
     </div>
