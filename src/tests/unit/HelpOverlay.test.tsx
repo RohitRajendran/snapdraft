@@ -148,7 +148,7 @@ describe('HelpOverlay', () => {
       'Wall tool — tap, click, or drag points; use Done, Cancel, and Length on touch.',
     );
     expect(container).toHaveTextContent('Ctrl+Z / Ctrl+Shift+Z');
-    expect(container).toHaveTextContent('S or tap ↖');
+    expect(container).toHaveTextContent('S or tap Select');
     expect(container).toHaveTextContent(
       "Type 10' or 5'6\" while drawing, or tap Length on touch to edit the last wall.",
     );
