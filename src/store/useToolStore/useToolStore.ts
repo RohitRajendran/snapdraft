@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ToolType, Point } from '../types';
+import type { ToolType, Point } from '../../types';
 
 type ToolStore = {
   activeTool: ToolType;

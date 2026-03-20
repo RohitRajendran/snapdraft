@@ -1,5 +1,5 @@
 import { useState, useId } from 'react';
-import { formatFeet, parseFtIn } from '../../utils/geometry';
+import { formatFeet, parseFtIn } from '../../../utils/geometry/geometry';
 import styles from './FtInInput.module.css';
 
 type Props = {

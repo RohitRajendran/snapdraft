@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { X, Pencil, Plus } from 'lucide-react';
-import { useFloorplanStore } from '../../store/useFloorplanStore';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanStore';
+import { useFocusTrap } from '../../hooks/useFocusTrap/useFocusTrap';
 import styles from './FloorplanManager.module.css';
 
 type Props = {

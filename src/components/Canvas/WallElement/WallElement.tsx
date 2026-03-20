@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { Line, Circle } from 'react-konva';
 import type Konva from 'konva';
-import { useToolStore } from '../../store/useToolStore';
-import { useFloorplanStore } from '../../store/useFloorplanStore';
-import type { Wall, Point } from '../../types';
+import { useToolStore } from '../../../store/useToolStore/useToolStore';
+import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplanStore';
+import type { Wall, Point } from '../../../types';
 import {
   ftToPx,
   pxToFt,
@@ -12,7 +12,7 @@ import {
   distance,
   SNAP_RADIUS_FT,
   getWallSnapIncrement,
-} from '../../utils/geometry';
+} from '../../../utils/geometry/geometry';
 
 function moveOtherSelected(
   node: Konva.Node,

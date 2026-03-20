@@ -1,4 +1,4 @@
-import type { Element, Point } from '../types';
+import type { Element, Point } from '../../types';
 
 export const PIXELS_PER_FOOT = 40;
 export const SNAP_RADIUS_FT = 0.4;

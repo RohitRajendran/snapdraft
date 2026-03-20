@@ -26,6 +26,7 @@ export type ToolType = 'select' | 'wall' | 'box' | 'measure';
 
 export type FloorPlan = {
   id: string;
+  version: number;
   name: string;
   createdAt: string;
   updatedAt: string;

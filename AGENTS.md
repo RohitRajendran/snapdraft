@@ -12,6 +12,7 @@ Use this file as the source of truth for agent work in this repo. Keep it factua
 - Do not overwrite unrelated user changes in a dirty worktree.
 - Every code change must include tests in the same session. Update existing tests when behavior changes.
 - Before adding new selectors in tests, look for an existing `data-testid`. If one is missing, add one instead of relying on text or CSS classes.
+- Keep component files grouped by component directory, for example `src/components/Canvas/TopBar/TopBar.tsx` with `TopBar.module.css`, instead of mixing multiple components in one folder.
 
 ## Stack
 
@@ -53,30 +54,31 @@ npm run spell:check   # cspell for src TS/TSX
 src/
   App.tsx                              App shell; creates default plan on first load
   types/index.ts                       Point, Wall, Box, Element, ToolType, FloorPlan
-  utils/geometry.ts                    Coordinate conversion, snapping, dimensions, nudging
-  utils/storage.ts                     localStorage read/write helpers
+  utils/
+    geometry/geometry.ts               Coordinate conversion, snapping, dimensions, nudging
+    storage/storage.ts                 localStorage read/write helpers
   store/
-    useFloorplanStore.ts               Plans, elements, persistence, undo/redo history
-    useToolStore.ts                    Active tool, chain state, selection, measure, zoom, pan
+    useFloorplanStore/                 Plans, elements, persistence, undo/redo history
+    useToolStore/                      Active tool, chain state, selection, measure, zoom, pan
   hooks/
-    useSnap.ts                         Endpoint/segment/axis/grid snapping
-    useFocusTrap.ts                    Overlay/dialog focus handling
+    useSnap/                           Endpoint/segment/axis/grid snapping
+    useFocusTrap/                      Overlay/dialog focus handling
   components/
     Canvas/
-      DrawingCanvas.tsx                Main stage, pointer/keyboard/wheel handling
-      Grid.tsx                         Adaptive grid
-      WallElement.tsx                  Wall rendering and editing affordances
-      BoxElement.tsx                   Box rendering and dragging
-      MeasureOverlay.tsx               Measurement overlay for measure tool
-      MultiSelectBar.tsx               Actions for multi-selection
-      ScaleBar.tsx                     Scale indicator
-      TopBar.tsx                       Plan name and plan manager entry point
+      DrawingCanvas/                   Main stage, pointer/keyboard/wheel handling
+      Grid/                            Adaptive grid
+      WallElement/                     Wall rendering and editing affordances
+      BoxElement/                      Box rendering and dragging
+      MeasureOverlay/                  Measurement overlay for measure tool
+      MultiSelectBar/                  Actions for multi-selection
+      ScaleBar/                        Scale indicator
+      TopBar/                          Plan name and plan manager entry point
       layout.ts                        Overlay/mobile layout constants
     Toolbar/                           Tool switcher, undo/redo, help
     PropertiesPanel/                   Single-selection editing
+    PropertiesPanel/FtInInput/         Feet-and-inches field
     FloorplanManager/                  Create, rename, delete, switch plans
     HelpOverlay/                       Help modal shown on first visit
-src/tests/unit/                        Unit tests
 e2e/                                   Playwright scenarios
 ```
 
@@ -105,7 +107,7 @@ type Box = {
 type ToolType = 'select' | 'wall' | 'box' | 'measure';
 ```
 
-`FloorPlan` stores `id`, `name`, timestamps, and `elements`.
+`FloorPlan` stores `id`, `version`, `name`, timestamps, and `elements`.
 
 ## Core Invariants
 
@@ -127,7 +129,7 @@ Snap priority is:
 3. Axis lock from the active wall chain origin
 4. Grid
 
-This logic lives in `src/hooks/useSnap.ts`. Preserve that ordering unless the task explicitly changes snapping behavior and tests are updated with it.
+This logic lives in `src/hooks/useSnap/useSnap.ts`. Preserve that ordering unless the task explicitly changes snapping behavior and tests are updated with it.
 
 ### Stage rendering
 
@@ -142,10 +144,13 @@ This logic lives in `src/hooks/useSnap.ts`. Preserve that ordering unless the ta
 
 ### Persistence
 
-- Storage helpers are in `src/utils/storage.ts`.
+- Storage helpers are in `src/utils/storage/storage.ts`.
+- Each persisted plan carries a schema `version`.
 - Floor plans persist on mutating store actions.
 - Undo/redo history is session-only and not persisted.
 - Corrupt or missing storage data should degrade safely to empty/default state.
+- If a change would break compatibility with existing persisted plan data, bump the plan version constant and add a migration path for older plans in `loadFloorPlans()`.
+- Do not ship a breaking persisted-data change without tests that cover both the legacy load path and the migrated current shape.
 
 ## Current Tooling and Behaviors
 
@@ -174,8 +179,8 @@ Tests are mandatory for every code change.
 
 | Change type | Test location |
 |---|---|
-| Geometry, parsing, conversion, snapping helpers | `src/tests/unit/geometry.test.ts` or `src/tests/unit/useSnap.test.ts` |
-| Store mutations, persistence, undo/redo | `src/tests/unit/useFloorplanStore.test.ts` or `src/tests/unit/useToolStore.test.ts` |
+| Geometry, parsing, conversion, snapping helpers | Co-located spec next to the source file, for example `src/utils/geometry/geometry.test.ts` or `src/hooks/useSnap/useSnap.test.ts` |
+| Store mutations, persistence, undo/redo | Co-located spec next to the store file, for example `src/store/useFloorplanStore/useFloorplanStore.test.ts` or `src/store/useToolStore/useToolStore.test.ts` |
 | Drawing interactions, keyboard handling, cancel flows, selection, mobile UI behavior | `e2e/floorplan.spec.ts` or a new `e2e/*.spec.ts` |
 
 ### Unit test expectations
@@ -211,7 +216,7 @@ Keep these covered:
 
 Typical verification choices:
 
-- Geometry/store-only change: `npm run test -- src/tests/unit/...`
+- Geometry/store-only change: `npm run test -- src/path/to/file.test.ts`
 - UI interaction change: `npm run test:e2e -- e2e/...`
 - Cross-cutting change: `npm run test`, then `npm run build`
 

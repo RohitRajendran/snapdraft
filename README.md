@@ -55,6 +55,8 @@ SnapDraft stores plan data in world coordinates measured in feet. Rendering is h
 
 The app starts with a default plan on first load. If a saved plan already has content, the canvas fits that content on open.
 
+Persisted floor plans also carry a schema `version`. When a future change would break compatibility with existing saved plan data, the plan version must be bumped and `src/utils/storage/storage.ts` must include a migration path so older plans still load into the current shape.
+
 ## Tools and Shortcuts
 
 | Tool | Shortcut | Use |
@@ -91,7 +93,9 @@ Dimension fields accept common architectural shorthand:
 
 ## Testing
 
-Unit tests live under `src/tests/unit/`. End-to-end tests live under `e2e/`.
+Unit tests are co-located with the files they cover under `src/`. End-to-end tests live under `e2e/`.
+
+Component source is also grouped by component directory, for example `src/components/Canvas/TopBar/TopBar.tsx` or `src/components/Toolbar/Toolbar.tsx` with colocated CSS and tests, instead of mixing many components in one folder.
 
 Typical workflows:
 
@@ -129,10 +133,9 @@ GitHub Actions runs:
 
 ```text
 src/
-  components/   UI and canvas components
+  components/   UI and canvas components, grouped into per-component folders
   hooks/        Shared hooks such as snapping and focus management
   store/        Zustand stores for floor plan data and tool state
-  tests/unit/   Unit tests
   types/        Shared TypeScript models
   utils/        Geometry and storage helpers
 e2e/            Playwright tests
@@ -141,5 +144,7 @@ e2e/            Playwright tests
 ## Contributing Notes
 
 - Keep persisted geometry in feet, not pixels.
+- Keep persisted plan schema changes backward-compatible when possible.
+- If you make a breaking change to persisted plan data, bump the plan version and add a tested migration path in `src/utils/storage/storage.ts`.
 - Use `stage.getRelativePointerPosition()` for world-coordinate math.
 - Prefer `data-testid` selectors for UI tests.

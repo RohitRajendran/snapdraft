@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { DrawingCanvas } from './components/Canvas/DrawingCanvas';
+import { DrawingCanvas } from './components/Canvas/DrawingCanvas/DrawingCanvas';
 import { Toolbar } from './components/Toolbar/Toolbar';
-import { TopBar } from './components/Canvas/TopBar';
+import { TopBar } from './components/Canvas/TopBar/TopBar';
 import { PropertiesPanel } from './components/PropertiesPanel/PropertiesPanel';
 import { HelpOverlay } from './components/HelpOverlay/HelpOverlay';
-import { ScaleBar } from './components/Canvas/ScaleBar';
-import { MultiSelectBar } from './components/Canvas/MultiSelectBar';
-import { useFloorplanStore } from './store/useFloorplanStore';
+import { ScaleBar } from './components/Canvas/ScaleBar/ScaleBar';
+import { MultiSelectBar } from './components/Canvas/MultiSelectBar/MultiSelectBar';
+import { useFloorplanStore } from './store/useFloorplanStore/useFloorplanStore';
 import styles from './App.module.css';
 
 export default function App() {

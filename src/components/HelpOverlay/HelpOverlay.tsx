@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { X } from 'lucide-react';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useFocusTrap } from '../../hooks/useFocusTrap/useFocusTrap';
 import styles from './HelpOverlay.module.css';
 
 type Props = {

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { Point, Element } from '../types';
+import type { Point, Element } from '../../types';
 import {
   snapPointToGrid,
   snapToGrid,
@@ -8,7 +8,7 @@ import {
   distance,
   SNAP_RADIUS_FT,
   GRID_SNAP_FT,
-} from '../utils/geometry';
+} from '../../utils/geometry/geometry';
 
 function collectEndpoints(elements: Element[]): Point[] {
   const pts: Point[] = [];

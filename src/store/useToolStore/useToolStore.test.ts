@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useToolStore } from '../../store/useToolStore';
+import { useToolStore } from './useToolStore';
 
 beforeEach(() => {
   // Reset to initial state before each test
