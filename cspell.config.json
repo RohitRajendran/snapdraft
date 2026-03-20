@@ -19,7 +19,11 @@
     "autofit",
     "workbox",
     "pinia",
-    "trackpad"
+    "trackpad",
+    "lzstring",
+    "lz",
+    "qrcode",
+    "qr"
   ],
   "ignoreWords": [],
   "import": ["@cspell/dict-typescript", "@cspell/dict-node"]

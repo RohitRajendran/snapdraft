@@ -24,6 +24,7 @@ type FloorplanStore = {
 
   // Plan management
   createPlan: (name?: string) => string;
+  importPlan: (plan: FloorPlan) => string;
   deletePlan: (id: string) => void;
   renamePlan: (id: string, name: string) => void;
   setActivePlan: (id: string) => void;
@@ -142,6 +143,24 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
     };
     set((state) => {
       const plans = [...state.plans, plan];
+      persist(plans, id);
+      return { plans, activeId: id, past: [], future: [] };
+    });
+    return id;
+  },
+
+  importPlan: (plan) => {
+    const id = nanoid();
+    const now = new Date().toISOString();
+    const newPlan: FloorPlan = {
+      ...plan,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      version: FLOORPLAN_VERSION,
+    };
+    set((state) => {
+      const plans = [...state.plans, newPlan];
       persist(plans, id);
       return { plans, activeId: id, past: [], future: [] };
     });

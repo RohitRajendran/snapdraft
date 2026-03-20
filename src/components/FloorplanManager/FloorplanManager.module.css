@@ -159,7 +159,54 @@
   outline-offset: 2px;
 }
 
+.hidden {
+  display: none;
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.importError {
+  font-size: 11px;
+  color: #b94a4a;
+  margin: 0;
+}
+
+.importBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #c8c4bc;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  min-height: 44px;
+  touch-action: manipulation;
+  color: #2c2c2c;
+}
+
+.importBtn:hover {
+  background: #ece8e0;
+}
+
+.importBtn:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
 .createBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: #2c2c2c;
   color: #f5f0e8;
   border: none;
