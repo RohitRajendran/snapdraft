@@ -43,3 +43,46 @@
   z-index: 50;
   min-height: 32px;
 }
+
+.mobileWallBar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 84px;
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #c8c4bc;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(8px);
+  z-index: 120;
+}
+
+.mobileWallButton {
+  flex: 1 1 0;
+  min-height: 44px;
+  border: 1px solid #c8c4bc;
+  border-radius: 10px;
+  background: #f5f0e8;
+  color: #2c2c2c;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  touch-action: manipulation;
+}
+
+.mobileWallCancel {
+  background: #2c2c2c;
+  border-color: #2c2c2c;
+  color: #f5f0e8;
+}
+
+@media (min-width: 731px) {
+  .mobileWallBar {
+    display: none;
+  }
+}

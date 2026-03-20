@@ -6,6 +6,10 @@ async function setup(page: Page) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+  await dismissHelp(page);
+}
+
+async function dismissHelp(page: Page) {
   const help = page.getByTestId('help-overlay');
   if (await help.isVisible()) {
     await page.keyboard.press('Escape');
@@ -417,6 +421,72 @@ test.describe('Wall drawing', () => {
     await expect(page.getByTestId('dim-input')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('dim-input')).not.toBeVisible();
+  });
+
+  test('mobile wall length edits the last placed wall and can finish a chain', async ({ page }) => {
+    const originalViewport = page.viewportSize();
+    try {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.reload();
+      await dismissHelp(page);
+
+      await page.getByTestId('tool-wall').click();
+      const canvas = page.getByTestId('drawing-canvas');
+      await canvas.click({ position: { x: 40, y: 40 } });
+      await canvas.click({ position: { x: 120, y: 40 } });
+
+      await expect(page.getByTestId('mobile-wall-controls')).toBeVisible();
+      await expect(page.getByTestId('dim-input')).not.toBeVisible();
+
+      await page.getByTestId('mobile-wall-length').click();
+      const dimInput = page.getByTestId('dim-input');
+      await expect(dimInput).toBeVisible();
+      await dimInput.fill("5'");
+      await dimInput.press('Enter');
+      await expect(dimInput).not.toBeVisible();
+
+      await page.getByTestId('mobile-wall-done').click();
+      await expect(page.getByTestId('mobile-wall-controls')).not.toBeVisible();
+
+      const elements = await getActivePlanElements(page);
+      const wall = elements.find(
+        (element: { type: string; points?: Array<{ x: number; y: number }> }) =>
+          element.type === 'wall',
+      );
+      expect(wall).toBeTruthy();
+      expect(wall.points[0].x).toBeCloseTo(1);
+      expect(wall.points[1].x).toBeCloseTo(6);
+    } finally {
+      if (originalViewport) {
+        await page.setViewportSize(originalViewport);
+      }
+    }
+  });
+
+  test('mobile wall cancel removes the latest segment and exits drawing', async ({ page }) => {
+    const originalViewport = page.viewportSize();
+    try {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.reload();
+      await dismissHelp(page);
+
+      await page.getByTestId('tool-wall').click();
+      const canvas = page.getByTestId('drawing-canvas');
+      await canvas.click({ position: { x: 40, y: 40 } });
+      await canvas.click({ position: { x: 120, y: 40 } });
+
+      await expect(page.getByTestId('mobile-wall-controls')).toBeVisible();
+      await page.getByTestId('mobile-wall-cancel').click();
+      await expect(page.getByTestId('mobile-wall-controls')).not.toBeVisible();
+      await expect(page.getByTestId('dim-input')).not.toBeVisible();
+
+      const elements = await getActivePlanElements(page);
+      expect(elements).toHaveLength(0);
+    } finally {
+      if (originalViewport) {
+        await page.setViewportSize(originalViewport);
+      }
+    }
   });
 
   test('can edit wall length in properties panel', async ({ page }) => {

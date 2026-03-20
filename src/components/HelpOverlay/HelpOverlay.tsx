@@ -6,34 +6,163 @@ type Props = {
   onClose: () => void;
 };
 
-const GETTING_STARTED = [
-  { action: 'Draw walls', hint: 'Wall tool — drag or click points.' },
-  { action: 'Draw boxes', hint: 'Box tool — drag to create.' },
-  { action: 'Select and edit', hint: 'Select tool — tap an item to edit.' },
-  { action: 'Measure', hint: 'Measure tool — click two points.' },
-];
+type PlatformKind = 'mac' | 'windows' | 'other';
+type InputProfile = {
+  hasTouch: boolean;
+  hasKeyboard: boolean;
+  platform: PlatformKind;
+};
 
-const ADVANCED_SHORTCUTS = [
-  { action: 'Select tool', hint: 'S or tap ↖' },
-  { action: 'Wall tool', hint: 'W or tap ✏' },
-  { action: 'Box tool', hint: 'B or tap ▭' },
-  { action: 'Measure tool', hint: 'M or tap ⌖' },
-  { action: 'Exact wall length', hint: "Type 10' or 5'6\" while drawing." },
-  { action: 'End wall chain', hint: 'Click last point, double-tap, or Esc.' },
-  { action: 'Multi-select', hint: 'Drag a marquee or Shift+click items.' },
-  { action: 'Move selected', hint: 'Drag or use arrow keys.' },
-  { action: 'Fine nudge', hint: 'Shift + Arrow key.' },
-  { action: 'Delete item', hint: 'Backspace or trash button.' },
-  { action: 'Undo / Redo', hint: '⌘Z / ⌘⇧Z (Ctrl on Windows).' },
-  { action: 'Pan and zoom', hint: 'Two-finger scroll, pinch, or Ctrl + scroll.' },
-  { action: 'Fit content', hint: 'F or tap Fit.' },
-  { action: 'Wall snap', hint: 'Walls snap by 1"; hold Shift for 1/4".' },
-];
+function detectPlatform(): PlatformKind {
+  if (typeof navigator === 'undefined') return 'other';
+
+  const nav = navigator as Navigator & {
+    userAgentData?: {
+      platform?: string;
+    };
+  };
+  const platform = nav.userAgentData?.platform ?? navigator.platform ?? navigator.userAgent ?? '';
+
+  if (/mac/i.test(platform)) return 'mac';
+  if (/win/i.test(platform)) return 'windows';
+  return 'other';
+}
+
+function detectInputProfile(): InputProfile {
+  if (typeof window === 'undefined') {
+    return { hasTouch: false, hasKeyboard: true, platform: 'other' };
+  }
+
+  const hasTouch =
+    navigator.maxTouchPoints > 0 || window.matchMedia?.('(any-pointer: coarse)').matches === true;
+  const hasFinePointer = window.matchMedia?.('(any-pointer: fine)').matches === true;
+  const hasKeyboard = !hasTouch || hasFinePointer;
+
+  return {
+    hasTouch,
+    hasKeyboard,
+    platform: detectPlatform(),
+  };
+}
+
+function getHelpContent(profile: InputProfile) {
+  const isTouchOnly = profile.hasTouch && !profile.hasKeyboard;
+  const isKeyboardOnly = profile.hasKeyboard && !profile.hasTouch;
+  const supportsBoth = profile.hasTouch && profile.hasKeyboard;
+  const undoRedoHint =
+    profile.platform === 'mac'
+      ? '⌘Z / ⌘⇧Z'
+      : profile.platform === 'windows'
+        ? 'Ctrl+Z / Ctrl+Shift+Z'
+        : 'Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z';
+
+  const gettingStarted = isTouchOnly
+    ? [
+        {
+          action: 'Draw walls',
+          hint: 'Wall tool — tap points; use Done, Cancel, and Length to tune the last wall.',
+        },
+        { action: 'Draw boxes', hint: 'Box tool — drag to create.' },
+        { action: 'Select and edit', hint: 'Select tool — tap an item to edit.' },
+        { action: 'Measure', hint: 'Measure tool — tap two points.' },
+      ]
+    : isKeyboardOnly
+      ? [
+          { action: 'Draw walls', hint: 'Wall tool — drag or click points.' },
+          { action: 'Draw boxes', hint: 'Box tool — drag to create.' },
+          { action: 'Select and edit', hint: 'Select tool — click an item to edit.' },
+          { action: 'Measure', hint: 'Measure tool — click two points.' },
+        ]
+      : [
+          {
+            action: 'Draw walls',
+            hint: 'Wall tool — tap, click, or drag points; use Done, Cancel, and Length on touch.',
+          },
+          { action: 'Draw boxes', hint: 'Box tool — drag to create.' },
+          { action: 'Select and edit', hint: 'Select tool — tap or click an item to edit.' },
+          { action: 'Measure', hint: 'Measure tool — tap or click two points.' },
+        ];
+
+  const advancedShortcuts = [
+    {
+      action: 'Select tool',
+      hint: isTouchOnly ? 'Tap ↖' : supportsBoth ? 'S or tap ↖' : 'S',
+    },
+    {
+      action: 'Wall tool',
+      hint: isTouchOnly ? 'Tap ✏' : supportsBoth ? 'W or tap ✏' : 'W',
+    },
+    {
+      action: 'Box tool',
+      hint: isTouchOnly ? 'Tap ▭' : supportsBoth ? 'B or tap ▭' : 'B',
+    },
+    {
+      action: 'Measure tool',
+      hint: isTouchOnly ? 'Tap ⌖' : supportsBoth ? 'M or tap ⌖' : 'M',
+    },
+    {
+      action: 'Exact wall length',
+      hint: isTouchOnly
+        ? 'Tap Length to edit the last wall.'
+        : supportsBoth
+          ? "Type 10' or 5'6\" while drawing, or tap Length on touch to edit the last wall."
+          : "Type 10' or 5'6\" while drawing.",
+    },
+    {
+      action: 'End wall chain',
+      hint: isTouchOnly
+        ? 'Tap Done, tap the last point, or double-tap the last point.'
+        : supportsBoth
+          ? 'Click or tap the last point, tap Done on touch, double-tap, or Esc.'
+          : 'Click the last point or press Esc.',
+    },
+    {
+      action: 'Multi-select',
+      hint: isTouchOnly ? 'Select tool — drag a marquee.' : 'Drag a marquee or Shift+click items.',
+    },
+    {
+      action: 'Move selected',
+      hint: isTouchOnly ? 'Drag selected items.' : 'Drag or use arrow keys.',
+    },
+    ...(isTouchOnly ? [] : [{ action: 'Fine nudge', hint: 'Shift + Arrow key.' }]),
+    {
+      action: 'Delete item',
+      hint: isTouchOnly ? 'Tap the trash button.' : 'Backspace, Delete, or trash button.',
+    },
+    ...(isTouchOnly ? [] : [{ action: 'Undo / Redo', hint: undoRedoHint }]),
+    {
+      action: 'Pan and zoom',
+      hint: isTouchOnly
+        ? 'Pinch to zoom and use two fingers to pan.'
+        : supportsBoth
+          ? 'Pinch or Ctrl + scroll to zoom; two fingers to pan.'
+          : 'Two-finger scroll or Ctrl + scroll.',
+    },
+    {
+      action: 'Fit content',
+      hint: isTouchOnly ? 'Tap Fit.' : supportsBoth ? 'F or tap Fit.' : 'F',
+    },
+    {
+      action: 'Wall snap',
+      hint: isTouchOnly ? 'Walls snap by 1".' : 'Walls snap by 1"; hold Shift for 1/4".',
+    },
+  ];
+
+  const dismissHint = isTouchOnly
+    ? 'tap anywhere to dismiss'
+    : supportsBoth
+      ? 'tap anywhere or press Escape to dismiss'
+      : 'press Escape to dismiss';
+  const reopenHint = isKeyboardOnly || supportsBoth ? ' · ? to reopen' : '';
+
+  return { gettingStarted, advancedShortcuts, dismissHint: `${dismissHint}${reopenHint}` };
+}
 
 const titleId = 'help-overlay-title';
 
 export function HelpOverlay({ onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const { gettingStarted, advancedShortcuts, dismissHint } = getHelpContent(detectInputProfile());
 
   useFocusTrap(cardRef, onClose);
 
@@ -57,7 +186,7 @@ export function HelpOverlay({ onClose }: Props) {
         </div>
         <p className={styles.subtitle}>Sketch floor plans right in your browser.</p>
         <dl className={styles.grid}>
-          {GETTING_STARTED.map(({ action, hint }) => (
+          {gettingStarted.map(({ action, hint }) => (
             <div key={action} className={styles.row}>
               <dt className={styles.hint}>{action}</dt>
               <dd className={styles.action}>{hint}</dd>
@@ -70,7 +199,7 @@ export function HelpOverlay({ onClose }: Props) {
         <details className={styles.advanced}>
           <summary className={styles.advancedSummary}>Advanced shortcuts and tips</summary>
           <dl className={styles.grid}>
-            {ADVANCED_SHORTCUTS.map(({ action, hint }) => (
+            {advancedShortcuts.map(({ action, hint }) => (
               <div key={action} className={styles.row}>
                 <dt className={styles.hint}>{action}</dt>
                 <dd className={styles.action}>{hint}</dd>
@@ -82,7 +211,7 @@ export function HelpOverlay({ onClose }: Props) {
           <button className={styles.startBtn} onClick={onClose}>
             Start drawing
           </button>
-          <span className={styles.dismiss}>or tap anywhere to dismiss · ? to reopen</span>
+          <span className={styles.dismiss}>or {dismissHint}</span>
         </div>
       </div>
     </div>

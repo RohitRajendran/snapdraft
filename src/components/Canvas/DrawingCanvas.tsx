@@ -67,6 +67,8 @@ export function DrawingCanvas() {
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
   const [dimInput, setDimInput] = useState('');
   const [dimInputError, setDimInputError] = useState(false);
+  const [mobileDimInputOpen, setMobileDimInputOpen] = useState(false);
+  const [lastPlacedWallId, setLastPlacedWallId] = useState<string | null>(null);
   const dimInputRef = useRef<HTMLInputElement>(null);
   const lastWallTapRef = useRef<{ time: number; point: Point | null }>({ time: 0, point: null });
 
@@ -173,16 +175,34 @@ export function DrawingCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const resetWallInputUi = useCallback(() => {
+    setDimInput('');
+    setDimInputError(false);
+    setMobileDimInputOpen(false);
+    setLastPlacedWallId(null);
+    lastWallTapRef.current = { time: 0, point: null };
+  }, []);
+
+  const cancelTransientState = useCallback(() => {
+    endChain();
+    clearSelection();
+    clearMeasurement();
+    resetWallInputUi();
+    dimInputRef.current?.blur();
+  }, [clearMeasurement, clearSelection, endChain, resetWallInputUi]);
+
+  const rollbackLastMobileWall = useCallback(() => {
+    if (lastPlacedWallId) {
+      deleteElements([lastPlacedWallId]);
+    }
+    cancelTransientState();
+  }, [cancelTransientState, deleteElements, lastPlacedWallId]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       // Escape always cancels regardless of focus
       if (e.key === 'Escape') {
-        endChain();
-        clearSelection();
-        clearMeasurement();
-        setDimInput('');
-        dimInputRef.current?.blur();
-        lastWallTapRef.current = { time: 0, point: null };
+        cancelTransientState();
         return;
       }
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -234,7 +254,7 @@ export function DrawingCanvas() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [endChain, clearSelection, clearMeasurement, deleteElements, fitToContent]);
+  }, [cancelTransientState, clearSelection, deleteElements, fitToContent]);
 
   const getPointerWorld = useCallback((): Point | null => {
     const stage = stageRef.current;
@@ -345,10 +365,9 @@ export function DrawingCanvas() {
 
       if (didDoubleTapLastEndpoint) {
         endChain();
-        setDimInput('');
+        resetWallInputUi();
         setPointerDown(null);
         setMarquee(null);
-        lastWallTapRef.current = { time: 0, point: null };
         return;
       }
       lastWallTapRef.current = { time: now, point: snappedEnd };
@@ -383,6 +402,7 @@ export function DrawingCanvas() {
       // Click on the last placed endpoint → end the chain (no new wall)
       if (distance(endPt, lastPt) < CLOSE_CHAIN_RADIUS_FT) {
         endChain();
+        resetWallInputUi();
         return;
       }
 
@@ -390,6 +410,7 @@ export function DrawingCanvas() {
       if (distance(endPt, firstPt) < CLOSE_CHAIN_RADIUS_FT && chainPoints.length >= 2) {
         commitWall([lastPt, firstPt]);
         endChain();
+        resetWallInputUi();
         return;
       }
 
@@ -411,13 +432,41 @@ export function DrawingCanvas() {
 
   function commitWall(points: Point[]) {
     if (points.length < 2) return;
-    addElement({ id: nanoid(), type: 'wall', points });
+    const id = nanoid();
+    addElement({ id, type: 'wall', points });
+    setLastPlacedWallId(id);
   }
 
   // Commit a wall at an exact typed length, in the direction of the current cursor from the last chain point.
   function commitWallAtTypedLength(lengthFt: number) {
     if (!isChainArmed || chainPoints.length === 0) return;
     const lastPt = chainPoints[chainPoints.length - 1];
+
+    if (usesMobileOverlayLayout && lastPlacedWallId && chainPoints.length >= 2) {
+      const startPt = chainPoints[chainPoints.length - 2];
+      const rawDx = lastPt.x - startPt.x;
+      const rawDy = lastPt.y - startPt.y;
+      const mag = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+      const dx = mag > 0.01 ? rawDx / mag : 1;
+      const dy = mag > 0.01 ? rawDy / mag : 0;
+      const endPt: Point = { x: startPt.x + dx * lengthFt, y: startPt.y + dy * lengthFt };
+
+      updateElements({
+        [lastPlacedWallId]: {
+          points: [startPt, endPt],
+        },
+      });
+      useToolStore.setState((state) => ({
+        chainPoints: [...state.chainPoints.slice(0, -1), endPt],
+        isChainArmed: true,
+      }));
+      setCursor(endPt);
+      setDimInput('');
+      setDimInputError(false);
+      setMobileDimInputOpen(false);
+      dimInputRef.current?.blur();
+      return;
+    }
 
     // Direction: toward cursor, or horizontal if no cursor movement
     let dx = 1,
@@ -437,6 +486,11 @@ export function DrawingCanvas() {
     addChainPoint(endPt);
     setCursor(endPt);
     setDimInput('');
+    setDimInputError(false);
+    if (usesMobileOverlayLayout) {
+      setMobileDimInputOpen(false);
+      dimInputRef.current?.blur();
+    }
   }
 
   function handleBoxDraw(start: Point, end: Point) {
@@ -567,9 +621,16 @@ export function DrawingCanvas() {
   const showEndpointSnap = activeTool === 'wall' && cursorSnappedToEndpoint && cursor;
   const showSegmentSnap = activeTool === 'wall' && cursorSnappedToSegment && cursor;
   const showAxisSnap = activeTool === 'wall' && cursorSnappedToAxis && cursor;
+  const usesMobileOverlayLayout = shouldUseMobileOverlayLayout(size.width);
+  const mobileWallControlsVisible =
+    usesMobileOverlayLayout && activeTool === 'wall' && isChainArmed && chainPoints.length > 0;
 
   // Dimension input — anchored to the last chain point so it stays still while typing
-  const showDimInput = activeTool === 'wall' && isChainArmed && chainPoints.length > 0;
+  const showDimInput =
+    activeTool === 'wall' &&
+    isChainArmed &&
+    chainPoints.length > 0 &&
+    (!usesMobileOverlayLayout || mobileDimInputOpen);
   const lastChainPt = chainPoints[chainPoints.length - 1] ?? null;
   const dimInputScreenPos =
     showDimInput && lastChainPt
@@ -579,13 +640,14 @@ export function DrawingCanvas() {
         }
       : null;
 
-  // Auto-focus the dim input whenever the chain gains a new point
+  // Auto-focus the dim input whenever the chain gains a new point on desktop,
+  // or when it is explicitly opened on mobile.
   useEffect(() => {
-    if (showDimInput && dimInputRef.current) {
+    if (showDimInput && dimInputRef.current && (!usesMobileOverlayLayout || mobileDimInputOpen)) {
       dimInputRef.current.focus();
       dimInputRef.current.select();
     }
-  }, [showDimInput, chainPoints.length]);
+  }, [showDimInput, chainPoints.length, usesMobileOverlayLayout, mobileDimInputOpen]);
 
   const measurePreviewEnd = activeTool === 'measure' && measureStart && !measureEnd ? cursor : null;
 
@@ -596,7 +658,11 @@ export function DrawingCanvas() {
       : null;
 
   const cursorStyle = activeTool === 'select' ? (marquee ? 'crosshair' : 'default') : 'crosshair';
-  const usesMobileOverlayLayout = shouldUseMobileOverlayLayout(size.width);
+  const fitButtonBottom = mobileWallControlsVisible
+    ? MOBILE_OVERLAY_CLEARANCE_PX + 68
+    : usesMobileOverlayLayout
+      ? MOBILE_OVERLAY_CLEARANCE_PX
+      : 20;
 
   return (
     <div
@@ -828,13 +894,7 @@ export function DrawingCanvas() {
             }
             if (e.key === 'Escape') {
               e.preventDefault();
-              endChain();
-              clearMeasurement();
-              clearSelection();
-              setDimInput('');
-              setDimInputError(false);
-              dimInputRef.current?.blur();
-              lastWallTapRef.current = { time: 0, point: null };
+              cancelTransientState();
             }
             // Don't let other keys (S/W/B) change the tool while typing
             e.stopPropagation();
@@ -847,6 +907,49 @@ export function DrawingCanvas() {
         />
       )}
 
+      {mobileWallControlsVisible && (
+        <div className={styles.mobileWallBar} data-testid="mobile-wall-controls">
+          <button
+            type="button"
+            className={styles.mobileWallButton}
+            onClick={() => {
+              setMobileDimInputOpen((open) => {
+                const next = !open;
+                if (!next) {
+                  setDimInput('');
+                  setDimInputError(false);
+                  dimInputRef.current?.blur();
+                }
+                return next;
+              });
+            }}
+            data-testid="mobile-wall-length"
+          >
+            {mobileDimInputOpen ? 'Hide Length' : 'Length'}
+          </button>
+          <button
+            type="button"
+            className={styles.mobileWallButton}
+            onClick={() => {
+              endChain();
+              resetWallInputUi();
+              dimInputRef.current?.blur();
+            }}
+            data-testid="mobile-wall-done"
+          >
+            Done
+          </button>
+          <button
+            type="button"
+            className={`${styles.mobileWallButton} ${styles.mobileWallCancel}`}
+            onClick={rollbackLastMobileWall}
+            data-testid="mobile-wall-cancel"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       {/* Fit-to-content button — always visible so it works even when keyboard focus is elsewhere */}
       <button
         className={styles.fitButton}
@@ -854,7 +957,7 @@ export function DrawingCanvas() {
         title="Fit all content in view (F)"
         aria-label="Fit all content in view"
         style={{
-          bottom: usesMobileOverlayLayout ? MOBILE_OVERLAY_CLEARANCE_PX : 20,
+          bottom: fitButtonBottom,
           left: usesMobileOverlayLayout ? 12 : 20,
         }}
         data-testid="fit-to-content"
