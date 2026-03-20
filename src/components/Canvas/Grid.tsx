@@ -9,9 +9,9 @@ type Props = {
   pan: { x: number; y: number };
 };
 
-const GRID_STEP_FT = 1;       // 1 square = 1 ft, always
-const MAJOR_EVERY = 5;        // bold line every 5 ft
-const MIN_PX_BETWEEN = 4;     // hide minor lines below this screen-pixel density
+const GRID_STEP_FT = 1; // 1 square = 1 ft, always
+const MAJOR_EVERY = 5; // bold line every 5 ft
+const MIN_PX_BETWEEN = 4; // hide minor lines below this screen-pixel density
 
 export function Grid({ width, height, zoom, pan }: Props) {
   const lines = useMemo(() => {

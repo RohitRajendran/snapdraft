@@ -1,57 +1,89 @@
-import { useEffect } from 'react';
+import { useRef } from 'react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import styles from './HelpOverlay.module.css';
 
 type Props = {
   onClose: () => void;
 };
 
-const SHORTCUTS = [
-  { action: 'Select tool', hint: 'S  or tap ↖' },
-  { action: 'Wall tool', hint: 'W  or tap ✏' },
-  { action: 'Box tool', hint: 'B  or tap ▭' },
-  { action: 'Draw wall', hint: 'Drag or click points' },
-  { action: 'Continue chain', hint: 'Keep drawing from endpoint' },
-  { action: 'End chain', hint: 'Double-tap / Esc' },
-  { action: 'Draw box', hint: 'Drag to create' },
-  { action: 'Move item', hint: 'Select → drag' },
-  { action: 'Delete item', hint: 'Select → Backspace / trash' },
-  { action: 'Pan canvas', hint: 'Two-finger drag' },
-  { action: 'Zoom', hint: 'Pinch or scroll' },
-  { action: 'Half-foot snap', hint: 'Hold Shift while drawing' },
+const GETTING_STARTED = [
+  { action: 'Draw walls', hint: 'Wall tool — drag or click points.' },
+  { action: 'Draw boxes', hint: 'Box tool — drag to create.' },
+  { action: 'Select and edit', hint: 'Select tool — tap an item to edit.' },
+  { action: 'Measure', hint: 'Measure tool — click two points.' },
 ];
 
+const ADVANCED_SHORTCUTS = [
+  { action: 'Select tool', hint: 'S or tap ↖' },
+  { action: 'Wall tool', hint: 'W or tap ✏' },
+  { action: 'Box tool', hint: 'B or tap ▭' },
+  { action: 'Measure tool', hint: 'M or tap ⌖' },
+  { action: 'Exact wall length', hint: "Type 10' or 5'6\" while drawing." },
+  { action: 'End wall chain', hint: 'Click last point, double-tap, or Esc.' },
+  { action: 'Multi-select', hint: 'Drag a marquee or Shift+click items.' },
+  { action: 'Move selected', hint: 'Drag or use arrow keys.' },
+  { action: 'Fine nudge', hint: 'Shift + Arrow key.' },
+  { action: 'Delete item', hint: 'Backspace or trash button.' },
+  { action: 'Undo / Redo', hint: '⌘Z / ⌘⇧Z (Ctrl on Windows).' },
+  { action: 'Pan and zoom', hint: 'Two-finger scroll, pinch, or Ctrl + scroll.' },
+  { action: 'Fit content', hint: 'F or tap Fit.' },
+  { action: 'Wall snap', hint: 'Walls snap by 1"; hold Shift for 1/4".' },
+];
+
+const titleId = 'help-overlay-title';
+
 export function HelpOverlay({ onClose }: Props) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(cardRef, onClose);
 
   return (
-    <div
-      className={styles.backdrop}
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Help"
-      data-testid="help-overlay"
-    >
-      <div className={styles.card} onClick={e => e.stopPropagation()}>
+    <div className={styles.backdrop} onClick={onClose} data-testid="help-overlay">
+      <div
+        ref={cardRef}
+        className={styles.card}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.header}>
-          <span className={styles.title}>SnapDraft</span>
-          <button className={styles.close} onClick={onClose} aria-label="Close help">✕</button>
+          <span id={titleId} className={styles.title}>
+            SnapDraft
+          </span>
+          <button className={styles.close} onClick={onClose} aria-label="Close help">
+            ✕
+          </button>
         </div>
-        <div className={styles.grid}>
-          {SHORTCUTS.map(({ action, hint }) => (
+        <p className={styles.subtitle}>Sketch floor plans right in your browser.</p>
+        <dl className={styles.grid}>
+          {GETTING_STARTED.map(({ action, hint }) => (
             <div key={action} className={styles.row}>
-              <span className={styles.action}>{action}</span>
-              <span className={styles.hint}>{hint}</span>
+              <dt className={styles.action}>{action}</dt>
+              <dd className={styles.hint}>{hint}</dd>
             </div>
           ))}
+        </dl>
+        <div className={styles.notice} data-testid="help-save-note">
+          Your work is saved automatically in this browser on this device.
         </div>
-        <p className={styles.footer}>Tap anywhere to dismiss</p>
+        <details className={styles.advanced}>
+          <summary className={styles.advancedSummary}>Advanced shortcuts and tips</summary>
+          <dl className={styles.grid}>
+            {ADVANCED_SHORTCUTS.map(({ action, hint }) => (
+              <div key={action} className={styles.row}>
+                <dt className={styles.action}>{action}</dt>
+                <dd className={styles.hint}>{hint}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+        <div className={styles.footer}>
+          <button className={styles.startBtn} onClick={onClose}>
+            Start drawing
+          </button>
+          <span className={styles.dismiss}>or tap anywhere to dismiss · ? to reopen</span>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { ftToInput, parseFtIn } from '../../utils/geometry';
+import { useState, useId } from 'react';
+import { formatFeet, parseFtIn } from '../../utils/geometry';
 import styles from './FtInInput.module.css';
 
 type Props = {
@@ -13,55 +13,46 @@ type Props = {
 /**
  * An input that displays and accepts feet/inches notation.
  * Shows e.g. "5' 6"" and accepts: 5'6", 5'6, 5 6, 6", 5.5, etc.
+ * Uses a draft pattern: shows the prop value when not focused,
+ * and the user's typed value while focused.
  */
 export function FtInInput({ value, onChange, min = 0.5, label, testId }: Props) {
-  const [raw, setRaw] = useState(ftToInput(value));
-  const [invalid, setInvalid] = useState(false);
-  const isFocused = useRef(false);
+  const hintId = useId();
+  const [draft, setDraft] = useState<string | null>(null);
 
-  // Sync display when value changes externally (but not while editing)
-  useEffect(() => {
-    if (!isFocused.current) {
-      setRaw(ftToInput(value));
-      setInvalid(false);
-    }
-  }, [value]);
-
-  function handleFocus() {
-    isFocused.current = true;
-  }
+  const displayValue = draft ?? formatFeet(value);
 
   function commit() {
-    isFocused.current = false;
-    const parsed = parseFtIn(raw);
+    if (draft === null) return;
+    const parsed = parseFtIn(draft);
     if (parsed !== null && parsed >= min) {
-      setInvalid(false);
-      setRaw(ftToInput(parsed));
       onChange(parsed);
-    } else {
-      setInvalid(true);
-      // Reset to last valid value
-      setRaw(ftToInput(value));
-      setInvalid(false);
     }
+    setDraft(null);
   }
 
   return (
     <label className={styles.field}>
       <span className={styles.label}>{label}</span>
       <input
-        className={`${styles.input} ${invalid ? styles.invalid : ''}`}
+        className={styles.input}
         type="text"
         inputMode="decimal"
-        value={raw}
+        value={displayValue}
         placeholder={`e.g. 10' 6"`}
-        onFocus={handleFocus}
-        onChange={e => { setRaw(e.target.value); setInvalid(false); }}
+        aria-describedby={hintId}
+        onFocus={() => setDraft(formatFeet(value))}
+        onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') commit(); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+        }}
         data-testid={testId}
         autoComplete="off"
       />
+      <span id={hintId} className={styles.hint}>
+        Accepts: 10&apos; 6&quot;, 10&apos;6, 10.5, or 6&quot;
+      </span>
     </label>
   );
 }

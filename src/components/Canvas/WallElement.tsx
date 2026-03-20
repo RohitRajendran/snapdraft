@@ -11,6 +11,7 @@ import {
   findNearestEndpoint,
   distance,
   SNAP_RADIUS_FT,
+  getWallSnapIncrement,
 } from '../../utils/geometry';
 
 function moveOtherSelected(
@@ -224,10 +225,11 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
                 const rawFt = { x: pxToFt(node.x()), y: pxToFt(node.y()) };
                 const otherEndpoints = getOtherEndpoints(targetIdx);
                 const nearest = findNearestEndpoint(rawFt, otherEndpoints);
+                const snapIncrement = getWallSnapIncrement(Boolean(e.evt.shiftKey));
                 setEndpointSnapTarget(nearest ?? null);
                 const snappedPos = nearest ?? {
-                  x: snapToGrid(rawFt.x),
-                  y: snapToGrid(rawFt.y),
+                  x: snapToGrid(rawFt.x, snapIncrement),
+                  y: snapToGrid(rawFt.y, snapIncrement),
                 };
                 setDraggingEndpoint({ idx: targetIdx, pos: snappedPos });
               }}
@@ -251,10 +253,11 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
                 // If connected, redirect the resize to the OTHER (free) endpoint
                 const resolvedIdx = connected ? (idx === 0 ? wall.points.length - 1 : 0) : idx;
                 const otherEndpoints = getOtherEndpoints(resolvedIdx);
+                const snapIncrement = getWallSnapIncrement(Boolean(e.evt.shiftKey));
 
                 const snapped = findNearestEndpoint(rawFt, otherEndpoints) ?? {
-                  x: snapToGrid(rawFt.x),
-                  y: snapToGrid(rawFt.y),
+                  x: snapToGrid(rawFt.x, snapIncrement),
+                  y: snapToGrid(rawFt.y, snapIncrement),
                 };
 
                 const newPoints = wall.points.map((p, i) => (i === resolvedIdx ? snapped : p));

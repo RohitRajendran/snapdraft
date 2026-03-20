@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useFloorplanStore } from '../../store/useFloorplanStore';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import styles from './FloorplanManager.module.css';
 
 type Props = {
@@ -11,6 +12,10 @@ export function FloorplanManager({ onClose }: Props) {
     useFloorplanStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = 'floorplan-manager-title';
+
+  useFocusTrap(panelRef, onClose);
 
   function handleCreate() {
     createPlan('Untitled Plan');
@@ -33,26 +38,28 @@ export function FloorplanManager({ onClose }: Props) {
   }
 
   return (
-    <div
-      className={styles.backdrop}
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Floor plans"
-      data-testid="floorplan-manager"
-    >
-      <div className={styles.panel} onClick={e => e.stopPropagation()}>
+    <div className={styles.backdrop} onClick={onClose} data-testid="floorplan-manager">
+      <div
+        ref={panelRef}
+        className={styles.panel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.header}>
-          <span className={styles.title}>Floor Plans</span>
-          <button className={styles.close} onClick={onClose} aria-label="Close">✕</button>
+          <h2 id={titleId} className={styles.title}>
+            Floor Plans
+          </h2>
+          <button className={styles.close} onClick={onClose} aria-label="Close floor plans">
+            ✕
+          </button>
         </div>
 
-        <div className={styles.list}>
-          {plans.length === 0 && (
-            <p className={styles.empty}>No plans yet. Create one below.</p>
-          )}
-          {plans.map(plan => (
-            <div
+        <ul className={styles.list} role="list">
+          {plans.length === 0 && <li className={styles.empty}>No plans yet. Create one below.</li>}
+          {plans.map((plan) => (
+            <li
               key={plan.id}
               className={`${styles.item} ${plan.id === activeId ? styles.active : ''}`}
             >
@@ -61,9 +68,11 @@ export function FloorplanManager({ onClose }: Props) {
                   className={styles.nameInput}
                   value={editingName}
                   autoFocus
-                  onChange={e => setEditingName(e.target.value)}
+                  maxLength={50}
+                  aria-label={`Rename plan: ${plan.name}`}
+                  onChange={(e) => setEditingName(e.target.value)}
                   onBlur={() => commitRename(plan.id)}
-                  onKeyDown={e => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter') commitRename(plan.id);
                     if (e.key === 'Escape') setEditingId(null);
                   }}
@@ -74,6 +83,8 @@ export function FloorplanManager({ onClose }: Props) {
                   className={styles.name}
                   onClick={() => handleSelect(plan.id)}
                   onDoubleClick={() => startRename(plan.id, plan.name)}
+                  aria-label={plan.id === activeId ? `${plan.name} (active)` : plan.name}
+                  aria-current={plan.id === activeId ? 'true' : undefined}
                   data-testid={`plan-${plan.id}`}
                 >
                   {plan.name}
@@ -83,24 +94,28 @@ export function FloorplanManager({ onClose }: Props) {
                 <button
                   className={styles.actionBtn}
                   onClick={() => startRename(plan.id, plan.name)}
-                  aria-label="Rename"
+                  aria-label={`Rename "${plan.name}"`}
                   title="Rename"
                 >
-                  ✎
+                  ✏
                 </button>
                 <button
                   className={styles.actionBtn}
-                  onClick={() => deletePlan(plan.id)}
-                  aria-label="Delete"
+                  onClick={() => {
+                    if (window.confirm(`Delete "${plan.name}"? This cannot be undone.`)) {
+                      deletePlan(plan.id);
+                    }
+                  }}
+                  aria-label={`Delete "${plan.name}"`}
                   title="Delete"
                   data-testid={`delete-plan-${plan.id}`}
                 >
                   ✕
                 </button>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
 
         <button className={styles.createBtn} onClick={handleCreate} data-testid="create-plan">
           + New Floor Plan

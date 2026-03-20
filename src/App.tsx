@@ -10,7 +10,12 @@ import { useFloorplanStore } from './store/useFloorplanStore';
 import styles from './App.module.css';
 
 export default function App() {
-  const [showHelp, setShowHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState(() => {
+    if (localStorage.getItem('snapdraft_help_seen')) return false;
+    localStorage.setItem('snapdraft_help_seen', '1');
+    return true;
+  });
+
   const { plans, createPlan, activeId } = useFloorplanStore();
 
   // Create a default plan on first load
@@ -20,20 +25,11 @@ export default function App() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Show help on very first visit
-  useEffect(() => {
-    const seen = localStorage.getItem('snapdraft_help_seen');
-    if (!seen) {
-      setShowHelp(true);
-      localStorage.setItem('snapdraft_help_seen', '1');
-    }
-  }, []);
-
   // Keyboard shortcut for help
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement) return;
-      if (e.key === '?') setShowHelp(v => !v);
+      if (e.key === '?') setShowHelp((v) => !v);
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

@@ -35,6 +35,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #2c2c2c;
+  margin: 0;
 }
 
 .close {
@@ -46,6 +47,16 @@
   min-height: 44px;
   min-width: 44px;
   touch-action: manipulation;
+  border-radius: 6px;
+}
+
+.close:hover {
+  background: #ece8e0;
+}
+
+.close:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
 }
 
 .list {
@@ -54,6 +65,9 @@
   gap: 6px;
   overflow-y: auto;
   flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .empty {
@@ -88,6 +102,16 @@
   text-align: left;
   padding: 4px;
   min-height: 44px;
+  border-radius: 4px;
+}
+
+.name:hover {
+  background: #ece8e0;
+}
+
+.name:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
 }
 
 .nameInput {
@@ -99,8 +123,12 @@
   font-size: 13px;
   padding: 4px 8px;
   color: #2c2c2c;
-  outline: none;
   min-height: 44px;
+}
+
+.nameInput:focus {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 1px;
 }
 
 .actions {
@@ -111,19 +139,24 @@
 .actionBtn {
   background: none;
   border: none;
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
-  color: #5a5a5a;
+  color: #2c2c2c;
   padding: 4px 8px;
   min-height: 44px;
-  min-width: 36px;
+  min-width: 44px;
   touch-action: manipulation;
   border-radius: 4px;
 }
 
 .actionBtn:hover {
   background: #e0dcd4;
-  color: #2c2c2c;
+  color: #1a1a1a;
+}
+
+.actionBtn:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
 }
 
 .createBtn {
@@ -142,4 +175,9 @@
 
 .createBtn:hover {
   background: #3a3a3a;
+}
+
+.createBtn:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
 }

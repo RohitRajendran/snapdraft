@@ -7,7 +7,6 @@ export type Wall = {
   id: string;
   type: 'wall';
   points: Point[]; // chain of connected points
-  thickness: number; // in feet, default 0.5 (6 inches)
 };
 
 export type Box = {
@@ -23,7 +22,7 @@ export type Box = {
 
 export type Element = Wall | Box;
 
-export type ToolType = 'select' | 'wall' | 'box';
+export type ToolType = 'select' | 'wall' | 'box' | 'measure';
 
 export type FloorPlan = {
   id: string;

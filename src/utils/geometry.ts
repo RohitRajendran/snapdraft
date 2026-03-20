@@ -1,9 +1,12 @@
-import type { Point } from '../types';
+import type { Element, Point } from '../types';
 
 export const PIXELS_PER_FOOT = 40;
-export const WALL_THICKNESS_FT = 0.5;
 export const SNAP_RADIUS_FT = 0.4;
-export const HALF_SNAP_MODIFIER = 0.5;
+export const GRID_SNAP_FT = 1;
+export const WALL_SNAP_FT = 1 / 12;
+export const FINE_WALL_SNAP_FT = 1 / 48;
+export const NUDGE_FT = 1 / 12; // Arrow key nudge: 1 inch
+export const FINE_NUDGE_FT = 1 / 48; // Shift+Arrow key nudge: 1/4 inch
 
 export function ftToPx(ft: number): number {
   return ft * PIXELS_PER_FOOT;
@@ -13,16 +16,23 @@ export function pxToFt(px: number): number {
   return px / PIXELS_PER_FOOT;
 }
 
-export function snapToGrid(value: number, halfSnap = false): number {
-  const increment = halfSnap ? HALF_SNAP_MODIFIER : 1;
+export function snapToGrid(value: number, increment = GRID_SNAP_FT): number {
   return Math.round(value / increment) * increment;
 }
 
-export function snapPointToGrid(point: Point, halfSnap = false): Point {
+export function snapPointToGrid(point: Point, increment = GRID_SNAP_FT): Point {
   return {
-    x: snapToGrid(point.x, halfSnap),
-    y: snapToGrid(point.y, halfSnap),
+    x: snapToGrid(point.x, increment),
+    y: snapToGrid(point.y, increment),
   };
+}
+
+export function getWallSnapIncrement(fine = false): number {
+  return fine ? FINE_WALL_SNAP_FT : WALL_SNAP_FT;
+}
+
+export function snapWallPoint(point: Point, fine = false): Point {
+  return snapPointToGrid(point, getWallSnapIncrement(fine));
 }
 
 export function distance(a: Point, b: Point): number {
@@ -32,7 +42,7 @@ export function distance(a: Point, b: Point): number {
 export function findNearestEndpoint(
   point: Point,
   endpoints: Point[],
-  radiusFt = SNAP_RADIUS_FT
+  radiusFt = SNAP_RADIUS_FT,
 ): Point | null {
   let nearest: Point | null = null;
   let minDist = radiusFt;
@@ -44,10 +54,6 @@ export function findNearestEndpoint(
     }
   }
   return nearest;
-}
-
-export function segmentLength(a: Point, b: Point): number {
-  return distance(a, b);
 }
 
 /**
@@ -62,6 +68,45 @@ export function nearestPointOnSegment(p: Point, a: Point, b: Point): Point {
   return { x: a.x + t * dx, y: a.y + t * dy };
 }
 
+/**
+ * BFS from `movedPt` across wall endpoint connections.
+ * Returns IDs of all walls reachable from `movedPt`, excluding `excludeId`.
+ * Used to cascade translations when a wall's endpoint moves due to a resize.
+ *
+ * For open chains (L, U shapes) every connected wall is returned.
+ * For closed rooms the cycle is detected via the visited set and the last
+ * wall in the cycle is included but will end up disconnected from the
+ * resized wall's fixed endpoint — the trade-off of a simple translate cascade.
+ */
+export function collectConnectedWallIds(
+  movedPt: Point,
+  excludeId: string,
+  allElements: Element[],
+): string[] {
+  const visited = new Set<string>([excludeId]);
+  const queue: Point[] = [movedPt];
+  const result: string[] = [];
+
+  while (queue.length > 0) {
+    const pt = queue.shift()!;
+    for (const el of allElements) {
+      if (el.type !== 'wall' || visited.has(el.id)) continue;
+      for (const ep of el.points) {
+        if (distance(ep, pt) < 0.01) {
+          visited.add(el.id);
+          result.push(el.id);
+          // Cascade further: queue all OTHER endpoints of this wall
+          for (const otherEp of el.points) {
+            if (distance(otherEp, ep) >= 0.01) queue.push(otherEp);
+          }
+          break;
+        }
+      }
+    }
+  }
+  return result;
+}
+
 export function formatFeet(ft: number): string {
   const wholeFeet = Math.floor(ft);
   const inches = Math.round((ft - wholeFeet) * 12);
@@ -72,20 +117,15 @@ export function formatFeet(ft: number): string {
 }
 
 /**
- * Format feet as an editable ft/in string for input fields.
- * e.g. 5.5 → "5' 6""
- */
-export function ftToInput(ft: number): string {
-  return formatFeet(ft);
-}
-
-/**
  * Parse a ft/in string entered by the user into decimal feet.
  * Supports: 5'6", 5' 6", 5'6, 5', 6", 5.5, 5 6
  * Returns null if unparseable.
  */
 export function parseFtIn(input: string): number | null {
-  const s = input.trim().replace(/\u2019/g, "'").replace(/\u201D/g, '"');
+  const s = input
+    .trim()
+    .replace(/\u2019/g, "'")
+    .replace(/\u201D/g, '"');
   if (!s) return null;
 
   // 5'6" or 5' 6" or 5'6 (feet and inches)

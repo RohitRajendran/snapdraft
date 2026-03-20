@@ -19,6 +19,7 @@ import {
   PIXELS_PER_FOOT,
   NUDGE_FT,
   FINE_NUDGE_FT,
+  getWallSnapIncrement,
 } from '../../utils/geometry';
 import type { Point, Element } from '../../types';
 import {
@@ -67,7 +68,7 @@ export function DrawingCanvas() {
   const [dimInput, setDimInput] = useState('');
   const [dimInputError, setDimInputError] = useState(false);
   const dimInputRef = useRef<HTMLInputElement>(null);
-  const lastTapRef = useRef<number>(0);
+  const lastWallTapRef = useRef<{ time: number; point: Point | null }>({ time: 0, point: null });
 
   const { activePlan, addElement, updateElements, deleteElements } = useFloorplanStore();
   const {
@@ -180,6 +181,8 @@ export function DrawingCanvas() {
         clearSelection();
         clearMeasurement();
         setDimInput('');
+        dimInputRef.current?.blur();
+        lastWallTapRef.current = { time: 0, point: null };
         return;
       }
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -249,6 +252,12 @@ export function DrawingCanvas() {
     [],
   );
 
+  const isCanvasBackgroundTarget = useCallback((target: Konva.Node) => {
+    const stage = stageRef.current;
+    if (!stage) return false;
+    return target === stage || target.getParent() === stage;
+  }, []);
+
   // ── Pointer events ──────────────────────────────────────────────
 
   function handlePointerDown(e: Konva.KonvaEventObject<PointerEvent>) {
@@ -257,7 +266,7 @@ export function DrawingCanvas() {
 
     if (activeTool === 'select') {
       // Only clear selection when clicking empty canvas
-      if (e.target === stageRef.current) clearSelection();
+      if (isCanvasBackgroundTarget(e.target)) clearSelection();
       setPointerDown({ pos: world, time: Date.now() });
       return;
     }
@@ -267,7 +276,7 @@ export function DrawingCanvas() {
     setPointerDown({ pos: world, time: Date.now() });
   }
 
-  function handlePointerMove() {
+  function handlePointerMove(e: Konva.KonvaEventObject<PointerEvent>) {
     const world = getPointerWorld();
     if (!world) return;
 
@@ -278,7 +287,12 @@ export function DrawingCanvas() {
       setCursorSnappedToSegment(false);
       setCursorSnappedToAxis(false);
     } else {
-      const { point, snappedToEndpoint, snappedToSegment, snappedToAxis } = snapWithInfo(world);
+      const gridIncrement =
+        activeTool === 'wall' ? getWallSnapIncrement(Boolean(e.evt.shiftKey)) : undefined;
+      const { point, snappedToEndpoint, snappedToSegment, snappedToAxis } = snapWithInfo(
+        world,
+        gridIncrement,
+      );
       setCursor(point);
       setCursorSnappedToEndpoint(snappedToEndpoint);
       setCursorSnappedToSegment(snappedToSegment);
@@ -302,7 +316,8 @@ export function DrawingCanvas() {
 
     const dragDist = distance(pointerDown.pos, world);
     const isDrag = dragDist > DRAG_THRESHOLD_FT;
-    const snappedEnd = snap(world);
+    const wallSnapIncrement = getWallSnapIncrement(Boolean(e.evt.shiftKey));
+    const snappedEnd = activeTool === 'wall' ? snap(world, wallSnapIncrement) : snap(world);
 
     if (activeTool === 'measure') {
       // Use raw world coords — measure tool intentionally bypasses snapping
@@ -317,23 +332,33 @@ export function DrawingCanvas() {
     }
 
     if (activeTool === 'wall') {
-      // Double-tap to end wall chain
       const now = Date.now();
-      if (now - lastTapRef.current < DOUBLE_TAP_MS) {
+      const previousTap = lastWallTapRef.current;
+      const didDoubleTapLastEndpoint =
+        isChainArmed &&
+        !isDrag &&
+        chainPoints.length > 0 &&
+        previousTap.point != null &&
+        now - previousTap.time < DOUBLE_TAP_MS &&
+        distance(previousTap.point, snappedEnd) < CLOSE_CHAIN_RADIUS_FT &&
+        distance(chainPoints[chainPoints.length - 1], snappedEnd) < CLOSE_CHAIN_RADIUS_FT;
+
+      if (didDoubleTapLastEndpoint) {
         endChain();
+        setDimInput('');
         setPointerDown(null);
         setMarquee(null);
-        lastTapRef.current = 0;
+        lastWallTapRef.current = { time: 0, point: null };
         return;
       }
-      lastTapRef.current = now;
+      lastWallTapRef.current = { time: now, point: snappedEnd };
       setDimInput(''); // clear typed value when placing via click
-      handleWallInput(snappedEnd, snap(pointerDown.pos));
+      handleWallInput(snappedEnd, snap(pointerDown.pos, wallSnapIncrement));
     } else if (activeTool === 'box') {
-      lastTapRef.current = 0;
+      lastWallTapRef.current = { time: 0, point: null };
       if (isDrag) handleBoxDraw(snap(pointerDown.pos), snappedEnd);
     } else if (activeTool === 'select') {
-      lastTapRef.current = 0;
+      lastWallTapRef.current = { time: 0, point: null };
       if (isDrag && marquee) {
         const rx = Math.min(marquee.start.x, marquee.end.x);
         const ry = Math.min(marquee.start.y, marquee.end.y);
@@ -341,7 +366,7 @@ export function DrawingCanvas() {
         const rh = Math.abs(marquee.end.y - marquee.start.y);
         const hit = elements.filter((el) => elementOverlapsRect(el, rx, ry, rw, rh));
         setSelectedIds(new Set(hit.map((el) => el.id)));
-      } else if (e.target === stageRef.current) {
+      } else if (isCanvasBackgroundTarget(e.target)) {
         clearSelection();
       }
       setMarquee(null);
@@ -803,9 +828,13 @@ export function DrawingCanvas() {
             }
             if (e.key === 'Escape') {
               e.preventDefault();
+              endChain();
+              clearMeasurement();
+              clearSelection();
               setDimInput('');
               setDimInputError(false);
               dimInputRef.current?.blur();
+              lastWallTapRef.current = { time: 0, point: null };
             }
             // Don't let other keys (S/W/B) change the tool while typing
             e.stopPropagation();

@@ -1,20 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { collectEndpoints, findNearestOnSegments, axisSnap } from '../../hooks/useSnap';
-import { findNearestEndpoint } from '../../utils/geometry';
+import { findNearestEndpoint, WALL_SNAP_FT, FINE_WALL_SNAP_FT } from '../../utils/geometry';
 import type { Element } from '../../types';
 
 const wall = (points: { x: number; y: number }[]): Element => ({
   id: 'w1',
   type: 'wall',
   points,
-  thickness: 0.5,
 });
 
 describe('collectEndpoints', () => {
   it('returns all wall endpoints', () => {
     const elements: Element[] = [
-      wall([{ x: 0, y: 0 }, { x: 5, y: 0 }]),
-      wall([{ x: 5, y: 0 }, { x: 5, y: 4 }]),
+      wall([
+        { x: 0, y: 0 },
+        { x: 5, y: 0 },
+      ]),
+      wall([
+        { x: 5, y: 0 },
+        { x: 5, y: 4 },
+      ]),
     ];
     const pts = collectEndpoints(elements);
     expect(pts).toHaveLength(4);
@@ -36,7 +41,10 @@ describe('collectEndpoints', () => {
 
 describe('findNearestOnSegments', () => {
   const elements: Element[] = [
-    wall([{ x: 0, y: 0 }, { x: 10, y: 0 }]),
+    wall([
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+    ]),
   ];
 
   it('snaps cursor to nearest point on a horizontal wall segment', () => {
@@ -73,8 +81,20 @@ describe('findNearestOnSegments', () => {
 
   it('snaps to the closer of two overlapping segments', () => {
     const twoWalls: Element[] = [
-      { ...wall([{ x: 0, y: 0 }, { x: 10, y: 0 }]), id: 'w1' },
-      { ...wall([{ x: 0, y: 0.3 }, { x: 10, y: 0.3 }]), id: 'w2' },
+      {
+        ...wall([
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+        ]),
+        id: 'w1',
+      },
+      {
+        ...wall([
+          { x: 0, y: 0.3 },
+          { x: 10, y: 0.3 },
+        ]),
+        id: 'w2',
+      },
     ];
     // Cursor at (5, 0.1) — closer to y=0 wall (dist 0.1) than y=0.3 wall (dist 0.2)
     const result = findNearestOnSegments({ x: 5, y: 0.1 }, twoWalls);
@@ -86,8 +106,14 @@ describe('snap priority', () => {
   it('endpoint snap takes priority over segment snap', () => {
     // Wall endpoint at (5, 0), wall segment also near (5, 0.1)
     const elements: Element[] = [
-      wall([{ x: 0, y: 0 }, { x: 5, y: 0 }]),
-      wall([{ x: 0, y: 0.1 }, { x: 10, y: 0.1 }]),
+      wall([
+        { x: 0, y: 0 },
+        { x: 5, y: 0 },
+      ]),
+      wall([
+        { x: 0, y: 0.1 },
+        { x: 10, y: 0.1 },
+      ]),
     ];
     // cursor near (5, 0.05) — within range of both endpoint (5,0) and segment y=0.1
     // collectEndpoints finds (5,0) first
@@ -105,7 +131,7 @@ describe('axisSnap', () => {
     const result = axisSnap({ x: 10, y: 0.2 }, origin);
     expect(result).not.toBeNull();
     expect(result!.y).toBeCloseTo(origin.y); // Y locked to off-grid value
-    expect(result!.x).toBeCloseTo(10);       // X grid-snapped
+    expect(result!.x).toBeCloseTo(10); // X grid-snapped
   });
 
   it('locks X to origin when cursor is nearly vertical', () => {
@@ -113,7 +139,7 @@ describe('axisSnap', () => {
     const result = axisSnap({ x: 6.4, y: 5 }, origin);
     expect(result).not.toBeNull();
     expect(result!.x).toBeCloseTo(origin.x); // X locked to off-grid value
-    expect(result!.y).toBeCloseTo(5);        // Y grid-snapped
+    expect(result!.y).toBeCloseTo(5); // Y grid-snapped
   });
 
   it('returns null when cursor is clearly diagonal', () => {
@@ -135,5 +161,19 @@ describe('axisSnap', () => {
     const result = axisSnap({ x: 5, y: 6.4 }, offGridOrigin);
     expect(result).not.toBeNull();
     expect(result!.y).toBeCloseTo(76 / 12); // exact off-grid value preserved
+  });
+
+  it('uses custom inch increments for wall drawing axis snap', () => {
+    const result = axisSnap({ x: 1.1, y: 0.1 }, { x: 0, y: 0 }, WALL_SNAP_FT);
+    expect(result).not.toBeNull();
+    expect(result!.x).toBeCloseTo(13 / 12);
+    expect(result!.y).toBe(0);
+  });
+
+  it('uses custom quarter-inch increments for fine wall drawing axis snap', () => {
+    const result = axisSnap({ x: 1.1, y: 0.1 }, { x: 0, y: 0 }, FINE_WALL_SNAP_FT);
+    expect(result).not.toBeNull();
+    expect(result!.x).toBeCloseTo(53 / 48);
+    expect(result!.y).toBe(0);
   });
 });

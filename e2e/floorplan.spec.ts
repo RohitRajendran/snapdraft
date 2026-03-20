@@ -55,6 +55,27 @@ async function getActivePlanElements(page: Page) {
   });
 }
 
+async function clickWallMidpoint(page: Page, wallIndex = 0) {
+  const elements = await getActivePlanElements(page);
+  const walls = elements.filter(
+    (element: {
+      type: string;
+      points?: Array<{ x: number; y: number }>;
+    }) => element.type === 'wall' && element.points && element.points.length >= 2,
+  );
+  const wall = walls[wallIndex];
+  if (!wall || !wall.points) throw new Error(`Wall ${wallIndex} not found`);
+
+  const start = wall.points[0];
+  const end = wall.points[1];
+  const midpoint = {
+    x: (start.x + end.x) / 2,
+    y: (start.y + end.y) / 2,
+  };
+  const { box } = await canvasCenter(page);
+  await page.mouse.click(box.x + midpoint.x * 40, box.y + midpoint.y * 40);
+}
+
 // ─── App shell ───────────────────────────────────────────────────────────────
 
 test.describe('App shell', () => {
@@ -192,6 +213,15 @@ test.describe('Help overlay', () => {
     await page.getByTestId('help-overlay').click({ position: { x: 10, y: 10 } });
     await expect(page.getByTestId('help-overlay')).not.toBeVisible();
   });
+
+  test('shows browser save note and hides advanced help by default', async ({ page }) => {
+    await page.getByTestId('tool-help').click();
+    await expect(page.getByTestId('help-save-note')).toContainText(
+      'saved automatically in this browser',
+    );
+    await expect(page.getByText('Advanced shortcuts and tips')).toBeVisible();
+    await expect(page.getByText('Undo / Redo')).not.toBeVisible();
+  });
 });
 
 // ─── Floor plan management ────────────────────────────────────────────────────
@@ -287,8 +317,7 @@ test.describe('Box drawing', () => {
     await page.getByTestId('tool-select').click();
     await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
-    // Click far away from box
-    await page.mouse.click(centerX + 400, centerY + 400);
+    await page.getByTestId('drawing-canvas').click({ position: { x: 40, y: 40 } });
     await expect(page.getByTestId('properties-panel')).not.toBeVisible();
   });
 });
@@ -309,7 +338,7 @@ test.describe('Wall drawing', () => {
 
     // Select the wall
     await page.getByTestId('tool-select').click();
-    await page.mouse.click(cx, cy);
+    await clickWallMidpoint(page);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await expect(page.getByTestId('properties-panel')).toContainText('Wall');
   });
@@ -341,10 +370,44 @@ test.describe('Wall drawing', () => {
     // End chain and select the wall
     await page.keyboard.press('Escape');
     await page.getByTestId('tool-select').click();
-    await page.mouse.click(cx + 60, cy); // somewhere along the 5ft wall
+    await clickWallMidpoint(page);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     // Length should be 5'
     await expect(page.getByTestId('wall-length-input')).toHaveValue("5'");
+  });
+
+  test('wall drawing snaps to inches by default', async ({ page }) => {
+    await page.getByTestId('tool-wall').click();
+    const canvas = page.getByTestId('drawing-canvas');
+    await canvas.click({ position: { x: 40, y: 40 } });
+    await canvas.click({ position: { x: 88, y: 40 } });
+    await page.keyboard.press('Escape');
+
+    const elements = await getActivePlanElements(page);
+    const wall = elements.find(
+      (element: { type: string; points?: Array<{ x: number; y: number }> }) =>
+        element.type === 'wall',
+    );
+    expect(wall).toBeTruthy();
+    expect(wall.points[0].x).toBeCloseTo(1);
+    expect(wall.points[1].x).toBeCloseTo(26 / 12);
+  });
+
+  test('holding Shift snaps wall drawing to quarter inches', async ({ page }) => {
+    await page.getByTestId('tool-wall').click();
+    const canvas = page.getByTestId('drawing-canvas');
+    await canvas.click({ position: { x: 40, y: 40 }, modifiers: ['Shift'] });
+    await canvas.click({ position: { x: 88, y: 40 }, modifiers: ['Shift'] });
+    await page.keyboard.press('Escape');
+
+    const elements = await getActivePlanElements(page);
+    const wall = elements.find(
+      (element: { type: string; points?: Array<{ x: number; y: number }> }) =>
+        element.type === 'wall',
+    );
+    expect(wall).toBeTruthy();
+    expect(wall.points[0].x).toBeCloseTo(1);
+    expect(wall.points[1].x).toBeCloseTo(106 / 48);
   });
 
   test('Escape ends wall chain', async ({ page }) => {
@@ -360,7 +423,7 @@ test.describe('Wall drawing', () => {
     const { cx, cy } = await canvasCenter(page);
     await drawWall(page, cx - 80, cy, cx + 80, cy);
     await page.getByTestId('tool-select').click();
-    await page.mouse.click(cx, cy);
+    await clickWallMidpoint(page);
     const lengthInput = page.getByTestId('wall-length-input');
     await lengthInput.fill("10'");
     await lengthInput.press('Enter');
@@ -371,7 +434,7 @@ test.describe('Wall drawing', () => {
     const { cx, cy } = await canvasCenter(page);
     await drawWall(page, cx - 80, cy, cx + 80, cy);
     await page.getByTestId('tool-select').click();
-    await page.mouse.click(cx, cy);
+    await clickWallMidpoint(page);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await page.getByTestId('delete-element').click();
     await expect(page.getByTestId('properties-panel')).not.toBeVisible();
