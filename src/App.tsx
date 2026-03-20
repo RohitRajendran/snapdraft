@@ -7,6 +7,7 @@ import { HelpOverlay } from './components/HelpOverlay/HelpOverlay';
 import { ScaleBar } from './components/Canvas/ScaleBar/ScaleBar';
 import { MultiSelectBar } from './components/Canvas/MultiSelectBar/MultiSelectBar';
 import { useFloorplanStore } from './store/useFloorplanStore/useFloorplanStore';
+import { decodePlanFromUrl } from './utils/storage/storage';
 import styles from './App.module.css';
 
 export default function App() {
@@ -16,7 +17,20 @@ export default function App() {
     return true;
   });
 
-  const { plans, createPlan, activeId } = useFloorplanStore();
+  const { plans, createPlan, importPlan, activeId } = useFloorplanStore();
+
+  // Import plan from URL on first load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const planParam = params.get('plan');
+    if (planParam) {
+      const plan = decodePlanFromUrl(window.location.href);
+      if (plan) {
+        importPlan(plan);
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Create a default plan on first load
   useEffect(() => {

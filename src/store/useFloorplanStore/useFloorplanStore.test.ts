@@ -218,6 +218,118 @@ describe('activePlan', () => {
   });
 });
 
+describe('importPlan', () => {
+  it('adds the plan to the list and makes it active', () => {
+    const incoming: import('../../types').FloorPlan = {
+      id: 'orig-id',
+      version: 1,
+      name: 'Imported',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      elements: [
+        {
+          id: 'w1',
+          type: 'wall',
+          points: [
+            { x: 0, y: 0 },
+            { x: 5, y: 0 },
+          ],
+        },
+      ],
+    };
+    const countBefore = useFloorplanStore.getState().plans.length;
+    const newId = useFloorplanStore.getState().importPlan(incoming);
+
+    const plans = useFloorplanStore.getState().plans;
+    expect(plans.length).toBe(countBefore + 1);
+    expect(useFloorplanStore.getState().activeId).toBe(newId);
+  });
+
+  it('assigns a new id (does not reuse original id)', () => {
+    const incoming: import('../../types').FloorPlan = {
+      id: 'should-not-be-used',
+      version: 1,
+      name: 'Imported',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      elements: [],
+    };
+    const newId = useFloorplanStore.getState().importPlan(incoming);
+    expect(newId).not.toBe('should-not-be-used');
+    const plan = useFloorplanStore.getState().plans.find((p) => p.id === newId);
+    expect(plan).toBeDefined();
+  });
+
+  it('preserves name and elements from incoming plan', () => {
+    const wall: import('../../types').Element = {
+      id: 'w1',
+      type: 'wall',
+      points: [
+        { x: 0, y: 0 },
+        { x: 5, y: 0 },
+      ],
+    };
+    const incoming: import('../../types').FloorPlan = {
+      id: 'orig',
+      version: 1,
+      name: 'My Shared Plan',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      elements: [wall],
+    };
+    const newId = useFloorplanStore.getState().importPlan(incoming);
+    const plan = useFloorplanStore.getState().plans.find((p) => p.id === newId)!;
+    expect(plan.name).toBe('My Shared Plan');
+    expect(plan.elements).toHaveLength(1);
+    expect(plan.elements[0].id).toBe('w1');
+  });
+
+  it('sets version to FLOORPLAN_VERSION', () => {
+    const incoming: import('../../types').FloorPlan = {
+      id: 'orig',
+      version: 0,
+      name: 'Old Plan',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      elements: [],
+    };
+    const newId = useFloorplanStore.getState().importPlan(incoming);
+    const plan = useFloorplanStore.getState().plans.find((p) => p.id === newId)!;
+    expect(plan.version).toBe(FLOORPLAN_VERSION);
+  });
+
+  it('resets undo/redo history', () => {
+    useFloorplanStore.getState().addElement(wall());
+    expect(useFloorplanStore.getState().past.length).toBeGreaterThan(0);
+
+    const incoming: import('../../types').FloorPlan = {
+      id: 'orig',
+      version: 1,
+      name: 'Imported',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      elements: [],
+    };
+    useFloorplanStore.getState().importPlan(incoming);
+    expect(useFloorplanStore.getState().past).toHaveLength(0);
+    expect(useFloorplanStore.getState().future).toHaveLength(0);
+  });
+
+  it('persists the new plan to localStorage', () => {
+    const incoming: import('../../types').FloorPlan = {
+      id: 'orig',
+      version: 1,
+      name: 'Persisted Import',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      elements: [],
+    };
+    const newId = useFloorplanStore.getState().importPlan(incoming);
+    const stored = JSON.parse(localStorage.getItem('snapdraft_floorplans')!);
+    expect(stored.find((p: { id: string }) => p.id === newId)?.name).toBe('Persisted Import');
+  });
+});
+
 describe('persistence to localStorage', () => {
   it('saves and reloads plans', () => {
     const id = useFloorplanStore.getState().activeId!;

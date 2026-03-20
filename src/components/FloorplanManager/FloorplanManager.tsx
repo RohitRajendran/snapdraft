@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react';
-import { X, Pencil, Plus } from 'lucide-react';
+import { X, Pencil, Plus, Upload, Share2, Trash2 } from 'lucide-react';
 import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanStore';
 import { useFocusTrap } from '../../hooks/useFocusTrap/useFocusTrap';
+import { parseImportedPlan } from '../../utils/storage/storage';
+import type { FloorPlan } from '../../types';
+import { ShareModal } from './QrModal';
 import styles from './FloorplanManager.module.css';
 
 type Props = {
@@ -9,11 +12,14 @@ type Props = {
 };
 
 export function FloorplanManager({ onClose }: Props) {
-  const { plans, activeId, createPlan, deletePlan, renamePlan, setActivePlan } =
+  const { plans, activeId, createPlan, importPlan, deletePlan, renamePlan, setActivePlan } =
     useFloorplanStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
+  const [qrPlan, setQrPlan] = useState<FloorPlan | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const titleId = 'floorplan-manager-title';
 
   useFocusTrap(panelRef, onClose);
@@ -36,6 +42,30 @@ export function FloorplanManager({ onClose }: Props) {
   function commitRename(id: string) {
     if (editingName.trim()) renamePlan(id, editingName.trim());
     setEditingId(null);
+  }
+
+  function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const raw = JSON.parse(event.target?.result as string) as unknown;
+        const plan = parseImportedPlan(raw);
+        if (plan) {
+          importPlan(plan);
+          setImportError(null);
+          onClose();
+        } else {
+          setImportError('File is not a valid SnapDraft plan');
+        }
+      } catch {
+        setImportError('File is not valid JSON');
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
   }
 
   return (
@@ -102,6 +132,15 @@ export function FloorplanManager({ onClose }: Props) {
                 </button>
                 <button
                   className={styles.actionBtn}
+                  onClick={() => setQrPlan(plan)}
+                  aria-label={`Share "${plan.name}"`}
+                  title="Share"
+                  data-testid={`share-plan-${plan.id}`}
+                >
+                  <Share2 size={14} />
+                </button>
+                <button
+                  className={styles.actionBtn}
                   onClick={() => {
                     if (window.confirm(`Delete "${plan.name}"? This cannot be undone.`)) {
                       deletePlan(plan.id);
@@ -111,17 +150,44 @@ export function FloorplanManager({ onClose }: Props) {
                   title="Delete"
                   data-testid={`delete-plan-${plan.id}`}
                 >
-                  <X size={14} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </li>
           ))}
         </ul>
 
-        <button className={styles.createBtn} onClick={handleCreate} data-testid="create-plan">
-          <Plus size={16} /> New Floor Plan
-        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          className={styles.hidden}
+          onChange={handleImportFile}
+          data-testid="import-file-input"
+        />
+
+        <div className={styles.footer}>
+          {importError && (
+            <p className={styles.importError} role="alert" data-testid="import-error">
+              {importError}
+            </p>
+          )}
+          <button
+            className={styles.importBtn}
+            onClick={() => {
+              setImportError(null);
+              fileInputRef.current?.click();
+            }}
+            data-testid="import-plan"
+          >
+            <Upload size={16} /> Import Plan
+          </button>
+          <button className={styles.createBtn} onClick={handleCreate} data-testid="create-plan">
+            <Plus size={16} /> New Floor Plan
+          </button>
+        </div>
       </div>
+      {qrPlan && <ShareModal plan={qrPlan} onClose={() => setQrPlan(null)} />}
     </div>
   );
 }
