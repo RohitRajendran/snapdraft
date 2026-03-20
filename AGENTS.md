@@ -80,7 +80,6 @@ type Wall = {
   id: string;
   type: 'wall';
   points: Point[];   // array of {x, y} in feet; consecutive pairs = segments
-  thickness: number; // default 0.5 ft (6 inches)
 };
 
 type Box = {
@@ -105,17 +104,22 @@ Wall chain state lives in `useToolStore` (`chainPoints`, `isChainArmed`). Switch
 
 ### Snap behavior
 
-- Default: snap to nearest whole foot
-- Shift held: snap to 0.5 ft (6 inches)
-- Endpoint snap: if cursor is within `SNAP_RADIUS_FT` of an existing wall endpoint, snaps to it
-- Snap is applied in `useSnap.ts`; raw world coords come from `getRelativePointerPosition()`
+Priority order (highest first):
+
+1. **Endpoint** — snaps to an existing wall endpoint within `SNAP_RADIUS_FT`
+2. **Wall centerline** — nearest point on any wall segment
+3. **Axis** — locks H or V from the active chain origin (only during wall drawing)
+4. **Grid** — nearest whole foot (or 0.5 ft when Shift is held)
+
+Snap is applied in `useSnap.ts`; raw world coords come from `getRelativePointerPosition()`.
 
 ### Zoom / pan
 
-- Scroll wheel or pinch: zoom toward cursor, clamped to `[0.25, 6]`
-- Two-finger drag: pan (handled by touch events on the stage)
+- **Pinch or Ctrl+scroll**: zoom toward cursor, clamped to `[0.25, 6]`
+- **Two-finger scroll (no Ctrl)**: pan — `wheel` event `deltaX`/`deltaY` applied directly to pan
+- Both handled in `handleWheel` via `e.evt.ctrlKey` to distinguish pinch from scroll
 - Grid adapts: 5ft grid below zoom 0.4, 1ft grid normal, 0.5ft grid above zoom 3
-- Stroke widths and dash sizes are divided by `zoom` so they appear constant on screen
+- UI chrome stroke widths (handles, indicators, grid lines) are divided by `zoom` so they appear constant on screen; wall strokes are NOT divided (they have real-world thickness)
 
 ### Ft/in input
 
@@ -141,11 +145,40 @@ Wall chain state lives in `useToolStore` (`chainPoints`, `isChainArmed`). Switch
 
 Unit tests live in `src/tests/unit/`. E2E tests in `e2e/`.
 
-Before writing a test, check if `data-testid` attributes exist on the target element. Add them if missing — don't select by text or class.
+**Tests are required for every code change.** When you fix a bug or add a feature, add or update tests in the same session — never defer to later. If a test would have caught the bug being fixed, write it. If a new user-visible behaviour was added, cover it.
 
-E2E `beforeEach` clears localStorage and reloads the page, then dismisses the help overlay with Escape. If a test relies on the help overlay itself, handle it explicitly.
+### What to test and where
 
-When adding a new geometry utility, add corresponding unit tests in `geometry.test.ts`.
+| Change type | Where to test |
+|---|---|
+| New geometry utility or snap function | `geometry.test.ts` or `useSnap.test.ts` (unit) |
+| Store action / state mutation | `useFloorplanStore.test.ts` or `useToolStore.test.ts` (unit) |
+| Bug fix in drawing logic (pointer events, chain, cancel) | E2E test in `e2e/` |
+| New UI interaction (button, keyboard shortcut, drag) | E2E test in `e2e/` |
+| Regression that's hard to E2E (edge-case math, snap priority) | Unit test |
+
+### Unit test rules
+
+- When adding a new geometry or snap utility, export it and add unit tests immediately.
+- Cover the happy path, edge cases (empty input, zero-length, out-of-range), and any priority/ordering logic (e.g. endpoint snap beats wall-edge snap beats segment snap).
+- Before writing a test, check if `data-testid` attributes exist on the target element. Add them if missing — don't select by text or class.
+
+### E2E test rules
+
+- E2E `beforeEach` clears localStorage and reloads the page, then dismisses the help overlay with Escape. If a test relies on the help overlay itself, handle it explicitly.
+- Cover user scenarios end-to-end: draw a wall, cancel mid-draw, place furniture against a wall, undo, rename a plan, etc.
+- When fixing a user-reported bug (e.g. "pressing Escape creates a dot", "Escape requires two presses"), add an E2E test that would have caught it.
+
+### Regression targets
+
+These areas have had bugs and must not regress — keep them covered:
+
+- **Wall chain cancel**: single Escape clears the chain with no element created, even when the dim input is focused.
+- **First click arms chain only**: clicking once in wall mode sets the start point but creates no wall element.
+- **Snap priority**: endpoint → wall centerline → axis → grid.
+- **Wall thickness rendering**: `strokeWidth` must NOT be divided by `zoom` for walls (only for UI chrome like handles and indicators).
+- **Coordinate system**: all stored values are in feet; no pixel values in state or on disk.
+- **Undo/redo**: mutations push to `past`; undo restores previous state; redo replays.
 
 ## What to avoid
 

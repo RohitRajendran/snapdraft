@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/packages/cspell-types/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "files": ["src/**/*.{ts,tsx}"],
+  "ignorePaths": ["node_modules", "dist", "*.min.js"],
+  "words": [
+    "floorplan",
+    "floorplans",
+    "konva",
+    "snapdraft",
+    "undos",
+    "unparseable",
+    "endpt",
+    "nanoid",
+    "zustand",
+    "vitest",
+    "testid",
+    "autofit",
+    "workbox",
+    "pinia",
+    "trackpad"
+  ],
+  "ignoreWords": [],
+  "import": ["@cspell/dict-typescript", "@cspell/dict-node"]
+}

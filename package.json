@@ -12,7 +12,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "spell:check": "cspell \"src/**/*.{ts,tsx}\" --no-progress",
+    "prepare": "husky"
   },
   "dependencies": {
     "konva": "^10.2.3",
@@ -21,6 +25,13 @@
     "react-dom": "^19.2.4",
     "react-konva": "^19.2.3",
     "zustand": "^5.0.12"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix",
+      "cspell --no-progress --no-must-find-files"
+    ]
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -33,14 +44,21 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/ui": "^4.1.0",
+    "cspell": "^9.7.0",
     "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.0.0",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.0",
+    "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.0"
   }
 }
