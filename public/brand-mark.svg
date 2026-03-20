@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#F5F0E8"/>
+  <text
+    x="256"
+    y="256"
+    text-anchor="middle"
+    dominant-baseline="central"
+    fill="#2F3137"
+    font-family="Courier New"
+    font-size="196"
+    font-weight="700"
+    letter-spacing="-0.09em"
+  >
+    SD
+  </text>
+</svg>

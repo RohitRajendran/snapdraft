@@ -7,12 +7,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['brand-mark.svg', 'favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'SnapDraft',
         short_name: 'SnapDraft',
         description: 'Quick floor plan sketching tool',
-        theme_color: '#863bff',
+        theme_color: '#f5f0e8',
         background_color: '#f5f0e8',
         display: 'standalone',
         orientation: 'any',
