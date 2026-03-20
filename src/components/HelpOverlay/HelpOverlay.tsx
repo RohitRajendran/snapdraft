@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import styles from './HelpOverlay.module.css';
 
@@ -86,19 +87,19 @@ function getHelpContent(profile: InputProfile) {
   const advancedShortcuts = [
     {
       action: 'Select tool',
-      hint: isTouchOnly ? 'Tap ↖' : supportsBoth ? 'S or tap ↖' : 'S',
+      hint: isTouchOnly ? 'Tap Select' : supportsBoth ? 'S or tap Select' : 'S',
     },
     {
       action: 'Wall tool',
-      hint: isTouchOnly ? 'Tap ✏' : supportsBoth ? 'W or tap ✏' : 'W',
+      hint: isTouchOnly ? 'Tap Wall' : supportsBoth ? 'W or tap Wall' : 'W',
     },
     {
       action: 'Box tool',
-      hint: isTouchOnly ? 'Tap ▭' : supportsBoth ? 'B or tap ▭' : 'B',
+      hint: isTouchOnly ? 'Tap Box' : supportsBoth ? 'B or tap Box' : 'B',
     },
     {
       action: 'Measure tool',
-      hint: isTouchOnly ? 'Tap ⌖' : supportsBoth ? 'M or tap ⌖' : 'M',
+      hint: isTouchOnly ? 'Tap Measure' : supportsBoth ? 'M or tap Measure' : 'M',
     },
     {
       action: 'Exact wall length',
@@ -181,7 +182,7 @@ export function HelpOverlay({ onClose }: Props) {
             SnapDraft
           </span>
           <button className={styles.close} onClick={onClose} aria-label="Close help">
-            ✕
+            <X size={16} />
           </button>
         </div>
         <p className={styles.subtitle}>Sketch floor plans right in your browser.</p>

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { X, Pencil, Plus } from 'lucide-react';
 import { useFloorplanStore } from '../../store/useFloorplanStore';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import styles from './FloorplanManager.module.css';
@@ -52,7 +53,7 @@ export function FloorplanManager({ onClose }: Props) {
             Floor Plans
           </h2>
           <button className={styles.close} onClick={onClose} aria-label="Close floor plans">
-            ✕
+            <X size={16} />
           </button>
         </div>
 
@@ -97,7 +98,7 @@ export function FloorplanManager({ onClose }: Props) {
                   aria-label={`Rename "${plan.name}"`}
                   title="Rename"
                 >
-                  ✏
+                  <Pencil size={14} />
                 </button>
                 <button
                   className={styles.actionBtn}
@@ -110,7 +111,7 @@ export function FloorplanManager({ onClose }: Props) {
                   title="Delete"
                   data-testid={`delete-plan-${plan.id}`}
                 >
-                  ✕
+                  <X size={14} />
                 </button>
               </div>
             </li>
@@ -118,7 +119,7 @@ export function FloorplanManager({ onClose }: Props) {
         </ul>
 
         <button className={styles.createBtn} onClick={handleCreate} data-testid="create-plan">
-          + New Floor Plan
+          <Plus size={16} /> New Floor Plan
         </button>
       </div>
     </div>
