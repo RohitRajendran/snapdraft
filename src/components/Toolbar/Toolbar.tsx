@@ -1,14 +1,23 @@
 import { useEffect } from 'react';
+import {
+  MousePointer2,
+  PenLine,
+  RectangleHorizontal,
+  RulerDimensionLine,
+  Undo2,
+  Redo2,
+  HelpCircle,
+} from 'lucide-react';
 import { useToolStore } from '../../store/useToolStore';
 import { useFloorplanStore } from '../../store/useFloorplanStore';
 import type { ToolType } from '../../types';
 import styles from './Toolbar.module.css';
 
-const TOOLS: { type: ToolType; label: string; icon: string; key: string }[] = [
-  { type: 'select', label: 'Select', icon: '↖', key: 'S' },
-  { type: 'wall', label: 'Wall', icon: '✏', key: 'W' },
-  { type: 'box', label: 'Box', icon: '▭', key: 'B' },
-  { type: 'measure', label: 'Measure', icon: '⌖', key: 'M' },
+const TOOLS: { type: ToolType; label: string; icon: React.ReactNode; key: string }[] = [
+  { type: 'select', label: 'Select', icon: <MousePointer2 />, key: 'S' },
+  { type: 'wall', label: 'Wall', icon: <PenLine />, key: 'W' },
+  { type: 'box', label: 'Box', icon: <RectangleHorizontal />, key: 'B' },
+  { type: 'measure', label: 'Measure', icon: <RulerDimensionLine />, key: 'M' },
 ];
 
 type Props = {
@@ -55,7 +64,9 @@ export function Toolbar({ onHelpOpen }: Props) {
         aria-label="Undo"
         data-testid="tool-undo"
       >
-        <span className={styles.icon}>↩</span>
+        <span className={styles.icon}>
+          <Undo2 />
+        </span>
         <span className={styles.label}>Undo</span>
       </button>
       <button
@@ -66,7 +77,9 @@ export function Toolbar({ onHelpOpen }: Props) {
         aria-label="Redo"
         data-testid="tool-redo"
       >
-        <span className={styles.icon}>↪</span>
+        <span className={styles.icon}>
+          <Redo2 />
+        </span>
         <span className={styles.label}>Redo</span>
       </button>
       <div className={styles.divider} />
@@ -77,7 +90,9 @@ export function Toolbar({ onHelpOpen }: Props) {
         aria-label="Open help"
         data-testid="tool-help"
       >
-        <span className={styles.icon}>?</span>
+        <span className={styles.icon}>
+          <HelpCircle />
+        </span>
         <span className={styles.label}>Help</span>
       </button>
     </div>

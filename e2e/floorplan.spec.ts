@@ -564,6 +564,8 @@ test.describe('Multi-select', () => {
     await expect(page.getByTestId('multi-select-bar')).not.toBeVisible();
 
     await page.keyboard.press('Meta+z');
+    // Wait for React to commit the undo state change before clicking
+    await expect(page.getByTestId('tool-redo')).not.toBeDisabled();
 
     await page.mouse.click(firstBox.centerX, firstBox.centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
