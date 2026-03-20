@@ -1,5 +1,13 @@
 import { useEffect } from 'react';
-import { MousePointer2, Pencil, Square, Crosshair, Undo2, Redo2, HelpCircle } from 'lucide-react';
+import {
+  MousePointer2,
+  PenLine,
+  RectangleHorizontal,
+  RulerDimensionLine,
+  Undo2,
+  Redo2,
+  HelpCircle,
+} from 'lucide-react';
 import { useToolStore } from '../../store/useToolStore';
 import { useFloorplanStore } from '../../store/useFloorplanStore';
 import type { ToolType } from '../../types';
@@ -7,9 +15,9 @@ import styles from './Toolbar.module.css';
 
 const TOOLS: { type: ToolType; label: string; icon: React.ReactNode; key: string }[] = [
   { type: 'select', label: 'Select', icon: <MousePointer2 />, key: 'S' },
-  { type: 'wall', label: 'Wall', icon: <Pencil />, key: 'W' },
-  { type: 'box', label: 'Box', icon: <Square />, key: 'B' },
-  { type: 'measure', label: 'Measure', icon: <Crosshair />, key: 'M' },
+  { type: 'wall', label: 'Wall', icon: <PenLine />, key: 'W' },
+  { type: 'box', label: 'Box', icon: <RectangleHorizontal />, key: 'B' },
+  { type: 'measure', label: 'Measure', icon: <RulerDimensionLine />, key: 'M' },
 ];
 
 type Props = {
