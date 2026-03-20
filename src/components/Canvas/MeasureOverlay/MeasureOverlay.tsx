@@ -1,6 +1,6 @@
 import { Group, Line, Rect, Text } from 'react-konva';
-import { distance, formatFeet } from '../../utils/geometry';
-import type { Point } from '../../types';
+import { distance, formatFeet } from '../../../utils/geometry/geometry';
+import type { Point } from '../../../types';
 
 type Props = {
   start: Point;

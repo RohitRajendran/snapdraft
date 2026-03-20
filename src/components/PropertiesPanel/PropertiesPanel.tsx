@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useFloorplanStore } from '../../store/useFloorplanStore';
-import { useToolStore } from '../../store/useToolStore';
+import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanStore';
+import { useToolStore } from '../../store/useToolStore/useToolStore';
 import type { Box, Element, Wall } from '../../types';
-import { collectConnectedWallIds, formatFeet } from '../../utils/geometry';
-import { FtInInput } from './FtInInput';
+import { collectConnectedWallIds, formatFeet } from '../../utils/geometry/geometry';
+import { FtInInput } from './FtInInput/FtInInput';
 import styles from './PropertiesPanel.module.css';
 
 function WallProperties({ wall, onDelete }: { wall: Wall; onDelete: () => void }) {

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useFloorplanStore } from '../../store/useFloorplanStore';
+import { useFloorplanStore } from './useFloorplanStore';
+import { FLOORPLAN_VERSION } from '../../utils/storage/storage';
 import type { Element } from '../../types';
 
 const wall = (id = 'w1'): Element => ({
@@ -37,6 +38,7 @@ describe('createPlan', () => {
     const id = useFloorplanStore.getState().createPlan();
     const plan = useFloorplanStore.getState().plans.find((p) => p.id === id);
     expect(plan).toBeDefined();
+    expect(plan!.version).toBe(FLOORPLAN_VERSION);
     expect(plan!.name).toBe('Untitled Plan');
     expect(plan!.elements).toHaveLength(0);
   });
@@ -223,6 +225,7 @@ describe('persistence to localStorage', () => {
     const stored = localStorage.getItem('snapdraft_floorplans');
     expect(stored).not.toBeNull();
     const parsed = JSON.parse(stored!);
+    expect(parsed.find((p: { id: string }) => p.id === id)?.version).toBe(FLOORPLAN_VERSION);
     expect(parsed.find((p: { id: string }) => p.id === id)?.name).toBe('Persisted');
   });
 

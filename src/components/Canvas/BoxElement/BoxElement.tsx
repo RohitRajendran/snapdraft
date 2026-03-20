@@ -1,10 +1,10 @@
 import { useRef } from 'react';
 import { Group, Rect, Text, Circle, Line } from 'react-konva';
 import type Konva from 'konva';
-import { useToolStore } from '../../store/useToolStore';
-import { useFloorplanStore } from '../../store/useFloorplanStore';
-import type { Box } from '../../types';
-import { ftToPx, pxToFt, formatFeet } from '../../utils/geometry';
+import { useToolStore } from '../../../store/useToolStore/useToolStore';
+import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplanStore';
+import type { Box } from '../../../types';
+import { ftToPx, pxToFt, formatFeet } from '../../../utils/geometry/geometry';
 
 const HANDLE_OFFSET_PX = 22;
 

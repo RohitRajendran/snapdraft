@@ -2,13 +2,13 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { Stage, Layer, Line, Rect, Circle, Text, Group } from 'react-konva';
 import type Konva from 'konva';
 import { nanoid } from 'nanoid';
-import { useFloorplanStore } from '../../store/useFloorplanStore';
-import { useToolStore } from '../../store/useToolStore';
-import { useSnap } from '../../hooks/useSnap';
-import { Grid } from './Grid';
-import { WallElement } from './WallElement';
-import { BoxElement } from './BoxElement';
-import { MeasureOverlay } from './MeasureOverlay';
+import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplanStore';
+import { useToolStore } from '../../../store/useToolStore/useToolStore';
+import { useSnap } from '../../../hooks/useSnap/useSnap';
+import { Grid } from '../Grid/Grid';
+import { WallElement } from '../WallElement/WallElement';
+import { BoxElement } from '../BoxElement/BoxElement';
+import { MeasureOverlay } from '../MeasureOverlay/MeasureOverlay';
 import styles from './DrawingCanvas.module.css';
 import {
   ftToPx,
@@ -20,14 +20,14 @@ import {
   NUDGE_FT,
   FINE_NUDGE_FT,
   getWallSnapIncrement,
-} from '../../utils/geometry';
-import type { Point, Element } from '../../types';
+} from '../../../utils/geometry/geometry';
+import type { Point, Element } from '../../../types';
 import {
   FIT_CONTENT_PADDING_PX,
   MOBILE_OVERLAY_CLEARANCE_PX,
   MOBILE_TOOLBAR_INSET_PX,
   shouldUseMobileOverlayLayout,
-} from './layout';
+} from '../layout';
 
 const DRAG_THRESHOLD_FT = 0.3;
 const CLOSE_CHAIN_RADIUS_FT = 0.5;

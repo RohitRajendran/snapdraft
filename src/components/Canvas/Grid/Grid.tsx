@@ -1,6 +1,6 @@
 import { Line, Rect } from 'react-konva';
 import { useMemo } from 'react';
-import { PIXELS_PER_FOOT } from '../../utils/geometry';
+import { PIXELS_PER_FOOT } from '../../../utils/geometry/geometry';
 
 type Props = {
   width: number;

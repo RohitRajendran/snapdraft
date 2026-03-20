@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { collectEndpoints, findNearestOnSegments, axisSnap } from '../../hooks/useSnap';
-import { findNearestEndpoint, WALL_SNAP_FT, FINE_WALL_SNAP_FT } from '../../utils/geometry';
+import { collectEndpoints, findNearestOnSegments, axisSnap } from './useSnap';
+import {
+  findNearestEndpoint,
+  WALL_SNAP_FT,
+  FINE_WALL_SNAP_FT,
+} from '../../utils/geometry/geometry';
 import type { Element } from '../../types';
 
 const wall = (points: { x: number; y: number }[]): Element => ({

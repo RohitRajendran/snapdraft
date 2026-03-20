@@ -1,7 +1,13 @@
 import { create } from 'zustand';
 import { nanoid } from 'nanoid';
-import type { FloorPlan, Element, Point } from '../types';
-import { loadFloorPlans, saveFloorPlans, loadActiveId, saveActiveId } from '../utils/storage';
+import type { FloorPlan, Element, Point } from '../../types';
+import {
+  FLOORPLAN_VERSION,
+  loadFloorPlans,
+  saveFloorPlans,
+  loadActiveId,
+  saveActiveId,
+} from '../../utils/storage/storage';
 
 const MAX_HISTORY = 50;
 
@@ -128,6 +134,7 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
     const id = nanoid();
     const plan: FloorPlan = {
       id,
+      version: FLOORPLAN_VERSION,
       name,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

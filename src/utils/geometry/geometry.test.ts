@@ -17,7 +17,7 @@ import {
   FINE_WALL_SNAP_FT,
   getWallSnapIncrement,
   snapWallPoint,
-} from '../../utils/geometry';
+} from './geometry';
 import type { Element } from '../../types';
 
 describe('ftToPx / pxToFt', () => {

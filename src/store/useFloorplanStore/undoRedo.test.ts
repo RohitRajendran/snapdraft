@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useFloorplanStore } from '../../store/useFloorplanStore';
+import { useFloorplanStore } from './useFloorplanStore';
 import type { Element } from '../../types';
 
 const wall = (id: string): Element => ({

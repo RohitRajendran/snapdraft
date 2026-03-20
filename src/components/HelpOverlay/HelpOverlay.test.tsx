@@ -1,8 +1,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { HelpOverlay } from '../../components/HelpOverlay/HelpOverlay';
-import styles from '../../components/HelpOverlay/HelpOverlay.module.css';
+import { HelpOverlay } from './HelpOverlay';
+import styles from './HelpOverlay.module.css';
 
 describe('HelpOverlay', () => {
   let container: HTMLDivElement;
