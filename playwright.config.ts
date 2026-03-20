@@ -16,7 +16,7 @@ export default defineConfig({
     { name: 'iPad', use: { ...devices['iPad Pro'] } },
   ],
   webServer: {
-    command: 'npm run build && npm run preview',
+    command: 'npm run build:preview && npm run preview',
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
   },
