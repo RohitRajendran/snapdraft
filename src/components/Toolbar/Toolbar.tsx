@@ -5,10 +5,10 @@ import type { ToolType } from '../../types';
 import styles from './Toolbar.module.css';
 
 const TOOLS: { type: ToolType; label: string; icon: string; key: string }[] = [
-  { type: 'select', label: 'Select', icon: '↖', key: 'S' },
-  { type: 'wall', label: 'Wall', icon: '✏', key: 'W' },
-  { type: 'box', label: 'Box', icon: '▭', key: 'B' },
-  { type: 'measure', label: 'Measure', icon: '⌖', key: 'M' },
+  { type: 'select', label: 'Select', icon: '↖\uFE0E', key: 'S' },
+  { type: 'wall', label: 'Wall', icon: '✏\uFE0E', key: 'W' },
+  { type: 'box', label: 'Box', icon: '▭\uFE0E', key: 'B' },
+  { type: 'measure', label: 'Measure', icon: '⌖\uFE0E', key: 'M' },
 ];
 
 type Props = {
@@ -55,7 +55,7 @@ export function Toolbar({ onHelpOpen }: Props) {
         aria-label="Undo"
         data-testid="tool-undo"
       >
-        <span className={styles.icon}>↩</span>
+        <span className={styles.icon}>↩&#xFE0E;</span>
         <span className={styles.label}>Undo</span>
       </button>
       <button
@@ -66,7 +66,7 @@ export function Toolbar({ onHelpOpen }: Props) {
         aria-label="Redo"
         data-testid="tool-redo"
       >
-        <span className={styles.icon}>↪</span>
+        <span className={styles.icon}>↪&#xFE0E;</span>
         <span className={styles.label}>Redo</span>
       </button>
       <div className={styles.divider} />
