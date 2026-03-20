@@ -59,8 +59,8 @@ export function HelpOverlay({ onClose }: Props) {
         <dl className={styles.grid}>
           {GETTING_STARTED.map(({ action, hint }) => (
             <div key={action} className={styles.row}>
-              <dt className={styles.action}>{action}</dt>
-              <dd className={styles.hint}>{hint}</dd>
+              <dt className={styles.hint}>{action}</dt>
+              <dd className={styles.action}>{hint}</dd>
             </div>
           ))}
         </dl>
@@ -72,8 +72,8 @@ export function HelpOverlay({ onClose }: Props) {
           <dl className={styles.grid}>
             {ADVANCED_SHORTCUTS.map(({ action, hint }) => (
               <div key={action} className={styles.row}>
-                <dt className={styles.action}>{action}</dt>
-                <dd className={styles.hint}>{hint}</dd>
+                <dt className={styles.hint}>{action}</dt>
+                <dd className={styles.action}>{hint}</dd>
               </div>
             ))}
           </dl>
