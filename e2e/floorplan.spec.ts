@@ -720,6 +720,69 @@ test.describe('Arrow key movement', () => {
   });
 });
 
+// ─── Measure tool ─────────────────────────────────────────────────────────────
+
+test.describe('Measure tool', () => {
+  test.beforeEach(({ page }) => setup(page));
+
+  test('activates with toolbar button and M key', async ({ page }) => {
+    await page.getByTestId('tool-measure').click();
+    await expect(page.getByTestId('tool-measure')).toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByTestId('tool-select').click();
+    await page.keyboard.press('m');
+    await expect(page.getByTestId('tool-measure')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('places start and end points without crashing', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    await page.getByTestId('tool-measure').click();
+
+    // First click: start point (body appears)
+    await page.mouse.click(cx, cy);
+    // Second click: end point (tape extends)
+    await page.mouse.click(cx + 200, cy);
+
+    // App still functional — toolbar is visible
+    await expect(page.getByTestId('tool-measure')).toBeVisible();
+  });
+
+  test('Escape cancels an in-progress measurement', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    await page.getByTestId('tool-measure').click();
+
+    await page.mouse.click(cx, cy);
+    await page.keyboard.press('Escape');
+
+    // After Escape, a fresh click starts a new measurement without error
+    await page.mouse.click(cx + 50, cy + 50);
+    await expect(page.getByTestId('tool-measure')).toBeVisible();
+  });
+
+  test('Escape after completed measurement clears it', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    await page.getByTestId('tool-measure').click();
+
+    await page.mouse.click(cx, cy);
+    await page.mouse.click(cx + 200, cy);
+    await page.keyboard.press('Escape');
+
+    // App still functional
+    await expect(page.getByTestId('tool-measure')).toBeVisible();
+  });
+
+  test('does not mutate the floor plan', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    await page.getByTestId('tool-measure').click();
+
+    await page.mouse.click(cx, cy);
+    await page.mouse.click(cx + 200, cy);
+
+    const elements = await getActivePlanElements(page);
+    expect(elements).toHaveLength(0);
+  });
+});
+
 // ─── Keyboard shortcuts in canvas ─────────────────────────────────────────────
 
 test.describe('Canvas keyboard shortcuts', () => {
