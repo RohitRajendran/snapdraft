@@ -772,6 +772,7 @@ export function DrawingCanvas() {
       data-zoom={zoom}
       data-pan-x={pan.x}
       data-pan-y={pan.y}
+      data-element-count={elements.length}
     >
       <Stage
         ref={stageRef}

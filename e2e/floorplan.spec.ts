@@ -565,8 +565,17 @@ test.describe('Multi-select', () => {
     await expect(page.getByTestId('multi-select-bar')).not.toBeVisible();
 
     await page.keyboard.press('Meta+z');
-    // Wait for React to commit the undo state change before clicking
-    await expect(page.getByTestId('tool-redo')).not.toBeDisabled();
+    // Wait for React to commit the restored elements (data-element-count reflects elements.length
+    // from the render, which is in the same commit as Konva node creation).
+    await page.waitForFunction(
+      (count) =>
+        document.querySelector('[data-testid="drawing-canvas"]')?.getAttribute('data-element-count') ===
+        String(count),
+      2,
+    );
+    // Konva repaints its hit canvas via requestAnimationFrame after React commits.
+    // Clicking before that frame fires would miss the new nodes. Wait past it.
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(resolve)));
 
     await page.mouse.click(firstBox.centerX, firstBox.centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
