@@ -71,6 +71,13 @@ export function DrawingCanvas() {
   const [lastPlacedWallId, setLastPlacedWallId] = useState<string | null>(null);
   const dimInputRef = useRef<HTMLInputElement>(null);
   const lastWallTapRef = useRef<{ time: number; point: Point | null }>({ time: 0, point: null });
+  const touchGestureRef = useRef<{
+    initialDist: number;
+    initialZoom: number;
+    initialPan: { x: number; y: number };
+    initialMidpoint: { x: number; y: number };
+  } | null>(null);
+  const isTwoFingerActiveRef = useRef(false);
 
   const { activePlan, addElement, updateElements, deleteElements } = useFloorplanStore();
   const {
@@ -162,6 +169,92 @@ export function DrawingCanvas() {
     });
     if (containerRef.current) ro.observe(containerRef.current);
     return () => ro.disconnect();
+  }, []);
+
+  // ── Two-finger touch: pinch → zoom, translate → pan ─────────────
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    function getTouchDist(t1: Touch, t2: Touch) {
+      const dx = t1.clientX - t2.clientX;
+      const dy = t1.clientY - t2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function getTouchMidpoint(t1: Touch, t2: Touch) {
+      return {
+        x: (t1.clientX + t2.clientX) / 2,
+        y: (t1.clientY + t2.clientY) / 2,
+      };
+    }
+
+    function handleTouchStart(e: TouchEvent) {
+      if (e.touches.length === 2) {
+        isTwoFingerActiveRef.current = true;
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const { zoom: currentZoom, pan: currentPan } = useToolStore.getState();
+        touchGestureRef.current = {
+          initialDist: getTouchDist(t1, t2),
+          initialZoom: currentZoom,
+          initialPan: { ...currentPan },
+          initialMidpoint: getTouchMidpoint(t1, t2),
+        };
+        // Cancel any in-progress single-finger action
+        setPointerDown(null);
+        setMarquee(null);
+        e.preventDefault();
+      }
+    }
+
+    function handleTouchMove(e: TouchEvent) {
+      if (e.touches.length === 2 && touchGestureRef.current) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const { initialDist, initialZoom, initialPan, initialMidpoint } = touchGestureRef.current;
+
+        const currentDist = getTouchDist(t1, t2);
+        const currentMidpoint = getTouchMidpoint(t1, t2);
+
+        const scaleRatio = currentDist / initialDist;
+        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, initialZoom * scaleRatio));
+
+        // Keep the initial pinch midpoint anchored in world space
+        const worldUnderMidpoint = {
+          x: (initialMidpoint.x - initialPan.x) / initialZoom,
+          y: (initialMidpoint.y - initialPan.y) / initialZoom,
+        };
+
+        useToolStore.setState({
+          zoom: newZoom,
+          pan: {
+            x: currentMidpoint.x - worldUnderMidpoint.x * newZoom,
+            y: currentMidpoint.y - worldUnderMidpoint.y * newZoom,
+          },
+        });
+      }
+    }
+
+    function handleTouchEnd(e: TouchEvent) {
+      if (e.touches.length < 2) {
+        touchGestureRef.current = null;
+        // Brief delay so the finger-lift pointer event doesn't trigger a tap
+        setTimeout(() => {
+          isTwoFingerActiveRef.current = false;
+        }, 50);
+      }
+    }
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
   }, []);
 
   // On mount: if the active plan has content, fit it to screen and switch to select tool.
@@ -281,6 +374,7 @@ export function DrawingCanvas() {
   // ── Pointer events ──────────────────────────────────────────────
 
   function handlePointerDown(e: Konva.KonvaEventObject<PointerEvent>) {
+    if (isTwoFingerActiveRef.current) return;
     const world = getPointerWorld();
     if (!world) return;
 
@@ -297,6 +391,7 @@ export function DrawingCanvas() {
   }
 
   function handlePointerMove(e: Konva.KonvaEventObject<PointerEvent>) {
+    if (isTwoFingerActiveRef.current) return;
     const world = getPointerWorld();
     if (!world) return;
 
@@ -327,6 +422,7 @@ export function DrawingCanvas() {
   }
 
   function handlePointerUp(e: Konva.KonvaEventObject<PointerEvent>) {
+    if (isTwoFingerActiveRef.current) return;
     const world = getPointerWorld();
     if (!world || !pointerDown) {
       setPointerDown(null);
@@ -673,6 +769,9 @@ export function DrawingCanvas() {
       aria-label="Floor plan canvas. Use toolbar to select drawing tools."
       tabIndex={0}
       data-testid="drawing-canvas"
+      data-zoom={zoom}
+      data-pan-x={pan.x}
+      data-pan-y={pan.y}
     >
       <Stage
         ref={stageRef}

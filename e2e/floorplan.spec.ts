@@ -962,3 +962,153 @@ test.describe('Import / Export / QR', () => {
     await expect(page.getByTestId('share-modal')).not.toBeVisible();
   });
 });
+
+// ─── Touch gestures ───────────────────────────────────────────────────────────
+
+/** Dispatch a synthetic two-finger touch gesture on an element.
+ *  Fires touchstart → N touchmove steps → touchend.
+ *  Coordinates are relative to the page (clientX/Y). */
+async function simulatePinch(
+  page: Page,
+  opts: {
+    /** Starting midpoint (page coords) */
+    midX: number;
+    midY: number;
+    /** Half-distance between fingers at start */
+    startRadius: number;
+    /** Half-distance between fingers at end */
+    endRadius: number;
+    /** How much the midpoint translates during the gesture */
+    deltaX?: number;
+    deltaY?: number;
+    steps?: number;
+  },
+) {
+  const { midX, midY, startRadius, endRadius, deltaX = 0, deltaY = 0, steps = 8 } = opts;
+
+  await page.evaluate(
+    ({ midX, midY, startRadius, endRadius, deltaX, deltaY, steps }) => {
+      const target = document.querySelector('[data-testid="drawing-canvas"]') as HTMLElement;
+      if (!target) throw new Error('canvas not found');
+
+      function makeTouch(id: number, x: number, y: number): Touch {
+        return new Touch({ identifier: id, target, clientX: x, clientY: y, pageX: x, pageY: y });
+      }
+
+      function fire(type: string, t1: Touch, t2: Touch) {
+        const evt = new TouchEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          touches: type === 'touchend' ? [] : [t1, t2],
+          changedTouches: [t1, t2],
+          targetTouches: type === 'touchend' ? [] : [t1, t2],
+        });
+        target.dispatchEvent(evt);
+      }
+
+      // touchstart
+      fire(
+        'touchstart',
+        makeTouch(1, midX - startRadius, midY),
+        makeTouch(2, midX + startRadius, midY),
+      );
+
+      // touchmove steps
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        const r = startRadius + (endRadius - startRadius) * t;
+        const mx = midX + deltaX * t;
+        const my = midY + deltaY * t;
+        fire('touchmove', makeTouch(1, mx - r, my), makeTouch(2, mx + r, my));
+      }
+
+      // touchend
+      const finalR = endRadius;
+      const finalMx = midX + deltaX;
+      const finalMy = midY + deltaY;
+      fire(
+        'touchend',
+        makeTouch(1, finalMx - finalR, finalMy),
+        makeTouch(2, finalMx + finalR, finalMy),
+      );
+    },
+    { midX, midY, startRadius, endRadius, deltaX, deltaY, steps },
+  );
+}
+
+async function getCanvasZoom(page: Page): Promise<number> {
+  const val = await page.getByTestId('drawing-canvas').getAttribute('data-zoom');
+  return parseFloat(val ?? '1');
+}
+
+async function getCanvasPan(page: Page): Promise<{ x: number; y: number }> {
+  const [px, py] = await Promise.all([
+    page.getByTestId('drawing-canvas').getAttribute('data-pan-x'),
+    page.getByTestId('drawing-canvas').getAttribute('data-pan-y'),
+  ]);
+  return { x: parseFloat(px ?? '0'), y: parseFloat(py ?? '0') };
+}
+
+test.describe('Touch gestures', () => {
+  test.beforeEach(({ page }) => setup(page));
+
+  test('canvas has touch-action none to prevent browser interference', async ({ page }) => {
+    const touchAction = await page
+      .getByTestId('drawing-canvas')
+      .evaluate((el) => window.getComputedStyle(el).touchAction);
+    expect(touchAction).toBe('none');
+  });
+
+  test('two-finger pinch-out zooms in', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    const before = await getCanvasZoom(page);
+
+    await simulatePinch(page, { midX: cx, midY: cy, startRadius: 40, endRadius: 120 });
+
+    const after = await getCanvasZoom(page);
+    expect(after).toBeGreaterThan(before);
+  });
+
+  test('two-finger pinch-in zooms out', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    // Start zoomed in so there is room to zoom out
+    await simulatePinch(page, { midX: cx, midY: cy, startRadius: 40, endRadius: 160 });
+    const before = await getCanvasZoom(page);
+
+    await simulatePinch(page, { midX: cx, midY: cy, startRadius: 160, endRadius: 40 });
+
+    const after = await getCanvasZoom(page);
+    expect(after).toBeLessThan(before);
+  });
+
+  test('two-finger translate pans the canvas', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    const before = await getCanvasPan(page);
+
+    // Move both fingers 80px to the right without changing pinch distance
+    await simulatePinch(page, {
+      midX: cx,
+      midY: cy,
+      startRadius: 60,
+      endRadius: 60,
+      deltaX: 80,
+      deltaY: 0,
+    });
+
+    const after = await getCanvasPan(page);
+    expect(after.x).toBeGreaterThan(before.x);
+  });
+
+  test('two-finger gesture does not place a wall segment', async ({ page }) => {
+    // Wall tool is active by default
+    const { cx, cy } = await canvasCenter(page);
+    const elementsBefore = await getActivePlanElements(page);
+
+    await simulatePinch(page, { midX: cx, midY: cy, startRadius: 40, endRadius: 120 });
+    // Wait a tick for any deferred state updates
+    await page.waitForTimeout(100);
+
+    const elementsAfter = await getActivePlanElements(page);
+    expect(elementsAfter.length).toBe(elementsBefore.length);
+  });
+});
