@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useToolStore } from '../../store/useToolStore/useToolStore';
 import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanStore';
+import { shouldUseMobileOverlayLayout } from '../Canvas/layout';
 import type { ToolType } from '../../types';
 import styles from './Toolbar.module.css';
 
@@ -25,8 +26,11 @@ type Props = {
 };
 
 export function Toolbar({ onHelpOpen }: Props) {
-  const { activeTool, setActiveTool } = useToolStore();
+  const { activeTool, setActiveTool, selectedIds } = useToolStore();
   const { undo, redo, past, future } = useFloorplanStore();
+
+  const selectionBarVisible =
+    shouldUseMobileOverlayLayout(window.innerWidth) && selectedIds.size === 1;
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -41,7 +45,13 @@ export function Toolbar({ onHelpOpen }: Props) {
   }, [setActiveTool]);
 
   return (
-    <div className={styles.toolbar} role="toolbar" aria-label="Drawing tools">
+    <div
+      className={styles.toolbar}
+      role="toolbar"
+      aria-label="Drawing tools"
+      data-testid="drawing-toolbar"
+      style={selectionBarVisible ? { display: 'none' } : undefined}
+    >
       {TOOLS.map((tool) => (
         <button
           key={tool.type}

@@ -3,10 +3,19 @@ import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanSto
 import { useToolStore } from '../../store/useToolStore/useToolStore';
 import type { Box, Element, Wall } from '../../types';
 import { collectConnectedWallIds, formatFeet } from '../../utils/geometry/geometry';
+import { shouldUseMobileOverlayLayout } from '../Canvas/layout';
 import { FtInInput } from './FtInInput/FtInInput';
 import styles from './PropertiesPanel.module.css';
 
-function WallProperties({ wall, onDelete }: { wall: Wall; onDelete: () => void }) {
+function WallProperties({
+  wall,
+  onDelete,
+  showDelete,
+}: {
+  wall: Wall;
+  onDelete: () => void;
+  showDelete: boolean;
+}) {
   const { updateElements, activePlan } = useFloorplanStore();
   const allElements = activePlan()?.elements ?? [];
 
@@ -71,19 +80,29 @@ function WallProperties({ wall, onDelete }: { wall: Wall; onDelete: () => void }
           testId={isSimple ? 'wall-length-input' : `wall-segment-${i}-input`}
         />
       ))}
-      <button
-        className={styles.deleteBtn}
-        onClick={onDelete}
-        aria-label="Delete wall"
-        data-testid="delete-element"
-      >
-        Delete
-      </button>
+      {showDelete && (
+        <button
+          className={styles.deleteBtn}
+          onClick={onDelete}
+          aria-label="Delete wall"
+          data-testid="delete-element"
+        >
+          Delete
+        </button>
+      )}
     </div>
   );
 }
 
-function BoxProperties({ box, onDelete }: { box: Box; onDelete: () => void }) {
+function BoxProperties({
+  box,
+  onDelete,
+  showDelete,
+}: {
+  box: Box;
+  onDelete: () => void;
+  showDelete: boolean;
+}) {
   const { updateElement } = useFloorplanStore();
   const [rotationDraft, setRotationDraft] = useState<string | null>(null);
   const [labelDraft, setLabelDraft] = useState<string | null>(null);
@@ -150,21 +169,23 @@ function BoxProperties({ box, onDelete }: { box: Box; onDelete: () => void }) {
           data-testid="box-label-input"
         />
       </label>
-      <button
-        className={styles.deleteBtn}
-        onClick={onDelete}
-        aria-label="Delete box"
-        data-testid="delete-element"
-      >
-        Delete
-      </button>
+      {showDelete && (
+        <button
+          className={styles.deleteBtn}
+          onClick={onDelete}
+          aria-label="Delete box"
+          data-testid="delete-element"
+        >
+          Delete
+        </button>
+      )}
     </div>
   );
 }
 
 export function PropertiesPanel() {
   const { activePlan, deleteElement } = useFloorplanStore();
-  const { selectedId, selectedIds, setSelectedId } = useToolStore();
+  const { selectedId, selectedIds, setSelectedId, propertiesPanelOpen } = useToolStore();
 
   const plan = activePlan();
   const element =
@@ -176,7 +197,9 @@ export function PropertiesPanel() {
     setSelectedId(null);
   }
 
-  if (!element) return null;
+  if (!element || !propertiesPanelOpen) return null;
+
+  const showDelete = !shouldUseMobileOverlayLayout(window.innerWidth);
 
   return (
     <div
@@ -189,9 +212,19 @@ export function PropertiesPanel() {
         <h2 className={styles.title}>{element.type === 'wall' ? 'Wall' : 'Box'}</h2>
       </div>
       {element.type === 'wall' ? (
-        <WallProperties key={element.id} wall={element as Wall} onDelete={handleDelete} />
+        <WallProperties
+          key={element.id}
+          wall={element as Wall}
+          onDelete={handleDelete}
+          showDelete={showDelete}
+        />
       ) : (
-        <BoxProperties key={element.id} box={element as Box} onDelete={handleDelete} />
+        <BoxProperties
+          key={element.id}
+          box={element as Box}
+          onDelete={handleDelete}
+          showDelete={showDelete}
+        />
       )}
     </div>
   );
