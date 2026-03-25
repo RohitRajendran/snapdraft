@@ -459,7 +459,7 @@ export function DrawingCanvas() {
       setCursorSnappedToAxis(false);
     } else {
       const gridIncrement =
-        activeTool === 'wall' ? getWallSnapIncrement(Boolean(e.evt.shiftKey)) : undefined;
+        activeTool === 'wall' ? getWallSnapIncrement(Boolean(e.evt?.shiftKey)) : undefined;
       const { point, snappedToEndpoint, snappedToSegment, snappedToAxis } = snapWithInfo(
         world,
         gridIncrement,
@@ -488,7 +488,7 @@ export function DrawingCanvas() {
 
     const dragDist = distance(pointerDown.pos, world);
     const isDrag = dragDist > DRAG_THRESHOLD_FT;
-    const wallSnapIncrement = getWallSnapIncrement(Boolean(e.evt.shiftKey));
+    const wallSnapIncrement = getWallSnapIncrement(Boolean(e.evt?.shiftKey));
     const snappedEnd = activeTool === 'wall' ? snap(world, wallSnapIncrement) : snap(world);
 
     if (activeTool === 'measure') {

@@ -132,7 +132,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
-      onClick={(e) => onSelect(Boolean(e.evt.shiftKey))}
+      onClick={(e) => onSelect(Boolean(e.evt?.shiftKey))}
       onTap={() => onSelect(false)}
     >
       <Rect
