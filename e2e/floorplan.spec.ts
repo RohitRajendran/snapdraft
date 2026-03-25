@@ -81,6 +81,17 @@ async function clickWallMidpoint(page: Page, wallIndex = 0) {
   await page.mouse.click(box.x + midpoint.x * 40, box.y + midpoint.y * 40);
 }
 
+async function drawTwoBoxesAndMarqueeSelect(page: Page) {
+  await drawBox(page, -200, -60, 80, 80);
+  await drawBox(page, 80, -60, 80, 80);
+  await page.getByTestId('tool-select').click();
+  const { cx, cy } = await canvasCenter(page);
+  await page.mouse.move(cx - 240, cy - 100);
+  await page.mouse.down();
+  await page.mouse.move(cx + 200, cy + 60, { steps: 10 });
+  await page.mouse.up();
+}
+
 // ─── App shell ───────────────────────────────────────────────────────────────
 
 test.describe('App shell', () => {
@@ -110,72 +121,59 @@ test.describe('App shell', () => {
     await expect(page.getByTestId('scale-bar')).toContainText('1');
   });
 
-  test('toolbar fits within an iPhone SE portrait viewport', async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 568 });
-    await page.reload();
-    const help = page.getByTestId('help-overlay');
-    if (await help.isVisible()) {
-      await page.keyboard.press('Escape');
-    }
-
-    const toolbar = page.locator('[role="toolbar"]');
-    await expect(toolbar).toBeVisible();
-    const box = await toolbar.boundingBox();
-    const metrics = await toolbar.evaluate((element) => {
-      const computed = window.getComputedStyle(element);
-      return {
-        clientWidth: element.clientWidth,
-        scrollWidth: element.scrollWidth,
-        overflowX: computed.overflowX,
-      };
+  test.describe('iPhone SE portrait viewport', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 568 });
+      await page.reload();
+      await dismissHelp(page);
     });
-    expect(box).not.toBeNull();
-    expect(box!.x).toBeGreaterThanOrEqual(0);
-    expect(box!.y).toBeGreaterThanOrEqual(0);
-    expect(box!.x + box!.width).toBeLessThanOrEqual(320);
-    expect(box!.y + box!.height).toBeLessThanOrEqual(568);
-    expect(metrics.overflowX).toBe('auto');
-    expect(metrics.scrollWidth).toBeGreaterThan(metrics.clientWidth);
-  });
 
-  test('fit button sits above the toolbar on an iPhone SE portrait viewport', async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 568 });
-    await page.reload();
-    const help = page.getByTestId('help-overlay');
-    if (await help.isVisible()) {
-      await page.keyboard.press('Escape');
-    }
+    test('toolbar fits within an iPhone SE portrait viewport', async ({ page }) => {
+      const toolbar = page.locator('[role="toolbar"]');
+      await expect(toolbar).toBeVisible();
+      const box = await toolbar.boundingBox();
+      const metrics = await toolbar.evaluate((element) => {
+        const computed = window.getComputedStyle(element);
+        return {
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+          overflowX: computed.overflowX,
+        };
+      });
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(568);
+      expect(metrics.overflowX).toBe('auto');
+      expect(metrics.scrollWidth).toBeGreaterThan(metrics.clientWidth);
+    });
 
-    const fitButton = page.getByTestId('fit-to-content');
-    const toolbar = page.locator('[role="toolbar"]');
-    await expect(fitButton).toBeVisible();
-    await expect(toolbar).toBeVisible();
+    test('fit button sits above the toolbar on an iPhone SE portrait viewport', async ({ page }) => {
+      const fitButton = page.getByTestId('fit-to-content');
+      const toolbar = page.locator('[role="toolbar"]');
+      await expect(fitButton).toBeVisible();
+      await expect(toolbar).toBeVisible();
 
-    const fitBox = await fitButton.boundingBox();
-    const toolbarBox = await toolbar.boundingBox();
-    expect(fitBox).not.toBeNull();
-    expect(toolbarBox).not.toBeNull();
-    expect(fitBox!.y + fitBox!.height).toBeLessThanOrEqual(toolbarBox!.y - 8);
-  });
+      const fitBox = await fitButton.boundingBox();
+      const toolbarBox = await toolbar.boundingBox();
+      expect(fitBox).not.toBeNull();
+      expect(toolbarBox).not.toBeNull();
+      expect(fitBox!.y + fitBox!.height).toBeLessThanOrEqual(toolbarBox!.y - 8);
+    });
 
-  test('scale bar sits above the toolbar on an iPhone SE portrait viewport', async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 568 });
-    await page.reload();
-    const help = page.getByTestId('help-overlay');
-    if (await help.isVisible()) {
-      await page.keyboard.press('Escape');
-    }
+    test('scale bar sits above the toolbar on an iPhone SE portrait viewport', async ({ page }) => {
+      const scaleBar = page.getByTestId('scale-bar');
+      const toolbar = page.locator('[role="toolbar"]');
+      await expect(scaleBar).toBeVisible();
+      await expect(toolbar).toBeVisible();
 
-    const scaleBar = page.getByTestId('scale-bar');
-    const toolbar = page.locator('[role="toolbar"]');
-    await expect(scaleBar).toBeVisible();
-    await expect(toolbar).toBeVisible();
-
-    const scaleBox = await scaleBar.boundingBox();
-    const toolbarBox = await toolbar.boundingBox();
-    expect(scaleBox).not.toBeNull();
-    expect(toolbarBox).not.toBeNull();
-    expect(scaleBox!.y + scaleBox!.height).toBeLessThanOrEqual(toolbarBox!.y - 8);
+      const scaleBox = await scaleBar.boundingBox();
+      const toolbarBox = await toolbar.boundingBox();
+      expect(scaleBox).not.toBeNull();
+      expect(toolbarBox).not.toBeNull();
+      expect(scaleBox!.y + scaleBox!.height).toBeLessThanOrEqual(toolbarBox!.y - 8);
+    });
   });
 });
 
@@ -184,14 +182,12 @@ test.describe('App shell', () => {
 test.describe('Tool switching', () => {
   test.beforeEach(({ page }) => setup(page));
 
-  test('toolbar clicks switch tools', async ({ page }) => {
+  test('toolbar clicks and keyboard shortcuts switch tools', async ({ page }) => {
     await page.getByTestId('tool-box').click();
     await expect(page.getByTestId('tool-box')).toHaveAttribute('aria-pressed', 'true');
     await page.getByTestId('tool-select').click();
     await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true');
-  });
 
-  test('keyboard shortcuts S/W/B switch tools', async ({ page }) => {
     await page.keyboard.press('s');
     await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true');
     await page.keyboard.press('b');
@@ -256,24 +252,19 @@ test.describe('Floor plan management', () => {
 test.describe('Box drawing', () => {
   test.beforeEach(({ page }) => setup(page));
 
-  test('drag creates a box and shows properties panel', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
+  let boxCenter: { centerX: number; centerY: number };
+  test.beforeEach(async ({ page }) => {
+    boxCenter = await drawBox(page);
     await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
-    await expect(page.getByTestId('properties-panel')).toBeVisible();
+    await page.mouse.click(boxCenter.centerX, boxCenter.centerY);
   });
 
-  test('properties panel shows Box title for a box', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
+  test('selecting a drawn box shows the properties panel with Box title', async ({ page }) => {
+    await expect(page.getByTestId('properties-panel')).toBeVisible();
     await expect(page.getByTestId('properties-panel')).toContainText('Box');
   });
 
   test('can edit box width in properties panel', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
     const widthInput = page.getByTestId('box-width-input');
     await widthInput.fill("10'");
     await widthInput.press('Enter');
@@ -281,9 +272,6 @@ test.describe('Box drawing', () => {
   });
 
   test('can edit box height in properties panel', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
     const heightInput = page.getByTestId('box-height-input');
     await heightInput.fill("5'");
     await heightInput.press('Enter');
@@ -291,9 +279,6 @@ test.describe('Box drawing', () => {
   });
 
   test('can edit box rotation in properties panel', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
     const rotInput = page.getByTestId('box-rotation-input');
     await rotInput.fill('45');
     await rotInput.press('Enter');
@@ -301,26 +286,17 @@ test.describe('Box drawing', () => {
   });
 
   test('can delete a box from properties panel', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
     await page.getByTestId('delete-element').click();
     await expect(page.getByTestId('properties-panel')).not.toBeVisible();
   });
 
   test('delete key removes selected box', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await page.keyboard.press('Delete');
     await expect(page.getByTestId('properties-panel')).not.toBeVisible();
   });
 
   test('clicking empty canvas deselects', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await page.getByTestId('drawing-canvas').click({ position: { x: 40, y: 40 } });
     await expect(page.getByTestId('properties-panel')).not.toBeVisible();
@@ -490,6 +466,26 @@ test.describe('Wall drawing', () => {
     }
   });
 
+  test('dragging a wall endpoint moves it without crashing', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    await drawWall(page, cx - 80, cy, cx + 80, cy);
+    await page.getByTestId('tool-select').click();
+    await clickWallMidpoint(page);
+
+    const before = await getActivePlanElements(page);
+    const beforeLen = Math.abs(before[0].points[1].x - before[0].points[0].x);
+
+    // Drag the right endpoint further right
+    await page.mouse.move(cx + 80, cy);
+    await page.mouse.down();
+    await page.mouse.move(cx + 160, cy, { steps: 10 });
+    await page.mouse.up();
+
+    const after = await getActivePlanElements(page);
+    const afterLen = Math.abs(after[0].points[1].x - after[0].points[0].x);
+    expect(afterLen).toBeGreaterThan(beforeLen);
+  });
+
   test('can edit wall length in properties panel', async ({ page }) => {
     const { cx, cy } = await canvasCenter(page);
     await drawWall(page, cx - 80, cy, cx + 80, cy);
@@ -518,32 +514,14 @@ test.describe('Multi-select', () => {
   test.beforeEach(({ page }) => setup(page));
 
   test('marquee-selecting two boxes shows multi-select bar', async ({ page }) => {
-    // Draw two boxes side by side
-    await drawBox(page, -200, -60, 80, 80);
-    await drawBox(page, 80, -60, 80, 80);
-
-    // Marquee-select both
-    await page.getByTestId('tool-select').click();
-    const { cx, cy } = await canvasCenter(page);
-    await page.mouse.move(cx - 240, cy - 100);
-    await page.mouse.down();
-    await page.mouse.move(cx + 200, cy + 60, { steps: 10 });
-    await page.mouse.up();
+    await drawTwoBoxesAndMarqueeSelect(page);
 
     await expect(page.getByTestId('multi-select-bar')).toBeVisible();
     await expect(page.getByTestId('multi-select-bar')).toContainText('2');
   });
 
   test('Delete all removes all selected elements', async ({ page }) => {
-    await drawBox(page, -200, -60, 80, 80);
-    await drawBox(page, 80, -60, 80, 80);
-
-    await page.getByTestId('tool-select').click();
-    const { cx, cy } = await canvasCenter(page);
-    await page.mouse.move(cx - 240, cy - 100);
-    await page.mouse.down();
-    await page.mouse.move(cx + 200, cy + 60, { steps: 10 });
-    await page.mouse.up();
+    await drawTwoBoxesAndMarqueeSelect(page);
 
     await expect(page.getByTestId('multi-select-bar')).toBeVisible();
     await page.getByTestId('delete-selected').click();
@@ -707,7 +685,7 @@ test.describe('Undo and Redo', () => {
 test.describe('Arrow key movement', () => {
   test.beforeEach(({ page }) => setup(page));
 
-  test('arrow keys move a selected box', async ({ page }) => {
+  test('arrow keys move a selected box and movement is undoable', async ({ page }) => {
     const { centerX, centerY } = await drawBox(page);
     await page.getByTestId('tool-select').click();
     await page.mouse.click(centerX, centerY);
@@ -716,14 +694,6 @@ test.describe('Arrow key movement', () => {
     // Press right arrow — box should still be selected (not deselected)
     await page.keyboard.press('ArrowRight');
     await expect(page.getByTestId('properties-panel')).toBeVisible();
-  });
-
-  test('arrow movement is undoable', async ({ page }) => {
-    await drawBox(page);
-    await page.getByTestId('tool-select').click();
-    const { cx, cy } = await canvasCenter(page);
-    await page.mouse.click(cx + 80, cy + 60);
-    await page.keyboard.press('ArrowRight');
 
     // Two undo steps: one for the move, one for the draw
     await page.keyboard.press('Meta+z');
@@ -759,24 +729,20 @@ test.describe('Measure tool', () => {
     await expect(page.getByTestId('tool-measure')).toBeVisible();
   });
 
-  test('Escape cancels an in-progress measurement', async ({ page }) => {
+  test('Escape cancels or clears a measurement', async ({ page }) => {
     const { cx, cy } = await canvasCenter(page);
     await page.getByTestId('tool-measure').click();
 
+    // Cancel in-progress measurement
     await page.mouse.click(cx, cy);
     await page.keyboard.press('Escape');
 
     // After Escape, a fresh click starts a new measurement without error
     await page.mouse.click(cx + 50, cy + 50);
     await expect(page.getByTestId('tool-measure')).toBeVisible();
-  });
 
-  test('Escape after completed measurement clears it', async ({ page }) => {
-    const { cx, cy } = await canvasCenter(page);
-    await page.getByTestId('tool-measure').click();
-
-    await page.mouse.click(cx, cy);
-    await page.mouse.click(cx + 200, cy);
+    // Complete a measurement and Escape it
+    await page.mouse.click(cx + 200, cy + 50);
     await page.keyboard.press('Escape');
 
     // App still functional
@@ -800,19 +766,19 @@ test.describe('Measure tool', () => {
 test.describe('Canvas keyboard shortcuts', () => {
   test.beforeEach(({ page }) => setup(page));
 
-  test('Backspace key deletes selected element', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
+  test('Backspace deletes and Escape clears selection', async ({ page }) => {
+    // Draw a box, select it, press Backspace — panel should hide (element deleted)
+    const { centerX: cx1, centerY: cy1 } = await drawBox(page);
     await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
+    await page.mouse.click(cx1, cy1);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await page.keyboard.press('Backspace');
     await expect(page.getByTestId('properties-panel')).not.toBeVisible();
-  });
 
-  test('Escape clears selection', async ({ page }) => {
-    const { centerX, centerY } = await drawBox(page);
+    // Draw another box, select it, press Escape — panel should hide (deselected)
+    const { centerX: cx2, centerY: cy2 } = await drawBox(page);
     await page.getByTestId('tool-select').click();
-    await page.mouse.click(centerX, centerY);
+    await page.mouse.click(cx2, cy2);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('properties-panel')).not.toBeVisible();
@@ -1114,10 +1080,223 @@ test.describe('Touch gestures', () => {
     const elementsBefore = await getActivePlanElements(page);
 
     await simulatePinch(page, { midX: cx, midY: cy, startRadius: 40, endRadius: 120 });
-    // Wait a tick for any deferred state updates
-    await page.waitForTimeout(100);
 
-    const elementsAfter = await getActivePlanElements(page);
-    expect(elementsAfter.length).toBe(elementsBefore.length);
+    await expect.poll(() => getActivePlanElements(page)).toHaveLength(elementsBefore.length);
+  });
+});
+
+async function simulateTwist(
+  page: Page,
+  opts: { midX: number; midY: number; radius: number; endAngle: number; steps?: number },
+) {
+  const { midX, midY, radius, endAngle, steps = 8 } = opts;
+
+  await page.evaluate(
+    ({ midX, midY, radius, endAngle, steps }) => {
+      const target = document.querySelector('[data-testid="drawing-canvas"]') as HTMLElement;
+      if (!target) throw new Error('canvas not found');
+
+      function makeTouch(id: number, x: number, y: number): Touch {
+        return new Touch({ identifier: id, target, clientX: x, clientY: y, pageX: x, pageY: y });
+      }
+
+      function fire(type: string, t1: Touch, t2: Touch) {
+        const evt = new TouchEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          touches: type === 'touchend' ? [] : [t1, t2],
+          changedTouches: [t1, t2],
+          targetTouches: type === 'touchend' ? [] : [t1, t2],
+        });
+        target.dispatchEvent(evt);
+      }
+
+      // Start: fingers horizontal (angle 0)
+      fire(
+        'touchstart',
+        makeTouch(1, midX - radius, midY),
+        makeTouch(2, midX + radius, midY),
+      );
+
+      // Rotate from 0 to endAngle
+      for (let i = 1; i <= steps; i++) {
+        const angleRad = ((endAngle * i) / steps) * (Math.PI / 180);
+        const cos = Math.cos(angleRad);
+        const sin = Math.sin(angleRad);
+        fire(
+          'touchmove',
+          makeTouch(1, midX - radius * cos, midY - radius * sin),
+          makeTouch(2, midX + radius * cos, midY + radius * sin),
+        );
+      }
+
+      // touchend
+      const finalRad = endAngle * (Math.PI / 180);
+      fire(
+        'touchend',
+        makeTouch(1, midX - radius * Math.cos(finalRad), midY - radius * Math.sin(finalRad)),
+        makeTouch(2, midX + radius * Math.cos(finalRad), midY + radius * Math.sin(finalRad)),
+      );
+    },
+    { midX, midY, radius, endAngle, steps },
+  );
+}
+
+test.describe('Mobile selection UX', () => {
+  test.beforeEach(async ({ page }) => {
+    await setup(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+  });
+
+  test('tapping a box on mobile shows mobile selection bar instead of properties panel', async ({
+    page,
+  }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    await page.mouse.click(centerX, centerY);
+    await expect(page.getByTestId('mobile-selection-bar')).toBeVisible();
+    await expect(page.getByTestId('properties-panel')).not.toBeVisible();
+  });
+
+  test('toolbar hides when selection bar is visible and reappears on deselect', async ({
+    page,
+  }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    const { box: canvasBox } = await canvasCenter(page);
+
+    // Select box — toolbar should hide
+    await page.mouse.click(centerX, centerY);
+    await expect(page.getByTestId('mobile-selection-bar')).toBeVisible();
+    await expect(page.getByTestId('drawing-toolbar')).toBeHidden();
+
+    // Click empty upper-left corner of canvas (well away from the box) to deselect
+    await page.mouse.click(canvasBox.x + 20, canvasBox.y + 20);
+    await expect(page.getByTestId('mobile-selection-bar')).not.toBeVisible();
+    await expect(page.getByTestId('drawing-toolbar')).toBeVisible();
+  });
+
+  test('tapping Edit opens properties panel and bar switches to Cancel/Done mode', async ({
+    page,
+  }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    await page.mouse.click(centerX, centerY);
+    await page.getByTestId('mobile-selection-edit').click();
+    await expect(page.getByTestId('properties-panel')).toBeVisible();
+    await expect(page.getByTestId('mobile-selection-bar')).toBeVisible();
+    await expect(page.getByTestId('mobile-selection-cancel')).toBeVisible();
+    await expect(page.getByTestId('mobile-selection-done')).toBeVisible();
+  });
+
+  test('tapping Done closes properties panel and returns to selection bar', async ({ page }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    await page.mouse.click(centerX, centerY);
+    await page.getByTestId('mobile-selection-edit').click();
+    await page.getByTestId('mobile-selection-done').click();
+    await expect(page.getByTestId('properties-panel')).not.toBeVisible();
+    await expect(page.getByTestId('mobile-selection-edit')).toBeVisible();
+  });
+
+  test('tapping Cancel reverts property changes and closes the panel', async ({ page }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    await page.mouse.click(centerX, centerY);
+    await page.getByTestId('mobile-selection-edit').click();
+
+    // Change the width
+    const widthInput = page.getByTestId('box-width-input');
+    const originalWidth = await widthInput.inputValue();
+    await widthInput.fill("20'");
+    await widthInput.press('Enter');
+    expect(await widthInput.inputValue()).toBe("20'");
+
+    // Cancel — width should revert
+    await page.getByTestId('mobile-selection-cancel').click();
+    await expect(page.getByTestId('properties-panel')).not.toBeVisible();
+    await expect(page.getByTestId('mobile-selection-edit')).toBeVisible();
+
+    // Re-open panel and confirm value was restored
+    await page.getByTestId('mobile-selection-edit').click();
+    await expect(page.getByTestId('box-width-input')).toHaveValue(originalWidth);
+  });
+
+  test('tapping Delete in the mobile selection bar removes the element', async ({ page }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    await page.mouse.click(centerX, centerY);
+    await page.getByTestId('mobile-selection-delete').click();
+    const elements = await getActivePlanElements(page);
+    expect(elements).toHaveLength(0);
+  });
+
+  test('undo is enabled after drawing and redo is disabled until after an undo', async ({
+    page,
+  }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    await page.mouse.click(centerX, centerY);
+    await expect(page.getByTestId('mobile-selection-undo')).toBeEnabled();
+    await expect(page.getByTestId('mobile-selection-redo')).toBeDisabled();
+  });
+
+  test('undo and redo buttons work for rotation without leaving the bar', async ({ page }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    await page.mouse.click(centerX, centerY);
+
+    // Rotate — box stays selected, bar stays visible
+    await simulateTwist(page, { midX: centerX, midY: centerY, radius: 60, endAngle: 90 });
+    await expect.poll(async () => (await getActivePlanElements(page))[0]?.rotation).toBe(90);
+
+    // Undo rotation via bar button — box still selected, redo now available
+    await page.getByTestId('mobile-selection-undo').click();
+    await expect.poll(async () => (await getActivePlanElements(page))[0]?.rotation).toBe(0);
+    await expect(page.getByTestId('mobile-selection-redo')).toBeEnabled();
+
+    // Redo rotation via bar button
+    await page.getByTestId('mobile-selection-redo').click();
+    await expect.poll(async () => (await getActivePlanElements(page))[0]?.rotation).toBe(90);
+  });
+});
+
+test.describe('Two-finger rotation', () => {
+  test.beforeEach(async ({ page }) => {
+    await setup(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+  });
+
+  test('two-finger twist rotates the selected box', async ({ page }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    await page.mouse.click(centerX, centerY);
+
+    const before = await getActivePlanElements(page);
+    expect(before[0].rotation).toBe(0);
+
+    await simulateTwist(page, { midX: centerX, midY: centerY, radius: 60, endAngle: 90 });
+    await expect.poll(async () => (await getActivePlanElements(page))[0]?.rotation).toBe(90);
+  });
+
+  test('two-finger twist rotation undoes in a single step', async ({ page }) => {
+    const { centerX, centerY } = await drawBox(page);
+    await page.getByTestId('tool-select').click();
+    await page.mouse.click(centerX, centerY);
+
+    await simulateTwist(page, { midX: centerX, midY: centerY, radius: 60, endAngle: 90 });
+    await expect.poll(async () => (await getActivePlanElements(page))[0]?.rotation).toBe(90);
+
+    // One undo step should restore original rotation
+    await page.keyboard.press('Meta+z');
+    await expect.poll(async () => (await getActivePlanElements(page))[0]?.rotation).toBe(0);
+  });
+
+  test('two-finger pinch-zoom still works when no box is selected', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    const before = await getCanvasZoom(page);
+    await simulatePinch(page, { midX: cx, midY: cy, startRadius: 40, endRadius: 120 });
+    const after = await getCanvasZoom(page);
+    expect(after).toBeGreaterThan(before);
   });
 });

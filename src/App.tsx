@@ -6,6 +6,7 @@ import { PropertiesPanel } from './components/PropertiesPanel/PropertiesPanel';
 import { HelpOverlay } from './components/HelpOverlay/HelpOverlay';
 import { ScaleBar } from './components/Canvas/ScaleBar/ScaleBar';
 import { MultiSelectBar } from './components/Canvas/MultiSelectBar/MultiSelectBar';
+import { MobileSelectionBar } from './components/Canvas/MobileSelectionBar/MobileSelectionBar';
 import { useFloorplanStore } from './store/useFloorplanStore/useFloorplanStore';
 import { decodePlanFromUrl } from './utils/storage/storage';
 import styles from './App.module.css';
@@ -65,6 +66,7 @@ export default function App() {
       <PropertiesPanel />
       <ScaleBar />
       <MultiSelectBar />
+      <MobileSelectionBar />
       {showHelp && <HelpOverlay onClose={() => setShowHelp(false)} />}
     </div>
   );

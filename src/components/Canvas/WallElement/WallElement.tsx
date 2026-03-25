@@ -171,7 +171,7 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
-        onClick={(e) => onSelect(Boolean(e.evt.shiftKey))}
+        onClick={(e) => onSelect(Boolean(e.evt?.shiftKey))}
         onTap={() => onSelect(false)}
         hitStrokeWidth={16 / zoom}
         data-testid={`wall-${wall.id}`}
@@ -225,7 +225,7 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
                 const rawFt = { x: pxToFt(node.x()), y: pxToFt(node.y()) };
                 const otherEndpoints = getOtherEndpoints(targetIdx);
                 const nearest = findNearestEndpoint(rawFt, otherEndpoints);
-                const snapIncrement = getWallSnapIncrement(Boolean(e.evt.shiftKey));
+                const snapIncrement = getWallSnapIncrement(Boolean(e.evt?.shiftKey));
                 setEndpointSnapTarget(nearest ?? null);
                 const snappedPos = nearest ?? {
                   x: snapToGrid(rawFt.x, snapIncrement),
@@ -253,7 +253,7 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
                 // If connected, redirect the resize to the OTHER (free) endpoint
                 const resolvedIdx = connected ? (idx === 0 ? wall.points.length - 1 : 0) : idx;
                 const otherEndpoints = getOtherEndpoints(resolvedIdx);
-                const snapIncrement = getWallSnapIncrement(Boolean(e.evt.shiftKey));
+                const snapIncrement = getWallSnapIncrement(Boolean(e.evt?.shiftKey));
 
                 const snapped = findNearestEndpoint(rawFt, otherEndpoints) ?? {
                   x: snapToGrid(rawFt.x, snapIncrement),

@@ -76,6 +76,10 @@ export function DrawingCanvas() {
     initialZoom: number;
     initialPan: { x: number; y: number };
     initialMidpoint: { x: number; y: number };
+    initialAngle: number;
+    selectedBoxId: string | null;
+    initialBoxRotation: number;
+    panelWasOpen: boolean;
   } | null>(null);
   const isTwoFingerActiveRef = useRef(false);
 
@@ -189,17 +193,50 @@ export function DrawingCanvas() {
       };
     }
 
+    function getTouchAngle(touches: TouchList) {
+      const t1 = touches[0];
+      const t2 = touches[1];
+      return Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * (180 / Math.PI);
+    }
+
     function handleTouchStart(e: TouchEvent) {
       if (e.touches.length === 2) {
         isTwoFingerActiveRef.current = true;
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         const { zoom: currentZoom, pan: currentPan } = useToolStore.getState();
+
+        // Find selected box for rotation
+        const toolState = useToolStore.getState();
+        const selIds = toolState.selectedIds;
+        let selectedBoxId: string | null = null;
+        let initialBoxRotation = 0;
+        if (selIds.size === 1) {
+          const [id] = selIds;
+          const el = useFloorplanStore
+            .getState()
+            .activePlan()
+            ?.elements.find((e) => e.id === id);
+          if (el?.type === 'box') {
+            selectedBoxId = id;
+            initialBoxRotation = el.rotation;
+            useFloorplanStore.getState().snapshotForUndo();
+          }
+        }
+
+        // Hide the properties panel during the gesture
+        const panelWasOpen = toolState.propertiesPanelOpen;
+        useToolStore.getState().setPropertiesPanelOpen(false);
+
         touchGestureRef.current = {
           initialDist: getTouchDist(t1, t2),
           initialZoom: currentZoom,
           initialPan: { ...currentPan },
           initialMidpoint: getTouchMidpoint(t1, t2),
+          initialAngle: getTouchAngle(e.touches),
+          selectedBoxId,
+          initialBoxRotation,
+          panelWasOpen,
         };
         // Cancel any in-progress single-finger action
         setPointerDown(null);
@@ -213,7 +250,15 @@ export function DrawingCanvas() {
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
-        const { initialDist, initialZoom, initialPan, initialMidpoint } = touchGestureRef.current;
+        const {
+          initialDist,
+          initialZoom,
+          initialPan,
+          initialMidpoint,
+          initialAngle,
+          selectedBoxId,
+          initialBoxRotation,
+        } = touchGestureRef.current;
 
         const currentDist = getTouchDist(t1, t2);
         const currentMidpoint = getTouchMidpoint(t1, t2);
@@ -234,11 +279,22 @@ export function DrawingCanvas() {
             y: currentMidpoint.y - worldUnderMidpoint.y * newZoom,
           },
         });
+
+        // Apply rotation to selected box
+        if (selectedBoxId !== null) {
+          const deltaAngle = getTouchAngle(e.touches) - initialAngle;
+          const raw = initialBoxRotation + deltaAngle;
+          const snapped = Math.round((((raw % 360) + 360) % 360) / 5) * 5;
+          useFloorplanStore.getState().updateElementSilent(selectedBoxId, { rotation: snapped });
+        }
       }
     }
 
     function handleTouchEnd(e: TouchEvent) {
       if (e.touches.length < 2) {
+        if (touchGestureRef.current) {
+          useToolStore.getState().setPropertiesPanelOpen(touchGestureRef.current.panelWasOpen);
+        }
         touchGestureRef.current = null;
         // Brief delay so the finger-lift pointer event doesn't trigger a tap
         setTimeout(() => {
@@ -403,7 +459,7 @@ export function DrawingCanvas() {
       setCursorSnappedToAxis(false);
     } else {
       const gridIncrement =
-        activeTool === 'wall' ? getWallSnapIncrement(Boolean(e.evt.shiftKey)) : undefined;
+        activeTool === 'wall' ? getWallSnapIncrement(Boolean(e.evt?.shiftKey)) : undefined;
       const { point, snappedToEndpoint, snappedToSegment, snappedToAxis } = snapWithInfo(
         world,
         gridIncrement,
@@ -432,7 +488,7 @@ export function DrawingCanvas() {
 
     const dragDist = distance(pointerDown.pos, world);
     const isDrag = dragDist > DRAG_THRESHOLD_FT;
-    const wallSnapIncrement = getWallSnapIncrement(Boolean(e.evt.shiftKey));
+    const wallSnapIncrement = getWallSnapIncrement(Boolean(e.evt?.shiftKey));
     const snappedEnd = activeTool === 'wall' ? snap(world, wallSnapIncrement) : snap(world);
 
     if (activeTool === 'measure') {
@@ -481,6 +537,9 @@ export function DrawingCanvas() {
         const rh = Math.abs(marquee.end.y - marquee.start.y);
         const hit = elements.filter((el) => elementOverlapsRect(el, rx, ry, rw, rh));
         setSelectedIds(new Set(hit.map((el) => el.id)));
+        if (hit.length === 1 && !shouldUseMobileOverlayLayout(window.innerWidth)) {
+          useToolStore.getState().setPropertiesPanelOpen(true);
+        }
       } else if (isCanvasBackgroundTarget(e.target)) {
         clearSelection();
       }
@@ -801,10 +860,18 @@ export function DrawingCanvas() {
                 onSelect={(extendSelection) => {
                   if (activeTool !== 'select') return;
                   const toolStore = useToolStore.getState();
+                  const isMobile = shouldUseMobileOverlayLayout(window.innerWidth);
                   if (extendSelection) {
                     toolStore.toggleSelectedId(el.id);
+                    const single = useToolStore.getState().selectedIds.size === 1;
+                    toolStore.setPropertiesPanelOpen(!isMobile && single);
                   } else {
+                    const alreadySelected =
+                      toolStore.selectedIds.has(el.id) && toolStore.selectedIds.size === 1;
                     toolStore.setSelectedId(el.id);
+                    if (!isMobile || alreadySelected) {
+                      toolStore.setPropertiesPanelOpen(true);
+                    }
                   }
                 }}
                 onGroupDrag={handleGroupDrag}
@@ -817,10 +884,18 @@ export function DrawingCanvas() {
                 onSelect={(extendSelection) => {
                   if (activeTool !== 'select') return;
                   const toolStore = useToolStore.getState();
+                  const isMobile = shouldUseMobileOverlayLayout(window.innerWidth);
                   if (extendSelection) {
                     toolStore.toggleSelectedId(el.id);
+                    const single = useToolStore.getState().selectedIds.size === 1;
+                    toolStore.setPropertiesPanelOpen(!isMobile && single);
                   } else {
+                    const alreadySelected =
+                      toolStore.selectedIds.has(el.id) && toolStore.selectedIds.size === 1;
                     toolStore.setSelectedId(el.id);
+                    if (!isMobile || alreadySelected) {
+                      toolStore.setPropertiesPanelOpen(true);
+                    }
                   }
                 }}
                 onGroupDrag={handleGroupDrag}

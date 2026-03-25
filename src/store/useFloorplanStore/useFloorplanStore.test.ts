@@ -182,6 +182,64 @@ describe('updateElement', () => {
   });
 });
 
+describe('updateElementSilent', () => {
+  it('updates the element without pushing to undo history', () => {
+    useFloorplanStore.getState().addElement(box());
+    const pastBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElementSilent('b1', { rotation: 45 });
+    const el = getElements()[0] as Extract<Element, { type: 'box' }>;
+    expect(el.rotation).toBe(45);
+    expect(useFloorplanStore.getState().past.length).toBe(pastBefore); // no new history entry
+  });
+
+  it('does not clear future history', () => {
+    useFloorplanStore.getState().addElement(box());
+    useFloorplanStore.getState().updateElement('b1', { rotation: 10 });
+    useFloorplanStore.getState().undo();
+    const futureLength = useFloorplanStore.getState().future.length;
+    expect(futureLength).toBeGreaterThan(0);
+    useFloorplanStore.getState().updateElementSilent('b1', { rotation: 20 });
+    expect(useFloorplanStore.getState().future.length).toBe(futureLength); // future unchanged
+  });
+});
+
+describe('snapshotForUndo', () => {
+  it('pushes current elements to past without changing elements', () => {
+    useFloorplanStore.getState().addElement(box());
+    const elementsBefore = getElements();
+    const pastLengthBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().snapshotForUndo();
+    expect(useFloorplanStore.getState().past.length).toBe(pastLengthBefore + 1);
+    expect(getElements()).toEqual(elementsBefore); // elements unchanged
+  });
+
+  it('clears future when called', () => {
+    useFloorplanStore.getState().addElement(box());
+    useFloorplanStore.getState().updateElement('b1', { rotation: 10 });
+    useFloorplanStore.getState().undo();
+    expect(useFloorplanStore.getState().future.length).toBeGreaterThan(0);
+    useFloorplanStore.getState().snapshotForUndo();
+    expect(useFloorplanStore.getState().future.length).toBe(0);
+  });
+
+  it('is a no-op on empty plan', () => {
+    const pastBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().snapshotForUndo();
+    expect(useFloorplanStore.getState().past.length).toBe(pastBefore);
+  });
+
+  it('snapshot + silent updates = single undo step', () => {
+    useFloorplanStore.getState().addElement(box());
+    useFloorplanStore.getState().snapshotForUndo();
+    useFloorplanStore.getState().updateElementSilent('b1', { rotation: 30 });
+    useFloorplanStore.getState().updateElementSilent('b1', { rotation: 60 });
+    useFloorplanStore.getState().updateElementSilent('b1', { rotation: 90 });
+    expect((getElements()[0] as Extract<Element, { type: 'box' }>).rotation).toBe(90);
+    useFloorplanStore.getState().undo();
+    expect((getElements()[0] as Extract<Element, { type: 'box' }>).rotation).toBe(0); // back to original
+  });
+});
+
 describe('deleteElement', () => {
   it('removes the element', () => {
     useFloorplanStore.getState().addElement(wall());
