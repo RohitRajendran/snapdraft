@@ -466,6 +466,26 @@ test.describe('Wall drawing', () => {
     }
   });
 
+  test('dragging a wall endpoint moves it without crashing', async ({ page }) => {
+    const { cx, cy } = await canvasCenter(page);
+    await drawWall(page, cx - 80, cy, cx + 80, cy);
+    await page.getByTestId('tool-select').click();
+    await clickWallMidpoint(page);
+
+    const before = await getActivePlanElements(page);
+    const beforeLen = Math.abs(before[0].points[1].x - before[0].points[0].x);
+
+    // Drag the right endpoint further right
+    await page.mouse.move(cx + 80, cy);
+    await page.mouse.down();
+    await page.mouse.move(cx + 160, cy, { steps: 10 });
+    await page.mouse.up();
+
+    const after = await getActivePlanElements(page);
+    const afterLen = Math.abs(after[0].points[1].x - after[0].points[0].x);
+    expect(afterLen).toBeGreaterThan(beforeLen);
+  });
+
   test('can edit wall length in properties panel', async ({ page }) => {
     const { cx, cy } = await canvasCenter(page);
     await drawWall(page, cx - 80, cy, cx + 80, cy);
