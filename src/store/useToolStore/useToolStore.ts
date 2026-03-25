@@ -28,6 +28,10 @@ type ToolStore = {
   completeMeasurement: (pt: Point) => void;
   clearMeasurement: () => void;
 
+  // Properties panel visibility — controlled explicitly so mobile can keep canvas clear
+  propertiesPanelOpen: boolean;
+  setPropertiesPanelOpen: (v: boolean) => void;
+
   // View — zoom is a multiplier (1 = default, 2 = 2x zoom in)
   zoom: number;
   setZoom: (zoom: number) => void;
@@ -46,6 +50,7 @@ export const useToolStore = create<ToolStore>((set) => ({
       isChainArmed: false,
       measureStart: null,
       measureEnd: null,
+      propertiesPanelOpen: false,
     }),
 
   chainPoints: [],
@@ -85,7 +90,8 @@ export const useToolStore = create<ToolStore>((set) => ({
       selectedId: selectedIds.size === 1 ? [...selectedIds][0] : null,
     }),
 
-  clearSelection: () => set({ selectedId: null, selectedIds: new Set() }),
+  clearSelection: () =>
+    set({ selectedId: null, selectedIds: new Set(), propertiesPanelOpen: false }),
 
   measureStart: null,
   measureEnd: null,
@@ -94,6 +100,9 @@ export const useToolStore = create<ToolStore>((set) => ({
   startMeasurement: (measureStart) => set({ measureStart, measureEnd: null }),
   completeMeasurement: (measureEnd) => set({ measureEnd }),
   clearMeasurement: () => set({ measureStart: null, measureEnd: null }),
+
+  propertiesPanelOpen: false,
+  setPropertiesPanelOpen: (propertiesPanelOpen) => set({ propertiesPanelOpen }),
 
   zoom: 1,
   setZoom: (zoom) => set({ zoom }),

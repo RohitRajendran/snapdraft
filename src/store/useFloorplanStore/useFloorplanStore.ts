@@ -32,9 +32,13 @@ type FloorplanStore = {
   // Element management
   addElement: (element: Element) => void;
   updateElement: (id: string, updates: Partial<Element>) => void;
+  updateElementSilent: (id: string, updates: Partial<Element>) => void;
   updateElements: (updates: Record<string, Partial<Element>>) => void;
   deleteElement: (id: string) => void;
   deleteElements: (ids: Iterable<string>) => void;
+
+  // Undo snapshot without changing elements (use before a silent-update gesture)
+  snapshotForUndo: () => void;
 
   // Undo / redo
   undo: () => void;
@@ -208,6 +212,23 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
     });
   },
 
+  updateElementSilent: (id, updates) => {
+    set((state) => {
+      const current = state.plans.find((p) => p.id === state.activeId)?.elements ?? [];
+      const newElements = current.map((el) =>
+        el.id === id ? ({ ...el, ...updates } as Element) : el,
+      );
+      if (sameElements(current, newElements)) return {};
+      const plans = state.plans.map((p) =>
+        p.id === state.activeId
+          ? { ...p, elements: cloneElements(newElements), updatedAt: new Date().toISOString() }
+          : p,
+      );
+      persist(plans, state.activeId);
+      return { plans };
+    });
+  },
+
   updateElements: (updates) => {
     set((state) => {
       const current = state.plans.find((p) => p.id === state.activeId)?.elements ?? [];
@@ -237,6 +258,15 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
         state,
         current.filter((el) => !idSet.has(el.id)),
       );
+    });
+  },
+
+  snapshotForUndo: () => {
+    set((state) => {
+      const current = state.plans.find((p) => p.id === state.activeId)?.elements ?? [];
+      if (current.length === 0) return {};
+      const past = [...state.past.slice(-(MAX_HISTORY - 1)), cloneElements(current)];
+      return { past, future: [] };
     });
   },
 

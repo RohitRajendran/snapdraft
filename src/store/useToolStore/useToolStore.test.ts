@@ -13,6 +13,7 @@ beforeEach(() => {
     measureEnd: null,
     zoom: 1,
     pan: { x: 0, y: 0 },
+    propertiesPanelOpen: false,
   });
 });
 
@@ -139,6 +140,31 @@ describe('selection', () => {
     useToolStore.getState().clearSelection();
     expect(useToolStore.getState().selectedId).toBeNull();
     expect(useToolStore.getState().selectedIds.size).toBe(0);
+  });
+});
+
+describe('propertiesPanelOpen', () => {
+  it('defaults to false', () => {
+    expect(useToolStore.getState().propertiesPanelOpen).toBe(false);
+  });
+
+  it('setPropertiesPanelOpen toggles the flag', () => {
+    useToolStore.getState().setPropertiesPanelOpen(true);
+    expect(useToolStore.getState().propertiesPanelOpen).toBe(true);
+    useToolStore.getState().setPropertiesPanelOpen(false);
+    expect(useToolStore.getState().propertiesPanelOpen).toBe(false);
+  });
+
+  it('clearSelection resets propertiesPanelOpen to false', () => {
+    useToolStore.getState().setPropertiesPanelOpen(true);
+    useToolStore.getState().clearSelection();
+    expect(useToolStore.getState().propertiesPanelOpen).toBe(false);
+  });
+
+  it('setActiveTool resets propertiesPanelOpen to false', () => {
+    useToolStore.getState().setPropertiesPanelOpen(true);
+    useToolStore.getState().setActiveTool('box');
+    expect(useToolStore.getState().propertiesPanelOpen).toBe(false);
   });
 });
 
