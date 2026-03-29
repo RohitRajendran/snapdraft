@@ -43,6 +43,12 @@ type FloorplanStore = {
   // Undo / redo
   undo: () => void;
   redo: () => void;
+
+  // Sync helpers — called by useSyncManager, not by UI code directly
+  /** Replace a plan's elements with a version received from the cloud. Clears undo history. */
+  applyRemoteElements: (planId: string, elements: Element[], remoteUpdatedAt: string) => void;
+  /** Add plans from the cloud that don't exist locally. */
+  mergePlans: (incoming: FloorPlan[]) => void;
 };
 
 function persist(plans: FloorPlan[], activeId: string | null) {
@@ -303,6 +309,30 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
         past: [...state.past.slice(-(MAX_HISTORY - 1)), cloneElements(current)],
         future: state.future.slice(1),
       };
+    });
+  },
+
+  applyRemoteElements: (planId, elements, remoteUpdatedAt) => {
+    set((state) => {
+      const plans = state.plans.map((p) =>
+        p.id === planId
+          ? { ...p, elements: cloneElements(elements), updatedAt: remoteUpdatedAt }
+          : p,
+      );
+      persist(plans, state.activeId);
+      // Clear undo/redo so history doesn't contain pre-sync state.
+      return { plans, past: [], future: [] };
+    });
+  },
+
+  mergePlans: (incoming) => {
+    set((state) => {
+      const existingIds = new Set(state.plans.map((p) => p.id));
+      const toAdd = incoming.filter((p) => !existingIds.has(p.id));
+      if (toAdd.length === 0) return {};
+      const plans = [...state.plans, ...toAdd];
+      persist(plans, state.activeId);
+      return { plans };
     });
   },
 }));

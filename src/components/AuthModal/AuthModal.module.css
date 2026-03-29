@@ -1,0 +1,211 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.card {
+  background: #f5f0e8;
+  border: 1px solid #c8c4bc;
+  border-radius: 12px;
+  padding: 28px;
+  width: 360px;
+  max-width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  font-family: 'Courier New', monospace;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+}
+
+.close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4a4a4a;
+  padding: 4px 8px;
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close:hover {
+  background: #ece8e0;
+}
+
+.close:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #4a4a4a;
+  margin: 0 0 20px;
+  line-height: 1.4;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #3a3a3a;
+  margin-top: 8px;
+}
+
+.input {
+  background: white;
+  border: 1px solid #b8c9e0;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  color: #1a1a1a;
+  min-height: 44px;
+}
+
+.input:focus {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 1px;
+}
+
+.errorMsg {
+  font-size: 13px;
+  color: #c0392b;
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.25);
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+.infoMsg {
+  font-size: 13px;
+  color: #2c6e4a;
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  background: rgba(44, 110, 74, 0.08);
+  border: 1px solid rgba(44, 110, 74, 0.25);
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+.submitBtn {
+  margin-top: 14px;
+  background: #2c2c2c;
+  color: #f5f0e8;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 24px;
+  cursor: pointer;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #1a1a1a;
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitBtn:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
+.switchRow {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #4a4a4a;
+  text-align: center;
+}
+
+.switchBtn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: #4a6fa5;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.switchBtn:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
+.guestRow {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.guestBtn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  color: #7a7a7a;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 6px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.guestBtn:hover {
+  color: #3a3a3a;
+}
+
+.guestBtn:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .card {
+    width: 100%;
+    padding: 20px;
+  }
+}

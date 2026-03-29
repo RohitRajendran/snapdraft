@@ -8,6 +8,8 @@ import { ScaleBar } from './components/Canvas/ScaleBar/ScaleBar';
 import { MultiSelectBar } from './components/Canvas/MultiSelectBar/MultiSelectBar';
 import { MobileSelectionBar } from './components/Canvas/MobileSelectionBar/MobileSelectionBar';
 import { useFloorplanStore } from './store/useFloorplanStore/useFloorplanStore';
+import { useAuthStore } from './store/useAuthStore/useAuthStore';
+import { useSyncManager } from './sync/useSyncManager';
 import { decodePlanFromUrl } from './utils/storage/storage';
 import styles from './App.module.css';
 
@@ -19,6 +21,16 @@ export default function App() {
   });
 
   const { plans, createPlan, importPlan, activeId } = useFloorplanStore();
+  const initialize = useAuthStore((s) => s.initialize);
+
+  // Mount Supabase auth listener once.
+  useEffect(() => {
+    const unsubscribe = initialize();
+    return unsubscribe;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mount sync layer (no-op when Supabase is not configured).
+  useSyncManager();
 
   // Import plan from URL on first load
   useEffect(() => {

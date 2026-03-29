@@ -1,12 +1,18 @@
 import { useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplanStore';
+import { useAuthStore } from '../../../store/useAuthStore/useAuthStore';
+import { isSyncEnabled } from '../../../lib/supabase';
 import { FloorplanManager } from '../../FloorplanManager/FloorplanManager';
+import { AuthModal } from '../../AuthModal/AuthModal';
+import { UserMenu } from '../../UserMenu/UserMenu';
 import styles from './TopBar.module.css';
 
 export function TopBar() {
   const { activePlan, renamePlan } = useFloorplanStore();
+  const user = useAuthStore((s) => s.user);
   const [showManager, setShowManager] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const lastTapRef = useRef(0);
@@ -77,9 +83,25 @@ export function TopBar() {
         >
           Plans <ChevronDown size={14} />
         </button>
+
+        {isSyncEnabled && (
+          user ? (
+            <UserMenu />
+          ) : (
+            <button
+              className={styles.signInBtn}
+              onClick={() => setShowAuth(true)}
+              aria-label="Sign in to sync plans"
+              data-testid="sign-in-btn"
+            >
+              Sign in
+            </button>
+          )
+        )}
       </div>
 
       {showManager && <FloorplanManager onClose={() => setShowManager(false)} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </>
   );
 }

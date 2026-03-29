@@ -31,4 +31,8 @@ export type FloorPlan = {
   createdAt: string;
   updatedAt: string;
   elements: Element[];
+  /** Set when the plan has been synced to the cloud. undefined = local-only. */
+  ownerId?: string;
+  /** When true, any authenticated user who knows the plan ID can view and edit it. */
+  isPublic?: boolean;
 };

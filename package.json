@@ -20,6 +20,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.100.1",
     "konva": "^10.2.3",
     "lucide-react": "^0.577.0",
     "lz-string": "^1.5.0",

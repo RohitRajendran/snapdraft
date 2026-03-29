@@ -405,3 +405,104 @@ describe('persistence to localStorage', () => {
     expect(localStorage.getItem('snapdraft_active')).toBe(id);
   });
 });
+
+describe('applyRemoteElements', () => {
+  it('replaces elements with the remote version', () => {
+    useFloorplanStore.getState().addElement(wall());
+    const activeId = useFloorplanStore.getState().activeId!;
+    const remote = [box()];
+    useFloorplanStore
+      .getState()
+      .applyRemoteElements(activeId, remote, new Date().toISOString());
+    expect(getElements()).toHaveLength(1);
+    expect(getElements()[0].type).toBe('box');
+  });
+
+  it('uses the provided remoteUpdatedAt timestamp', () => {
+    const activeId = useFloorplanStore.getState().activeId!;
+    const ts = '2030-01-01T00:00:00.000Z';
+    useFloorplanStore.getState().applyRemoteElements(activeId, [], ts);
+    const plan = useFloorplanStore.getState().activePlan();
+    expect(plan?.updatedAt).toBe(ts);
+  });
+
+  it('clears undo and redo history', () => {
+    useFloorplanStore.getState().addElement(wall());
+    expect(useFloorplanStore.getState().past.length).toBeGreaterThan(0);
+    const activeId = useFloorplanStore.getState().activeId!;
+    useFloorplanStore
+      .getState()
+      .applyRemoteElements(activeId, [], new Date().toISOString());
+    expect(useFloorplanStore.getState().past).toHaveLength(0);
+    expect(useFloorplanStore.getState().future).toHaveLength(0);
+  });
+
+  it('persists the updated plan to localStorage', () => {
+    const activeId = useFloorplanStore.getState().activeId!;
+    useFloorplanStore
+      .getState()
+      .applyRemoteElements(activeId, [wall()], new Date().toISOString());
+    const stored = JSON.parse(localStorage.getItem('snapdraft_floorplans')!);
+    const persisted = stored.find((p: { id: string }) => p.id === activeId);
+    expect(persisted?.elements).toHaveLength(1);
+  });
+
+  it('is a no-op for an unknown plan id', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore
+      .getState()
+      .applyRemoteElements('nonexistent', [box()], new Date().toISOString());
+    expect(getElements()).toHaveLength(1);
+    expect(getElements()[0].type).toBe('wall');
+  });
+});
+
+describe('mergePlans', () => {
+  it('adds incoming plans that do not exist locally', () => {
+    const before = useFloorplanStore.getState().plans.length;
+    const incoming = [
+      {
+        id: 'remote-1',
+        version: 1 as const,
+        name: 'Remote Plan',
+        elements: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        ownerId: 'user-1',
+      },
+    ];
+    useFloorplanStore.getState().mergePlans(incoming);
+    expect(useFloorplanStore.getState().plans.length).toBe(before + 1);
+  });
+
+  it('does not duplicate plans already present locally', () => {
+    const existingId = useFloorplanStore.getState().activeId!;
+    const before = useFloorplanStore.getState().plans.length;
+    useFloorplanStore.getState().mergePlans([
+      {
+        id: existingId,
+        version: 1 as const,
+        name: 'Duplicate',
+        elements: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ]);
+    expect(useFloorplanStore.getState().plans.length).toBe(before);
+  });
+
+  it('persists after merge', () => {
+    useFloorplanStore.getState().mergePlans([
+      {
+        id: 'remote-2',
+        version: 1 as const,
+        name: 'Cloud Plan',
+        elements: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ]);
+    const stored = JSON.parse(localStorage.getItem('snapdraft_floorplans')!);
+    expect(stored.some((p: { id: string }) => p.id === 'remote-2')).toBe(true);
+  });
+});

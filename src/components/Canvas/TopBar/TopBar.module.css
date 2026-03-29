@@ -110,6 +110,30 @@
   outline-offset: 2px;
 }
 
+.signInBtn {
+  background: none;
+  border: 1px solid #b8c9e0;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #4a6fa5;
+  cursor: pointer;
+  padding: 6px 14px;
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.signInBtn:hover {
+  background: #e8f0f8;
+}
+
+.signInBtn:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
 @media (max-width: 730px) {
   .bar {
     height: 56px;

@@ -1,0 +1,87 @@
+.container {
+  position: relative;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  background: #4a6fa5;
+  color: white;
+  border: none;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar:hover {
+  background: #3a5f95;
+}
+
+.avatar:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #f5f0e8;
+  border: 1px solid #c8c4bc;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  min-width: 180px;
+  z-index: 151;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+}
+
+.emailRow {
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #6a6a6a;
+  border-bottom: 1px solid #d8d2c8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: #1a1a1a;
+  cursor: pointer;
+  text-align: left;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.menuItem:hover {
+  background: #ece8e0;
+}
+
+.menuItem:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: -2px;
+}
