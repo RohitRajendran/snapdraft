@@ -61,6 +61,16 @@ describe('createPlan', () => {
     expect(useFloorplanStore.getState().past).toHaveLength(0);
     expect(useFloorplanStore.getState().future).toHaveLength(0);
   });
+
+  it('creates a plan with initial elements and empty undo history', () => {
+    const initial: Element[] = [wall('seed-w'), box('seed-b')];
+    const id = useFloorplanStore.getState().createPlan('Seeded', initial);
+    const plan = useFloorplanStore.getState().plans.find((p) => p.id === id);
+    expect(plan!.elements).toHaveLength(2);
+    expect(plan!.elements[0].id).toBe('seed-w');
+    expect(plan!.elements[1].id).toBe('seed-b');
+    expect(useFloorplanStore.getState().past).toHaveLength(0);
+  });
 });
 
 describe('deletePlan', () => {
