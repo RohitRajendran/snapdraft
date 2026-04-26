@@ -108,6 +108,15 @@ test.describe('App shell', () => {
     await expect(page.getByTestId('scale-bar')).toBeVisible();
   });
 
+  test('creates exactly one sample plan on first load', async ({ page }) => {
+    const plans = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem('snapdraft_floorplans') ?? '[]'),
+    );
+    expect(plans).toHaveLength(1);
+    expect(plans[0].name).toBe('Bedroom');
+    expect(plans[0].elements.length).toBeGreaterThan(0);
+  });
+
   test('wall tool is active by default', async ({ page }) => {
     await expect(page.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'true');
   });
@@ -222,6 +231,30 @@ test.describe('Help overlay', () => {
     );
     await expect(page.getByText('Advanced shortcuts and tips')).toBeVisible();
     await expect(page.getByText('Undo / Redo')).not.toBeVisible();
+  });
+
+  test.describe('About tab', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.getByTestId('tool-help').click();
+      await page.getByRole('tab', { name: 'About' }).click();
+    });
+
+    test('switches to about tab and shows origin story', async ({ page }) => {
+      await expect(page.getByRole('tab', { name: 'About' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(page.getByText('— Rohit')).toBeVisible();
+    });
+
+    test('shows GitHub and Email links', async ({ page }) => {
+      await expect(page.getByRole('link', { name: 'GitHub' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Email' })).toBeVisible();
+    });
+
+    test('help tab content is hidden when about is active', async ({ page }) => {
+      await expect(page.getByTestId('help-save-note')).not.toBeVisible();
+    });
   });
 });
 
@@ -553,7 +586,7 @@ test.describe('Multi-select', () => {
     );
     // Konva repaints its hit canvas via requestAnimationFrame after React commits.
     // Clicking before that frame fires would miss the new nodes. Wait past it.
-    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(resolve)));
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
 
     await page.mouse.click(firstBox.centerX, firstBox.centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
