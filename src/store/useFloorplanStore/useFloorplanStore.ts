@@ -23,7 +23,7 @@ type FloorplanStore = {
   activePlan: () => FloorPlan | null;
 
   // Plan management
-  createPlan: (name?: string) => string;
+  createPlan: (name?: string, elements?: Element[]) => string;
   importPlan: (plan: FloorPlan) => string;
   deletePlan: (id: string) => void;
   renamePlan: (id: string, name: string) => void;
@@ -135,7 +135,7 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
     return plans.find((p) => p.id === activeId) ?? null;
   },
 
-  createPlan: (name = 'Untitled Plan') => {
+  createPlan: (name = 'Untitled Plan', elements: Element[] = []) => {
     const id = nanoid();
     const plan: FloorPlan = {
       id,
@@ -143,7 +143,7 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
       name,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      elements: [],
+      elements: cloneElements(elements),
     };
     set((state) => {
       const plans = [...state.plans, plan];

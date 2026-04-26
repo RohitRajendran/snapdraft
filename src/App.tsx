@@ -9,6 +9,7 @@ import { MultiSelectBar } from './components/Canvas/MultiSelectBar/MultiSelectBa
 import { MobileSelectionBar } from './components/Canvas/MobileSelectionBar/MobileSelectionBar';
 import { useFloorplanStore } from './store/useFloorplanStore/useFloorplanStore';
 import { decodePlanFromUrl } from './utils/storage/storage';
+import { createSampleElements } from './utils/samplePlan';
 import styles from './App.module.css';
 
 export default function App() {
@@ -18,7 +19,7 @@ export default function App() {
     return true;
   });
 
-  const { plans, createPlan, importPlan, activeId } = useFloorplanStore();
+  const { createPlan, importPlan, activeId } = useFloorplanStore();
 
   // Import plan from URL on first load
   useEffect(() => {
@@ -33,10 +34,12 @@ export default function App() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Create a default plan on first load
+  // Create a default plan with a sample bedroom on first load.
+  // Read from the store directly (not the closure) so StrictMode's double-invoke
+  // doesn't create a second plan after the first effect call updates the store.
   useEffect(() => {
-    if (plans.length === 0) {
-      createPlan('My First Plan');
+    if (useFloorplanStore.getState().plans.length === 0) {
+      createPlan('Bedroom', createSampleElements());
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
