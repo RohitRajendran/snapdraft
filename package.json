@@ -17,7 +17,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "spell:check": "cspell \"src/**/*.{ts,tsx}\" --no-progress",
-    "prepare": "husky"
+    "prepare": "husky",
+    "og-image": "bash scripts/og-image/generate-og-image.sh"
   },
   "dependencies": {
     "konva": "^10.2.3",
