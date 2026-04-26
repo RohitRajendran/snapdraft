@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { LayoutList } from 'lucide-react';
 import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplanStore';
 import { FloorplanManager } from '../../FloorplanManager/FloorplanManager';
 import styles from './TopBar.module.css';
@@ -75,7 +75,7 @@ export function TopBar() {
           aria-label="Manage floor plans"
           data-testid="plans-button"
         >
-          Plans <ChevronDown size={14} />
+          Plans <LayoutList size={14} />
         </button>
       </div>
 

@@ -99,6 +99,9 @@
   min-height: 44px;
   min-width: 44px;
   touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .plansBtn:hover {
