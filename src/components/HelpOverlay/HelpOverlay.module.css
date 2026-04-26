@@ -15,7 +15,7 @@
   border: 1px solid #c8c4bc;
   border-radius: 12px;
   padding: 28px;
-  min-width: 360px;
+  width: 560px;
   max-width: 90vw;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
@@ -42,7 +42,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .title {
@@ -53,12 +53,90 @@
   color: #1a1a1a;
 }
 
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #d0ccc4;
+  margin-bottom: 20px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6a6a6a;
+  cursor: pointer;
+  padding: 8px 16px;
+  min-height: 40px;
+  touch-action: manipulation;
+}
+
+.tab:hover {
+  color: #2c2c2c;
+}
+
+.tab:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: -2px;
+}
+
+.tabActive {
+  color: #1a1a1a;
+  border-bottom-color: #2c2c2c;
+}
+
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.aboutText {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #3a3a3a;
+  margin: 0;
+}
+
+.aboutSignoff {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aboutLinks {
+  display: flex;
+  gap: 20px;
+}
+
+.aboutLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c2c2c;
+  text-decoration: none;
+  border-bottom: 1px solid #2c2c2c;
+  padding-bottom: 1px;
+}
+
+.aboutLink:hover {
+  color: #4a6fa5;
+  border-bottom-color: #4a6fa5;
+}
+
 .subtitle {
   font-size: 14px;
   font-weight: 600;
   color: #3a3a3a;
   letter-spacing: 0.04em;
-  margin: -12px 0 40px;
+  margin: 0 0 20px;
 }
 
 .notice {

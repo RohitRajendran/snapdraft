@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap/useFocusTrap';
 import styles from './HelpOverlay.module.css';
@@ -163,6 +163,7 @@ const titleId = 'help-overlay-title';
 
 export function HelpOverlay({ onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<'help' | 'about'>('help');
   const { gettingStarted, advancedShortcuts, dismissHint } = getHelpContent(detectInputProfile());
 
   useFocusTrap(cardRef, onClose);
@@ -185,29 +186,95 @@ export function HelpOverlay({ onClose }: Props) {
             <X size={16} />
           </button>
         </div>
-        <p className={styles.subtitle}>Sketch floor plans right in your browser.</p>
-        <dl className={styles.grid}>
-          {gettingStarted.map(({ action, hint }) => (
-            <div key={action} className={styles.row}>
-              <dt className={styles.hint}>{action}</dt>
-              <dd className={styles.action}>{hint}</dd>
-            </div>
-          ))}
-        </dl>
-        <div className={styles.notice} data-testid="help-save-note">
-          Your work is saved automatically in this browser on this device.
+
+        <div className={styles.tabs} role="tablist">
+          <button
+            role="tab"
+            aria-selected={activeTab === 'help'}
+            className={`${styles.tab} ${activeTab === 'help' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('help')}
+          >
+            Help
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'about'}
+            className={`${styles.tab} ${activeTab === 'about' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('about')}
+          >
+            About
+          </button>
         </div>
-        <details className={styles.advanced}>
-          <summary className={styles.advancedSummary}>Advanced shortcuts and tips</summary>
-          <dl className={styles.grid}>
-            {advancedShortcuts.map(({ action, hint }) => (
-              <div key={action} className={styles.row}>
-                <dt className={styles.hint}>{action}</dt>
-                <dd className={styles.action}>{hint}</dd>
+
+        {activeTab === 'help' && (
+          <>
+            <p className={styles.subtitle}>Sketch floor plans right in your browser.</p>
+            <dl className={styles.grid}>
+              {gettingStarted.map(({ action, hint }) => (
+                <div key={action} className={styles.row}>
+                  <dt className={styles.hint}>{action}</dt>
+                  <dd className={styles.action}>{hint}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className={styles.notice} data-testid="help-save-note">
+              Your work is saved automatically in this browser on this device.
+            </div>
+            <details className={styles.advanced}>
+              <summary className={styles.advancedSummary}>Advanced shortcuts and tips</summary>
+              <dl className={styles.grid}>
+                {advancedShortcuts.map(({ action, hint }) => (
+                  <div key={action} className={styles.row}>
+                    <dt className={styles.hint}>{action}</dt>
+                    <dd className={styles.action}>{hint}</dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
+          </>
+        )}
+
+        {activeTab === 'about' && (
+          <div className={styles.about}>
+            <p className={styles.aboutText}>Hey,</p>
+            <p className={styles.aboutText}>
+              My wife is an architect (the building kind, not the software kind). Whenever we need
+              to plan anything for our home, she pulls up Revit. It&apos;s been amazing for things
+              like our kitchen renovation, but it&apos;s a lot for simpler things like experimenting
+              with furniture layouts or making sure the side table we spotted at IKEA would actually
+              fit.
+            </p>
+            <p className={styles.aboutText}>
+              I tried a few apps and websites. Everything was either too expensive or more than I
+              was really looking for. So I built SnapDraft: something quick, simple, and easy enough
+              for a non-architect like me to use and pull up from anywhere.
+            </p>
+            <p className={styles.aboutText}>Hope it&apos;s useful for you too.</p>
+            <div className={styles.aboutSignoff}>
+              <p className={styles.aboutText}>— Rohit</p>
+              <p className={styles.aboutText}>
+                P.S. If you have feedback, I&apos;d love to hear it!
+              </p>
+              <div className={styles.aboutLinks}>
+                <a
+                  href="https://github.com/RohitRajendran/snapdraft"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.aboutLink}
+                >
+                  GitHub
+                </a>
+                <a
+                  href="mailto:rohit@hummingbirdtech.xyz?subject=SnapDraft"
+                  className={styles.aboutLink}
+                >
+                  Email
+                </a>
               </div>
-            ))}
-          </dl>
-        </details>
+            </div>
+          </div>
+        )}
+
         <div className={styles.footer}>
           <button className={styles.startBtn} onClick={onClose}>
             Start drawing

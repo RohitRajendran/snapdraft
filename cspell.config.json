@@ -23,7 +23,9 @@
     "lzstring",
     "lz",
     "qrcode",
-    "qr"
+    "qr",
+    "Revit",
+    "Rohit"
   ],
   "ignoreWords": [],
   "import": ["@cspell/dict-typescript", "@cspell/dict-node"]
