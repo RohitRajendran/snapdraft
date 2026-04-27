@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Renders og-image.html → public/og-image.png at 1200×630.
-# Usage: npm run og-image
+# Usage: npm run generate:og-image
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
