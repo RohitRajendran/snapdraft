@@ -24,6 +24,8 @@ export type Element = Wall | Box;
 
 export type ToolType = 'select' | 'wall' | 'box' | 'measure';
 
+export type UnitSystem = 'imperial' | 'metric';
+
 export type FloorPlan = {
   id: string;
   version: number;

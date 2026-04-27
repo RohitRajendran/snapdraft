@@ -1,9 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FtInInput } from './FtInInput';
+import { useToolStore } from '../../../store/useToolStore/useToolStore';
 
-describe('FtInInput', () => {
+beforeEach(() => {
+  localStorage.clear();
+  useToolStore.setState({ unit: 'imperial' });
+});
+
+describe('FtInInput — imperial', () => {
   it('displays formatted value when not focused', () => {
     render(<FtInInput label="Width" value={5.5} onChange={vi.fn()} />);
     expect(screen.getByRole('textbox')).toHaveValue('5\' 6"');
@@ -73,8 +79,58 @@ describe('FtInInput', () => {
     expect(screen.getByTestId('my-input')).toBeInTheDocument();
   });
 
-  it('shows hint text', () => {
+  it('shows imperial hint text', () => {
     render(<FtInInput label="Width" value={5} onChange={vi.fn()} />);
-    expect(screen.getByText(/Accepts:/)).toBeInTheDocument();
+    expect(screen.getByText(/10' 6"/)).toBeInTheDocument();
+  });
+});
+
+describe('FtInInput — metric', () => {
+  beforeEach(() => {
+    useToolStore.setState({ unit: 'metric' });
+  });
+
+  it('displays value in metres', () => {
+    // FT_PER_M ft = 1.00 m
+    render(<FtInInput label="Width" value={1 / 0.3048} onChange={vi.fn()} />);
+    expect(screen.getByRole('textbox')).toHaveValue('1 m');
+  });
+
+  it('parses "3.5 m" and calls onChange in feet', async () => {
+    const onChange = vi.fn();
+    render(<FtInInput label="Width" value={1} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+    await userEvent.click(input);
+    await userEvent.clear(input);
+    await userEvent.type(input, '3.5 m');
+    await userEvent.tab();
+    expect(onChange).toHaveBeenCalledWith(expect.closeTo(3.5 / 0.3048, 3));
+  });
+
+  it('parses "350 cm"', async () => {
+    const onChange = vi.fn();
+    render(<FtInInput label="Width" value={1} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+    await userEvent.click(input);
+    await userEvent.clear(input);
+    await userEvent.type(input, '350 cm');
+    await userEvent.tab();
+    expect(onChange).toHaveBeenCalledWith(expect.closeTo(3.5 / 0.3048, 3));
+  });
+
+  it('parses bare decimal as metres', async () => {
+    const onChange = vi.fn();
+    render(<FtInInput label="Width" value={1} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+    await userEvent.click(input);
+    await userEvent.clear(input);
+    await userEvent.type(input, '3.5');
+    await userEvent.tab();
+    expect(onChange).toHaveBeenCalledWith(expect.closeTo(3.5 / 0.3048, 3));
+  });
+
+  it('shows metric hint text', () => {
+    render(<FtInInput label="Width" value={5} onChange={vi.fn()} />);
+    expect(screen.getByText(/350 cm/)).toBeInTheDocument();
   });
 });

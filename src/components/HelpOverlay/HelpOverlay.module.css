@@ -91,6 +91,66 @@
   border-bottom-color: #2c2c2c;
 }
 
+.preferences {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.prefRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.prefLabel {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #3a3a3a;
+}
+
+.unitToggle {
+  display: flex;
+  border: 1px solid #c8c4bc;
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.unitOption {
+  padding: 6px 18px;
+  min-height: 44px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6a6a6a;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.unitOption:hover {
+  color: #2c2c2c;
+}
+
+.unitOption:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: -2px;
+}
+
+.unitOptionActive {
+  background: #2c2c2c;
+  color: #f5f0e8;
+}
+
+.unitOptionActive:hover {
+  color: #f5f0e8;
+}
+
 .about {
   display: flex;
   flex-direction: column;

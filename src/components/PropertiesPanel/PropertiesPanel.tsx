@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanStore';
 import { useToolStore } from '../../store/useToolStore/useToolStore';
 import type { Box, Element, Wall } from '../../types';
-import { collectConnectedWallIds, formatFeet } from '../../utils/geometry/geometry';
+import { collectConnectedWallIds } from '../../utils/geometry/geometry';
+import { formatDimension } from '../../utils/units/units';
 import { shouldUseMobileOverlayLayout } from '../Canvas/layout';
 import { FtInInput } from './FtInInput/FtInInput';
 import styles from './PropertiesPanel.module.css';
@@ -32,6 +33,7 @@ function WallProperties({
 
   const totalLen = segments.reduce((sum, s) => sum + s.len, 0);
   const isSimple = segments.length === 1;
+  const unit = useToolStore((s) => s.unit);
 
   function applySegmentLength(segIdx: number, newLen: number) {
     if (newLen <= 0) return;
@@ -68,7 +70,7 @@ function WallProperties({
     <div className={styles.fields}>
       <div className={styles.row}>
         <span className={styles.fieldLabel}>Total length</span>
-        <span className={styles.value}>{formatFeet(totalLen)}</span>
+        <span className={styles.value}>{formatDimension(totalLen, unit)}</span>
       </div>
       {segments.map((seg, i) => (
         <FtInInput

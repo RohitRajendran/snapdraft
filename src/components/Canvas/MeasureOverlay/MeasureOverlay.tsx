@@ -1,5 +1,7 @@
 import { Group, Line, Rect, Text } from 'react-konva';
-import { distance, formatFeet } from '../../../utils/geometry/geometry';
+import { distance } from '../../../utils/geometry/geometry';
+import { formatDimension } from '../../../utils/units/units';
+import { useToolStore } from '../../../store/useToolStore/useToolStore';
 import type { Point } from '../../../types';
 
 type Props = {
@@ -61,6 +63,7 @@ function TapeBody({
 }
 
 export function MeasureOverlay({ start, end, zoom, worldToBase }: Props) {
+  const unit = useToolStore((s) => s.unit);
   const a = worldToBase(start);
 
   // Constant screen-space sizes
@@ -187,7 +190,7 @@ export function MeasureOverlay({ start, end, zoom, worldToBase }: Props) {
         <Text
           x={mid.x + 8 / zoom}
           y={mid.y - 16 / zoom}
-          text={formatFeet(dist)}
+          text={formatDimension(dist, unit)}
           fontSize={12 / zoom}
           fontFamily="Courier New"
           fontStyle="bold"

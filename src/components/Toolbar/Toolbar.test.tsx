@@ -27,6 +27,7 @@ function resetStores() {
     selectedIds: new Set(),
     selectedId: null,
     propertiesPanelOpen: false,
+    unit: 'imperial',
   });
 }
 

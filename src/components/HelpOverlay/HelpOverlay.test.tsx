@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HelpOverlay } from './HelpOverlay';
+import { useToolStore } from '../../store/useToolStore/useToolStore';
 
 function mockInputProfile({
   maxTouchPoints,
@@ -63,6 +64,8 @@ const touchAndKeyboardWindows = {
 describe('HelpOverlay', () => {
   beforeEach(() => {
     mockInputProfile(keyboardMac);
+    localStorage.clear();
+    useToolStore.setState({ unit: 'imperial' });
   });
 
   it('calls onClose when Escape is pressed', async () => {
@@ -114,6 +117,47 @@ describe('HelpOverlay', () => {
       expect(
         screen.getByText(/tap anywhere or press Escape to dismiss · \? to reopen/i),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('Preferences tab', () => {
+    it('switches to Preferences tab', async () => {
+      render(<HelpOverlay onClose={vi.fn()} />);
+      await userEvent.click(screen.getByRole('tab', { name: 'Preferences' }));
+      expect(screen.getByRole('tab', { name: 'Preferences' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    });
+
+    it('shows ft/in as active when unit is imperial', async () => {
+      render(<HelpOverlay onClose={vi.fn()} />);
+      await userEvent.click(screen.getByRole('tab', { name: 'Preferences' }));
+      expect(screen.getByTestId('unit-imperial')).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByTestId('unit-metric')).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('clicking m updates store to metric', async () => {
+      render(<HelpOverlay onClose={vi.fn()} />);
+      await userEvent.click(screen.getByRole('tab', { name: 'Preferences' }));
+      await userEvent.click(screen.getByTestId('unit-metric'));
+      expect(useToolStore.getState().unit).toBe('metric');
+      expect(screen.getByTestId('unit-metric')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('clicking ft/in restores imperial', async () => {
+      useToolStore.setState({ unit: 'metric' });
+      render(<HelpOverlay onClose={vi.fn()} />);
+      await userEvent.click(screen.getByRole('tab', { name: 'Preferences' }));
+      await userEvent.click(screen.getByTestId('unit-imperial'));
+      expect(useToolStore.getState().unit).toBe('imperial');
+      expect(screen.getByTestId('unit-imperial')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('hides help content when Preferences is active', async () => {
+      render(<HelpOverlay onClose={vi.fn()} />);
+      await userEvent.click(screen.getByRole('tab', { name: 'Preferences' }));
+      expect(screen.queryByTestId('help-save-note')).not.toBeInTheDocument();
     });
   });
 

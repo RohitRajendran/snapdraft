@@ -1,5 +1,6 @@
 import { useState, useId } from 'react';
-import { formatFeet, parseFtIn } from '../../../utils/geometry/geometry';
+import { useToolStore } from '../../../store/useToolStore/useToolStore';
+import { formatDimension, parseDimension } from '../../../utils/units/units';
 import styles from './FtInInput.module.css';
 
 type Props = {
@@ -10,26 +11,35 @@ type Props = {
   testId?: string;
 };
 
-/**
- * An input that displays and accepts feet/inches notation.
- * Shows e.g. "5' 6"" and accepts: 5'6", 5'6, 5 6, 6", 5.5, etc.
- * Uses a draft pattern: shows the prop value when not focused,
- * and the user's typed value while focused.
- */
 export function FtInInput({ value, onChange, min = 0.5, label, testId }: Props) {
+  const unit = useToolStore((s) => s.unit);
   const hintId = useId();
   const [draft, setDraft] = useState<string | null>(null);
+  const [prevUnit, setPrevUnit] = useState(unit);
 
-  const displayValue = draft ?? formatFeet(value);
+  // Adjust state during render (React-approved pattern) to discard a stale draft
+  // when the unit changes, so it is never parsed with the wrong unit system.
+  if (prevUnit !== unit) {
+    setPrevUnit(unit);
+    setDraft(null);
+  }
+
+  const displayValue = draft ?? formatDimension(value, unit);
 
   function commit() {
     if (draft === null) return;
-    const parsed = parseFtIn(draft);
+    const parsed = parseDimension(draft, unit);
     if (parsed !== null && parsed >= min) {
       onChange(parsed);
     }
     setDraft(null);
   }
+
+  const placeholder = unit === 'metric' ? 'e.g. 3.5 m' : 'e.g. 10\' 6"';
+  const hintText =
+    unit === 'metric'
+      ? 'Accepts: 3.5 m, 3.5, 350 cm, 3 m 50 cm'
+      : 'Accepts: 10\' 6", 10\'6, 10.5, or 6"';
 
   return (
     <label className={styles.field}>
@@ -39,9 +49,9 @@ export function FtInInput({ value, onChange, min = 0.5, label, testId }: Props) 
         type="text"
         inputMode="decimal"
         value={displayValue}
-        placeholder={`e.g. 10' 6"`}
+        placeholder={placeholder}
         aria-describedby={hintId}
-        onFocus={() => setDraft(formatFeet(value))}
+        onFocus={() => setDraft(formatDimension(value, unit))}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
@@ -51,7 +61,7 @@ export function FtInInput({ value, onChange, min = 0.5, label, testId }: Props) 
         autoComplete="off"
       />
       <span id={hintId} className={styles.hint}>
-        Accepts: 10&apos; 6&quot;, 10&apos;6, 10.5, or 6&quot;
+        {hintText}
       </span>
     </label>
   );

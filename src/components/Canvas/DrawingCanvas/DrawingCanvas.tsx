@@ -14,13 +14,17 @@ import {
   ftToPx,
   pxToFt,
   distance,
-  formatFeet,
-  parseFtIn,
   PIXELS_PER_FOOT,
   NUDGE_FT,
   FINE_NUDGE_FT,
   getWallSnapIncrement,
 } from '../../../utils/geometry/geometry';
+import {
+  formatDimension,
+  parseDimension,
+  NUDGE_METRIC_FT,
+  FINE_NUDGE_METRIC_FT,
+} from '../../../utils/units/units';
 import type { Point, Element } from '../../../types';
 import {
   FIT_CONTENT_PADDING_PX,
@@ -102,6 +106,7 @@ export function DrawingCanvas() {
     setZoom,
     pan,
     setPan,
+    unit,
   } = useToolStore();
 
   const plan = activePlan();
@@ -383,7 +388,14 @@ export function DrawingCanvas() {
         const ids = useToolStore.getState().selectedIds;
         if (ids.size === 0) return;
         e.preventDefault();
-        const step = e.shiftKey ? FINE_NUDGE_FT : NUDGE_FT;
+        const { unit: currentUnit } = useToolStore.getState();
+        const step = e.shiftKey
+          ? currentUnit === 'metric'
+            ? FINE_NUDGE_METRIC_FT
+            : FINE_NUDGE_FT
+          : currentUnit === 'metric'
+            ? NUDGE_METRIC_FT
+            : NUDGE_FT;
         const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
         const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
         const store = useFloorplanStore.getState();
@@ -504,7 +516,7 @@ export function DrawingCanvas() {
     }
 
     if (activeTool === 'wall') {
-      const now = Date.now();
+      const now = e.evt.timeStamp;
       const previousTap = lastWallTapRef.current;
       const didDoubleTapLastEndpoint =
         isChainArmed &&
@@ -739,7 +751,7 @@ export function DrawingCanvas() {
     const len = distance(last, cursor);
     if (len < 0.1) return null;
     const mid = worldToBase({ x: (last.x + cursor.x) / 2, y: (last.y + cursor.y) / 2 });
-    return { x: mid.x, y: mid.y, label: formatFeet(len) };
+    return { x: mid.x, y: mid.y, label: formatDimension(len, unit) };
   })();
 
   // ── Ghost box ───────────────────────────────────────────────────
@@ -754,8 +766,8 @@ export function DrawingCanvas() {
       y: Math.min(bs.y, be.y),
       width: Math.abs(be.x - bs.x),
       height: Math.abs(be.y - bs.y),
-      labelW: formatFeet(Math.abs(end.x - start.x)),
-      labelH: formatFeet(Math.abs(end.y - start.y)),
+      labelW: formatDimension(Math.abs(end.x - start.x), unit),
+      labelH: formatDimension(Math.abs(end.y - start.y), unit),
     };
   })();
 
@@ -1049,7 +1061,9 @@ export function DrawingCanvas() {
           type="text"
           value={dimInput}
           placeholder={
-            ghostLengthFt != null && ghostLengthFt > 0.05 ? formatFeet(ghostLengthFt) : 'length'
+            ghostLengthFt != null && ghostLengthFt > 0.05
+              ? formatDimension(ghostLengthFt, unit)
+              : 'length'
           }
           onChange={(e) => {
             setDimInput(e.target.value);
@@ -1058,7 +1072,7 @@ export function DrawingCanvas() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              const ft = parseFtIn(dimInput);
+              const ft = parseDimension(dimInput, unit);
               if (ft != null && ft > 0) {
                 setDimInputError(false);
                 commitWallAtTypedLength(ft);

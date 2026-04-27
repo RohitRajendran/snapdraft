@@ -33,7 +33,12 @@ function resetStores() {
   useFloorplanStore.setState({ plans: [], activeId: null, past: [], future: [] });
   const id = useFloorplanStore.getState().createPlan('Test');
   useFloorplanStore.setState({ activeId: id, past: [], future: [] });
-  useToolStore.setState({ selectedIds: new Set(), selectedId: null, propertiesPanelOpen: false });
+  useToolStore.setState({
+    selectedIds: new Set(),
+    selectedId: null,
+    propertiesPanelOpen: false,
+    unit: 'imperial',
+  });
 }
 
 function selectElement(el: Element) {

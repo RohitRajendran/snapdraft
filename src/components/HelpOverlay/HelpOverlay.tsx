@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap/useFocusTrap';
+import { useToolStore } from '../../store/useToolStore/useToolStore';
 import styles from './HelpOverlay.module.css';
 
 type Props = {
@@ -163,7 +164,9 @@ const titleId = 'help-overlay-title';
 
 export function HelpOverlay({ onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<'help' | 'about'>('help');
+  const [activeTab, setActiveTab] = useState<'help' | 'about' | 'preferences'>('help');
+  const unit = useToolStore((s) => s.unit);
+  const setUnit = useToolStore((s) => s.setUnit);
   const { gettingStarted, advancedShortcuts, dismissHint } = getHelpContent(detectInputProfile());
 
   useFocusTrap(cardRef, onClose);
@@ -195,6 +198,15 @@ export function HelpOverlay({ onClose }: Props) {
             onClick={() => setActiveTab('help')}
           >
             Help
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'preferences'}
+            className={`${styles.tab} ${activeTab === 'preferences' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('preferences')}
+            data-testid="tab-preferences"
+          >
+            Preferences
           </button>
           <button
             role="tab"
@@ -232,6 +244,32 @@ export function HelpOverlay({ onClose }: Props) {
               </dl>
             </details>
           </>
+        )}
+
+        {activeTab === 'preferences' && (
+          <div className={styles.preferences}>
+            <div className={styles.prefRow}>
+              <span className={styles.prefLabel}>Unit system</span>
+              <div className={styles.unitToggle} role="group" aria-label="Unit system">
+                <button
+                  className={`${styles.unitOption} ${unit === 'imperial' ? styles.unitOptionActive : ''}`}
+                  onClick={() => setUnit('imperial')}
+                  aria-pressed={unit === 'imperial'}
+                  data-testid="unit-imperial"
+                >
+                  ft / in
+                </button>
+                <button
+                  className={`${styles.unitOption} ${unit === 'metric' ? styles.unitOptionActive : ''}`}
+                  onClick={() => setUnit('metric')}
+                  aria-pressed={unit === 'metric'}
+                  data-testid="unit-metric"
+                >
+                  m
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'about' && (

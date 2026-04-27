@@ -1,5 +1,15 @@
 import { create } from 'zustand';
-import type { ToolType, Point } from '../../types';
+import type { ToolType, Point, UnitSystem } from '../../types';
+
+const UNIT_KEY = 'snapdraft_unit';
+
+function loadUnit(): UnitSystem {
+  try {
+    return localStorage.getItem(UNIT_KEY) === 'metric' ? 'metric' : 'imperial';
+  } catch {
+    return 'imperial';
+  }
+}
 
 type ToolStore = {
   activeTool: ToolType;
@@ -37,6 +47,10 @@ type ToolStore = {
   setZoom: (zoom: number) => void;
   pan: { x: number; y: number };
   setPan: (pan: { x: number; y: number }) => void;
+
+  // Unit system — persisted to localStorage, applies globally
+  unit: UnitSystem;
+  setUnit: (unit: UnitSystem) => void;
 };
 
 export const useToolStore = create<ToolStore>((set) => ({
@@ -108,4 +122,14 @@ export const useToolStore = create<ToolStore>((set) => ({
   setZoom: (zoom) => set({ zoom }),
   pan: { x: 0, y: 0 },
   setPan: (pan) => set({ pan }),
+
+  unit: loadUnit(),
+  setUnit: (unit) => {
+    try {
+      localStorage.setItem(UNIT_KEY, unit);
+    } catch {
+      /* storage unavailable */
+    }
+    set({ unit });
+  },
 }));
