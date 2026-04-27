@@ -9,7 +9,8 @@ Plans are saved locally in your browser with `localStorage`. If you clear site d
 - Draw wall chains by clicking points or dragging
 - Place boxes for furniture, fixtures, or room blocks
 - Measure distances without changing the plan
-- Edit dimensions using feet-and-inches input such as `5'6"`, `5 6`, `6"`, or `5.5`
+- Edit dimensions using feet-and-inches input such as `5'6"`, `5 6`, `6"`, or `5.5` (or meters in metric mode)
+- Toggle between imperial and metric units in Preferences
 - Select single or multiple elements, then move, rename, resize, or delete them
 - Undo and redo changes from the toolbar or keyboard shortcuts
 - Zoom, pan, and fit content on both desktop and touch devices
@@ -53,7 +54,7 @@ npm run spell:check   # cspell for src TS/TSX
 
 SnapDraft stores plan data in world coordinates measured in feet. Rendering is handled client-side with Konva, while pan and zoom are applied through the stage transform. That keeps geometry consistent while letting the UI scale smoothly across desktop and iPad interactions.
 
-The app starts with a default plan on first load. If a saved plan already has content, the canvas fits that content on open.
+The app starts with a default "Bedroom" plan on first load. If a saved plan already has content, the canvas fits that content on open.
 
 Persisted floor plans also carry a schema `version`. When a future change would break compatibility with existing saved plan data, the plan version must be bumped and `src/utils/storage/storage.ts` must include a migration path so older plans still load into the current shape.
 
@@ -65,6 +66,7 @@ Persisted floor plans also carry a schema `version`. When a future change would 
 | Wall | `W` | Draw connected wall segments by clicking or dragging |
 | Box | `B` | Drag to create a box |
 | Measure | `M` | Click two points to measure distance without changing the plan |
+| Preferences | `,` | Open preferences to toggle unit system |
 
 Other useful shortcuts:
 
@@ -90,6 +92,10 @@ Dimension fields accept common architectural shorthand:
 | `5'` | 5 feet |
 | `6"` | 6 inches |
 | `5.5` | 5.5 feet |
+| `3.5` | 3.5 meters (metric mode) |
+| `3.5 m` | 3.5 meters (metric mode) |
+| `350 cm` | 350 centimeters (metric mode) |
+| `3 m 50 cm` | 3 meters 50 centimeters (metric mode) |
 
 ## Testing
 

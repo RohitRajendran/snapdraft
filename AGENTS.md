@@ -53,9 +53,10 @@ npm run spell:check   # cspell for src TS/TSX
 ```text
 src/
   App.tsx                              App shell; creates default plan on first load
-  types/index.ts                       Point, Wall, Box, Element, ToolType, FloorPlan
+  types/index.ts                       Point, Wall, Box, Element, ToolType, UnitSystem, FloorPlan
   utils/
     geometry/geometry.ts               Coordinate conversion, snapping, dimensions, nudging
+    units/units.ts                      Dimension parsing and formatting (imperial/metric)
     storage/storage.ts                 localStorage read/write helpers
   store/
     useFloorplanStore/                 Plans, elements, persistence, undo/redo history
@@ -165,7 +166,7 @@ This logic lives in `src/hooks/useSnap/useSnap.ts`. Preserve that ordering unles
 
 ### App behaviors worth preserving
 
-- On first load with no saved plans, `App.tsx` creates a default plan.
+- On first load with no saved plans, `App.tsx` creates a default "Bedroom" plan with sample content.
 - If the active plan already has content on mount, the canvas fits content and switches to select mode.
 - `Escape` cancels transient UI state: wall chain, selection, measurement state, and inline dimension entry.
 - Undo/redo is available from the toolbar and keyboard shortcuts.
@@ -228,4 +229,4 @@ Typical verification choices:
 - Do not use `stage.getPointerPosition()` for drawing math.
 - Do not debounce persistence without a concrete performance problem and explicit need.
 - Do not introduce global CSS for component styling; prefer CSS modules, with `index.css` reserved for app-wide resets/base styles.
-- Do not change feature scope casually. Large features such as export, metric units, multi-floor support, or 3D views need explicit user direction.
+- Do not change feature scope casually. Large features such as export, multi-floor support, or 3D views need explicit user direction.
