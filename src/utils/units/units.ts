@@ -10,6 +10,10 @@ export const FINE_NUDGE_METRIC_FT = 0.01 * FT_PER_M; // 1 cm
 
 export function formatMetric(ft: number): string {
   const m = ft * M_PER_FT;
+  // Values below 1 cm can't be represented with 2 decimal meter places; show in mm instead.
+  if (m < 0.01) {
+    return `${Math.round(m * 1000)} mm`;
+  }
   // 2 decimal places, strip trailing zeros (e.g. 3.50 → "3.5 m", 3.00 → "3 m")
   const s = m.toFixed(2).replace(/\.?0+$/, '');
   return `${s} m`;
@@ -21,7 +25,8 @@ export function formatDimension(ft: number, unit: UnitSystem): string {
 
 /**
  * Parse a metric dimension string into decimal feet.
- * Accepts: "3.5 m", "3.5", "3.5m", "350 cm", "350cm", "3 m 50 cm", "3 m 50"
+ * Accepts: "3.5 m", "3.5", "3.5m", "350 cm", "350cm", "3 m 50 cm", "3 m 50",
+ *          "3500 mm", "3500mm", "3 m 500 mm"
  * Bare numbers are treated as meters.
  * Returns null if unparseable.
  */
@@ -34,6 +39,16 @@ export function parseMetric(input: string): number | null {
   if (mCm) {
     return (parseFloat(mCm[1]) + parseFloat(mCm[2]) / 100) * FT_PER_M;
   }
+
+  // "3 m 500 mm" (meters + millimeters)
+  const mMm = s.match(/^(\d+(?:\.\d+)?)\s*m\s+(\d+(?:\.\d+)?)\s*mm$/);
+  if (mMm) {
+    return (parseFloat(mMm[1]) + parseFloat(mMm[2]) / 1000) * FT_PER_M;
+  }
+
+  // "3500 mm" or "3500mm"
+  const mm = s.match(/^(\d+(?:\.\d+)?)\s*mm$/);
+  if (mm) return (parseFloat(mm[1]) / 1000) * FT_PER_M;
 
   // "350 cm" or "350cm"
   const cm = s.match(/^(\d+(?:\.\d+)?)\s*cm$/);

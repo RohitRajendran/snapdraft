@@ -129,8 +129,31 @@ describe('FtInInput — metric', () => {
     expect(onChange).toHaveBeenCalledWith(expect.closeTo(3.5 / 0.3048, 3));
   });
 
+  it('parses "5 mm" and calls onChange in feet', async () => {
+    const onChange = vi.fn();
+    render(<FtInInput label="Width" value={1} onChange={onChange} min={0.1} />);
+    const input = screen.getByRole('textbox');
+    await userEvent.click(input);
+    await userEvent.clear(input);
+    await userEvent.type(input, '5 mm');
+    await userEvent.tab();
+    expect(onChange).toHaveBeenCalledWith(expect.closeTo(0.005 / 0.3048, 5));
+  });
+
+  it('accepts sub-min mm values in metric mode', async () => {
+    // min={0.1} ft ≈ 3 cm; 5 mm is below that but should be accepted in metric
+    const onChange = vi.fn();
+    render(<FtInInput label="Width" value={1} onChange={onChange} min={0.1} />);
+    const input = screen.getByRole('textbox');
+    await userEvent.click(input);
+    await userEvent.clear(input);
+    await userEvent.type(input, '5mm');
+    await userEvent.tab();
+    expect(onChange).toHaveBeenCalled();
+  });
+
   it('shows metric hint text', () => {
     render(<FtInInput label="Width" value={5} onChange={vi.fn()} />);
-    expect(screen.getByText(/350 cm/)).toBeInTheDocument();
+    expect(screen.getByText(/3500 mm/)).toBeInTheDocument();
   });
 });

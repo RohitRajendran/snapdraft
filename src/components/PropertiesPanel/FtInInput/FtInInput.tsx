@@ -1,7 +1,9 @@
 import { useState, useId } from 'react';
 import { useToolStore } from '../../../store/useToolStore/useToolStore';
-import { formatDimension, parseDimension } from '../../../utils/units/units';
+import { formatDimension, parseDimension, FT_PER_M } from '../../../utils/units/units';
 import styles from './FtInInput.module.css';
+
+const MIN_METRIC_FT = 0.001 * FT_PER_M; // 1 mm
 
 type Props = {
   value: number; // in feet
@@ -29,7 +31,8 @@ export function FtInInput({ value, onChange, min = 0.5, label, testId }: Props) 
   function commit() {
     if (draft === null) return;
     const parsed = parseDimension(draft, unit);
-    if (parsed !== null && parsed >= min) {
+    const effectiveMin = unit === 'metric' ? Math.min(min, MIN_METRIC_FT) : min;
+    if (parsed !== null && parsed >= effectiveMin) {
       onChange(parsed);
     }
     setDraft(null);
@@ -38,7 +41,7 @@ export function FtInInput({ value, onChange, min = 0.5, label, testId }: Props) 
   const placeholder = unit === 'metric' ? 'e.g. 3.5 m' : 'e.g. 10\' 6"';
   const hintText =
     unit === 'metric'
-      ? 'Accepts: 3.5 m, 3.5, 350 cm, 3 m 50 cm'
+      ? 'Accepts: 3.5 m, 350 cm, 3500 mm, 3 m 50 cm'
       : 'Accepts: 10\' 6", 10\'6, 10.5, or 6"';
 
   return (

@@ -21,6 +21,16 @@ describe('formatMetric', () => {
     // 3.5 m in feet → "3.5 m"
     expect(formatMetric(3.5 * FT_PER_M)).toBe('3.5 m');
   });
+
+  it('shows mm for values below 1 cm', () => {
+    expect(formatMetric(0.005 * FT_PER_M)).toBe('5 mm');
+    expect(formatMetric(0.009 * FT_PER_M)).toBe('9 mm');
+    expect(formatMetric(0.001 * FT_PER_M)).toBe('1 mm');
+  });
+
+  it('shows meters at the 1 cm boundary', () => {
+    expect(formatMetric(0.01 * FT_PER_M)).toBe('0.01 m');
+  });
 });
 
 describe('formatDimension', () => {
@@ -64,6 +74,22 @@ describe('parseMetric', () => {
 
   it('is case-insensitive ("3.5 M")', () => {
     expect(parseMetric('3.5 M')).toBeCloseTo(3.5 * FT_PER_M);
+  });
+
+  it('parses "3500 mm"', () => {
+    expect(parseMetric('3500 mm')).toBeCloseTo(3.5 * FT_PER_M);
+  });
+
+  it('parses "3500mm" (no space)', () => {
+    expect(parseMetric('3500mm')).toBeCloseTo(3.5 * FT_PER_M);
+  });
+
+  it('parses "3 m 500 mm"', () => {
+    expect(parseMetric('3 m 500 mm')).toBeCloseTo(3.5 * FT_PER_M);
+  });
+
+  it('parses fractional mm', () => {
+    expect(parseMetric('1500.5 mm')).toBeCloseTo(1.5005 * FT_PER_M);
   });
 
   it('returns null for empty string', () => {
