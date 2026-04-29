@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { setup, getCanvasPan } from './helpers';
+import { setup, setupEmpty, getCanvasPan } from './helpers';
 
 test.describe('Tool switching', () => {
   test.beforeEach(({ page }) => setup(page));
@@ -54,7 +54,7 @@ test.describe('Tool switching', () => {
 });
 
 test.describe('Pan tool', () => {
-  test.beforeEach(({ page }) => setup(page));
+  test.beforeEach(({ page }) => setupEmpty(page));
 
   test('hand tool drag pans the canvas', async ({ page }) => {
     await page.keyboard.press('h');
@@ -77,7 +77,7 @@ test.describe('Pan tool', () => {
   });
 
   test('space + drag pans the canvas from any tool', async ({ page }) => {
-    // Start on wall tool (default after setup with empty plan)
+    // Start on wall tool (default with empty plan)
     await expect(page.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'true');
 
     const canvas = page.getByTestId('drawing-canvas');

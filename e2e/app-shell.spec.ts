@@ -24,8 +24,8 @@ test.describe('App shell', () => {
     expect(plans[0].elements.length).toBeGreaterThan(0);
   });
 
-  test('wall tool is active by default', async ({ page }) => {
-    await expect(page.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'true');
+  test('select tool is active when a plan with content is loaded', async ({ page }) => {
+    await expect(page.getByTestId('tool-select-pan')).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('undo and redo start disabled', async ({ page }) => {

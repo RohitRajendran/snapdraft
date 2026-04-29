@@ -37,7 +37,7 @@ test.describe('Help overlay', () => {
         'aria-selected',
         'true',
       );
-      await expect(page.getByText('— Rohit')).toBeVisible();
+      await expect(page.getByText('Rohit')).toBeVisible();
     });
 
     test('shows GitHub and Email links', async ({ page }) => {

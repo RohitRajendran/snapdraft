@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { setup, drawBox, drawWall, canvasCenter, getActivePlanElements } from './helpers';
+import { setupEmpty, drawBox, drawWall, canvasCenter, getActivePlanElements } from './helpers';
 
 test.describe('Undo and Redo', () => {
-  test.beforeEach(({ page }) => setup(page));
+  test.beforeEach(({ page }) => setupEmpty(page));
 
   test('undo becomes enabled after drawing', async ({ page }) => {
     await expect(page.getByTestId('tool-undo')).toBeDisabled();

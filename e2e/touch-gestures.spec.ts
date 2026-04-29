@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   setup,
+  setupEmpty,
   drawBox,
   canvasCenter,
   getActivePlanElements,
@@ -73,7 +74,7 @@ test.describe('Touch gestures', () => {
 
 test.describe('Mobile selection UX', () => {
   test.beforeEach(async ({ page }) => {
-    await setup(page);
+    await setupEmpty(page);
     await page.setViewportSize({ width: 375, height: 812 });
   });
 
@@ -187,7 +188,7 @@ test.describe('Mobile selection UX', () => {
 
 test.describe('Two-finger rotation', () => {
   test.beforeEach(async ({ page }) => {
-    await setup(page);
+    await setupEmpty(page);
     await page.setViewportSize({ width: 375, height: 812 });
   });
 

@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { setup, dismissHelp, canvasCenter, drawWall, getActivePlanElements, clickWallMidpoint } from './helpers';
+import { setupEmpty, dismissHelp, canvasCenter, drawWall, getActivePlanElements, clickWallMidpoint } from './helpers';
 
 test.describe('Wall drawing', () => {
-  test.beforeEach(({ page }) => setup(page));
+  test.beforeEach(({ page }) => setupEmpty(page));
 
   test('two clicks draw a wall that shows properties panel', async ({ page }) => {
     const { centerX, centerY } = await canvasCenter(page);

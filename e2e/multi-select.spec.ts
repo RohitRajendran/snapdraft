@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { setup, drawBox, canvasCenter, drawTwoBoxesAndMarqueeSelect } from './helpers';
+import { setupEmpty, drawBox, canvasCenter, drawTwoBoxesAndMarqueeSelect } from './helpers';
 
 test.describe('Multi-select', () => {
-  test.beforeEach(({ page }) => setup(page));
+  test.beforeEach(({ page }) => setupEmpty(page));
 
   test('marquee-selecting two boxes shows multi-select bar', async ({ page }) => {
     await drawTwoBoxesAndMarqueeSelect(page);

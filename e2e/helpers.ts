@@ -2,11 +2,34 @@ import { expect, type Page } from '@playwright/test';
 
 /**
  * Navigate to the app, clear all localStorage, reload, and dismiss the help overlay.
- * Call this in `test.beforeEach` for any test that needs a clean canvas with no prior state.
+ * The app will create a default bedroom plan with sample content on first load.
+ * Use `setupEmpty` instead when tests need a clean canvas with no pre-existing elements.
  */
 export async function setup(page: Page) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await dismissHelp(page);
+}
+
+/**
+ * Like `setup`, but pre-seeds an empty plan so the app skips sample content creation.
+ * After this call: wall tool is active, pan is zero, no pre-existing elements.
+ * Use this in any test that draws elements and checks element counts or world coordinates.
+ */
+export async function setupEmpty(page: Page) {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.clear();
+    const id = 'test-empty-plan';
+    localStorage.setItem('snapdraft_active', id);
+    localStorage.setItem(
+      'snapdraft_floorplans',
+      JSON.stringify([
+        { id, version: 1, name: 'Test', createdAt: Date.now(), updatedAt: Date.now(), elements: [] },
+      ]),
+    );
+  });
   await page.reload();
   await dismissHelp(page);
 }

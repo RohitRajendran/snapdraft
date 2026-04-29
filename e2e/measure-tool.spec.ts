@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { setup, canvasCenter, getActivePlanElements } from './helpers';
+import { setupEmpty, canvasCenter, getActivePlanElements } from './helpers';
 
 test.describe('Measure tool', () => {
-  test.beforeEach(({ page }) => setup(page));
+  test.beforeEach(({ page }) => setupEmpty(page));
 
   test('activates with toolbar button and M key', async ({ page }) => {
     await page.getByTestId('tool-measure').click();
