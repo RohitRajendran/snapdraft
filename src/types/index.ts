@@ -22,7 +22,7 @@ export type Box = {
 
 export type Element = Wall | Box;
 
-export type ToolType = 'select' | 'wall' | 'box' | 'measure';
+export type ToolType = 'select' | 'wall' | 'box' | 'measure' | 'pan';
 
 export type UnitSystem = 'imperial' | 'metric';
 

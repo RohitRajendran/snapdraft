@@ -69,6 +69,12 @@ export function DrawingCanvas() {
   const [cursorSnappedToAxis, setCursorSnappedToAxis] = useState(false);
   const [pointerDown, setPointerDown] = useState<{ pos: Point; time: number } | null>(null);
   const [marquee, setMarquee] = useState<{ start: Point; end: Point } | null>(null);
+  const [isSpaceDown, setIsSpaceDown] = useState(false);
+  const [isPanDragging, setIsPanDragging] = useState(false);
+  const panDragRef = useRef<{
+    screenStart: { x: number; y: number };
+    panStart: { x: number; y: number };
+  } | null>(null);
   const [dimInput, setDimInput] = useState('');
   const [dimInputError, setDimInputError] = useState(false);
   const [mobileDimInputOpen, setMobileDimInputOpen] = useState(false);
@@ -417,6 +423,29 @@ export function DrawingCanvas() {
     return () => window.removeEventListener('keydown', onKey);
   }, [cancelTransientState, clearSelection, deleteElements, fitToContent]);
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === ' ' && !e.repeat) {
+        e.preventDefault();
+        setIsSpaceDown(true);
+      }
+    }
+    function onKeyUp(e: KeyboardEvent) {
+      if (e.key === ' ') {
+        setIsSpaceDown(false);
+        panDragRef.current = null;
+        setIsPanDragging(false);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, []);
+
   const getPointerWorld = useCallback((): Point | null => {
     const stage = stageRef.current;
     if (!stage) return null;
@@ -443,6 +472,16 @@ export function DrawingCanvas() {
 
   function handlePointerDown(e: Konva.KonvaEventObject<PointerEvent>) {
     if (isTwoFingerActiveRef.current) return;
+
+    if (activeTool === 'pan' || isSpaceDown) {
+      panDragRef.current = {
+        screenStart: { x: e.evt.clientX, y: e.evt.clientY },
+        panStart: { x: pan.x, y: pan.y },
+      };
+      setIsPanDragging(true);
+      return;
+    }
+
     const world = getPointerWorld();
     if (!world) return;
 
@@ -460,6 +499,19 @@ export function DrawingCanvas() {
 
   function handlePointerMove(e: Konva.KonvaEventObject<PointerEvent>) {
     if (isTwoFingerActiveRef.current) return;
+
+    if (activeTool === 'pan' || isSpaceDown) {
+      if (panDragRef.current) {
+        const dx = e.evt.clientX - panDragRef.current.screenStart.x;
+        const dy = e.evt.clientY - panDragRef.current.screenStart.y;
+        setPan({
+          x: panDragRef.current.panStart.x + dx,
+          y: panDragRef.current.panStart.y + dy,
+        });
+      }
+      return;
+    }
+
     const world = getPointerWorld();
     if (!world) return;
 
@@ -491,6 +543,13 @@ export function DrawingCanvas() {
 
   function handlePointerUp(e: Konva.KonvaEventObject<PointerEvent>) {
     if (isTwoFingerActiveRef.current) return;
+
+    if (panDragRef.current) {
+      panDragRef.current = null;
+      setIsPanDragging(false);
+      return;
+    }
+
     const world = getPointerWorld();
     if (!world || !pointerDown) {
       setPointerDown(null);
@@ -824,7 +883,16 @@ export function DrawingCanvas() {
       ? distance(chainPoints[chainPoints.length - 1], cursor)
       : null;
 
-  const cursorStyle = activeTool === 'select' ? (marquee ? 'crosshair' : 'default') : 'crosshair';
+  const isInPanMode = activeTool === 'pan' || isSpaceDown;
+  const cursorStyle = isInPanMode
+    ? isPanDragging
+      ? 'grabbing'
+      : 'grab'
+    : activeTool === 'select'
+      ? marquee
+        ? 'crosshair'
+        : 'default'
+      : 'crosshair';
   const fitButtonBottom = mobileWallControlsVisible
     ? MOBILE_OVERLAY_CLEARANCE_PX + 68
     : usesMobileOverlayLayout

@@ -7,7 +7,7 @@ test.describe('Box drawing', () => {
   let boxCenter: { centerX: number; centerY: number };
   test.beforeEach(async ({ page }) => {
     boxCenter = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(boxCenter.centerX, boxCenter.centerY);
   });
 

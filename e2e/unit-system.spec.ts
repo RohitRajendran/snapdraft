@@ -61,7 +61,7 @@ test.describe('Unit system', () => {
     const wallY = centerY + 250;
     await drawWall(page, centerX - 80, wallY, centerX + 80, wallY);
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, wallY);
 
     await expect(page.getByTestId('wall-length-input')).toHaveValue(/m$/);
@@ -76,7 +76,7 @@ test.describe('Unit system', () => {
 
     const { centerX, centerY } = await drawBox(page);
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
 
     await expect(page.getByTestId('box-width-input')).toHaveValue(/m$/);
@@ -92,7 +92,7 @@ test.describe('Unit system', () => {
 
     const { centerX, centerY } = await drawBox(page);
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
 
     const widthInput = page.getByTestId('box-width-input');
@@ -119,7 +119,7 @@ test.describe('Unit system', () => {
     const wallY = centerY + 250;
     await drawWall(page, centerX - 80, wallY, centerX + 80, wallY);
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, wallY);
 
     const lengthInput = page.getByTestId('wall-length-input');
@@ -175,7 +175,7 @@ test.describe('Unit system', () => {
     await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
 
     // Select the box at the centre of the now-fitted view
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     const { centerX, centerY } = await canvasCenter(page);
     await page.mouse.click(centerX, centerY);
 

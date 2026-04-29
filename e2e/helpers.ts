@@ -148,7 +148,7 @@ export async function clickWallMidpoint(page: Page, wallIndex = 0) {
 export async function drawTwoBoxesAndMarqueeSelect(page: Page) {
   await drawBox(page, -200, -60, 80, 80);
   await drawBox(page, 80, -60, 80, 80);
-  await page.getByTestId('tool-select').click();
+  await page.getByTestId('tool-select-pan').click();
   const { centerX, centerY } = await canvasCenter(page);
   await page.mouse.move(centerX - 240, centerY - 100);
   await page.mouse.down();

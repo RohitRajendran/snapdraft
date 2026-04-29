@@ -23,7 +23,7 @@ test.describe('Multi-select', () => {
     const firstBox = await drawBox(page, -200, -60, 80, 80);
     const secondBox = await drawBox(page, 80, -60, 80, 80);
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     const { centerX, centerY } = await canvasCenter(page);
     await page.mouse.move(centerX - 240, centerY - 100);
     await page.mouse.down();
@@ -54,7 +54,7 @@ test.describe('Multi-select', () => {
     const firstBox = await drawBox(page, -200, -60, 80, 80);
     const secondBox = await drawBox(page, 80, -60, 80, 80);
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(firstBox.centerX, firstBox.centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
 

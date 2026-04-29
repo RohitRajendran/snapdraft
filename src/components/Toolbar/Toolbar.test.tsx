@@ -34,19 +34,31 @@ function resetStores() {
 describe('Toolbar', () => {
   beforeEach(resetStores);
 
-  it('renders all four tool buttons', () => {
+  it('renders the select/pan slot and the other tool buttons', () => {
     render(<Toolbar onHelpOpen={vi.fn()} />);
-    expect(screen.getByTestId('tool-select')).toBeInTheDocument();
+    expect(screen.getByTestId('tool-select-pan')).toBeInTheDocument();
+    expect(screen.getByTestId('tool-select-pan-toggle')).toBeInTheDocument();
     expect(screen.getByTestId('tool-wall')).toBeInTheDocument();
     expect(screen.getByTestId('tool-box')).toBeInTheDocument();
     expect(screen.getByTestId('tool-measure')).toBeInTheDocument();
   });
 
-  it('marks the active tool with aria-pressed', () => {
+  it('select/pan slot shows aria-pressed when select is active', () => {
     useToolStore.setState({ activeTool: 'select' });
     render(<Toolbar onHelpOpen={vi.fn()} />);
-    expect(screen.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('tool-select-pan')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('select/pan slot shows aria-pressed when pan is active', () => {
+    useToolStore.setState({ activeTool: 'pan' });
+    render(<Toolbar onHelpOpen={vi.fn()} />);
+    expect(screen.getByTestId('tool-select-pan')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('slot is not aria-pressed when a different tool is active', () => {
+    render(<Toolbar onHelpOpen={vi.fn()} />);
+    expect(screen.getByTestId('tool-select-pan')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('clicking a tool button updates the active tool', async () => {
@@ -55,10 +67,58 @@ describe('Toolbar', () => {
     expect(useToolStore.getState().activeTool).toBe('box');
   });
 
+  it('clicking the slot button activates the shown sub-tool', async () => {
+    useToolStore.setState({ activeTool: 'wall' });
+    render(<Toolbar onHelpOpen={vi.fn()} />);
+    await userEvent.click(screen.getByTestId('tool-select-pan'));
+    expect(useToolStore.getState().activeTool).toBe('select');
+  });
+
+  it('clicking the toggle opens the dropdown with both options', async () => {
+    render(<Toolbar onHelpOpen={vi.fn()} />);
+    await userEvent.click(screen.getByTestId('tool-select-pan-toggle'));
+    expect(screen.getByTestId('tool-select')).toBeInTheDocument();
+    expect(screen.getByTestId('tool-pan')).toBeInTheDocument();
+  });
+
+  it('choosing Select from dropdown activates select', async () => {
+    render(<Toolbar onHelpOpen={vi.fn()} />);
+    await userEvent.click(screen.getByTestId('tool-select-pan-toggle'));
+    await userEvent.click(screen.getByTestId('tool-select'));
+    expect(useToolStore.getState().activeTool).toBe('select');
+  });
+
+  it('choosing Hand from dropdown activates pan', async () => {
+    render(<Toolbar onHelpOpen={vi.fn()} />);
+    await userEvent.click(screen.getByTestId('tool-select-pan-toggle'));
+    await userEvent.click(screen.getByTestId('tool-pan'));
+    expect(useToolStore.getState().activeTool).toBe('pan');
+  });
+
+  it('dropdown closes after choosing an option', async () => {
+    render(<Toolbar onHelpOpen={vi.fn()} />);
+    await userEvent.click(screen.getByTestId('tool-select-pan-toggle'));
+    await userEvent.click(screen.getByTestId('tool-select'));
+    expect(screen.queryByTestId('tool-pan')).not.toBeInTheDocument();
+  });
+
   it('S key switches to select tool', async () => {
     render(<Toolbar onHelpOpen={vi.fn()} />);
     await userEvent.keyboard('s');
     expect(useToolStore.getState().activeTool).toBe('select');
+  });
+
+  it('V key switches to select tool', async () => {
+    useToolStore.setState({ activeTool: 'wall' });
+    render(<Toolbar onHelpOpen={vi.fn()} />);
+    await userEvent.keyboard('v');
+    expect(useToolStore.getState().activeTool).toBe('select');
+  });
+
+  it('H key switches to pan tool', async () => {
+    render(<Toolbar onHelpOpen={vi.fn()} />);
+    await userEvent.keyboard('h');
+    expect(useToolStore.getState().activeTool).toBe('pan');
   });
 
   it('W key switches to wall tool', async () => {

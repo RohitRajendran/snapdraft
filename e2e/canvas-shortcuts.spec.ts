@@ -6,14 +6,14 @@ test.describe('Canvas keyboard shortcuts', () => {
 
   test('Backspace deletes and Escape clears selection', async ({ page }) => {
     const firstBox = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(firstBox.centerX, firstBox.centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await page.keyboard.press('Backspace');
     await expect(page.getByTestId('properties-panel')).not.toBeVisible();
 
     const secondBox = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(secondBox.centerX, secondBox.centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await page.keyboard.press('Escape');
@@ -26,7 +26,7 @@ test.describe('Arrow key movement', () => {
 
   test('arrow keys move a selected box and movement is undoable', async ({ page }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
 

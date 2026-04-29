@@ -13,7 +13,7 @@ test.describe('Wall drawing', () => {
     await page.mouse.click(centerX + 80, centerY);
     await page.keyboard.press('Escape');
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await clickWallMidpoint(page);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await expect(page.getByTestId('properties-panel')).toContainText('Wall');
@@ -42,7 +42,7 @@ test.describe('Wall drawing', () => {
     await dimInput.press('Enter');
 
     await page.keyboard.press('Escape');
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await clickWallMidpoint(page);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await expect(page.getByTestId('wall-length-input')).toHaveValue("5'");
@@ -160,7 +160,7 @@ test.describe('Wall drawing', () => {
   test('dragging a wall endpoint moves it without crashing', async ({ page }) => {
     const { centerX, centerY } = await canvasCenter(page);
     await drawWall(page, centerX - 80, centerY, centerX + 80, centerY);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await clickWallMidpoint(page);
 
     const before = await getActivePlanElements(page);
@@ -180,7 +180,7 @@ test.describe('Wall drawing', () => {
   test('can edit wall length in properties panel', async ({ page }) => {
     const { centerX, centerY } = await canvasCenter(page);
     await drawWall(page, centerX - 80, centerY, centerX + 80, centerY);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await clickWallMidpoint(page);
     const lengthInput = page.getByTestId('wall-length-input');
     await lengthInput.fill("10'");
@@ -191,7 +191,7 @@ test.describe('Wall drawing', () => {
   test('can delete a wall from properties panel', async ({ page }) => {
     const { centerX, centerY } = await canvasCenter(page);
     await drawWall(page, centerX - 80, centerY, centerX + 80, centerY);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await clickWallMidpoint(page);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
     await page.getByTestId('delete-element').click();

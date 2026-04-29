@@ -81,7 +81,7 @@ test.describe('Mobile selection UX', () => {
     page,
   }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('mobile-selection-bar')).toBeVisible();
     await expect(page.getByTestId('properties-panel')).not.toBeVisible();
@@ -91,7 +91,7 @@ test.describe('Mobile selection UX', () => {
     page,
   }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     const { box: canvasBox } = await canvasCenter(page);
 
     // Select box — toolbar should hide
@@ -109,7 +109,7 @@ test.describe('Mobile selection UX', () => {
     page,
   }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
     await page.getByTestId('mobile-selection-edit').click();
     await expect(page.getByTestId('properties-panel')).toBeVisible();
@@ -120,7 +120,7 @@ test.describe('Mobile selection UX', () => {
 
   test('tapping Done closes properties panel and returns to selection bar', async ({ page }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
     await page.getByTestId('mobile-selection-edit').click();
     await page.getByTestId('mobile-selection-done').click();
@@ -130,7 +130,7 @@ test.describe('Mobile selection UX', () => {
 
   test('tapping Cancel reverts property changes and closes the panel', async ({ page }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
     await page.getByTestId('mobile-selection-edit').click();
 
@@ -151,7 +151,7 @@ test.describe('Mobile selection UX', () => {
 
   test('tapping Delete in the mobile selection bar removes the element', async ({ page }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
     await page.getByTestId('mobile-selection-delete').click();
     const elements = await getActivePlanElements(page);
@@ -162,7 +162,7 @@ test.describe('Mobile selection UX', () => {
     page,
   }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('mobile-selection-undo')).toBeEnabled();
     await expect(page.getByTestId('mobile-selection-redo')).toBeDisabled();
@@ -170,7 +170,7 @@ test.describe('Mobile selection UX', () => {
 
   test('undo and redo buttons work for rotation without leaving the bar', async ({ page }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
 
     await simulateTwist(page, { midX: centerX, midY: centerY, radius: 60, endAngle: 90 });
@@ -193,7 +193,7 @@ test.describe('Two-finger rotation', () => {
 
   test('two-finger twist rotates the selected box', async ({ page }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
 
     const before = await getActivePlanElements(page);
@@ -205,7 +205,7 @@ test.describe('Two-finger rotation', () => {
 
   test('two-finger twist rotation undoes in a single step', async ({ page }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
 
     await simulateTwist(page, { midX: centerX, midY: centerY, radius: 60, endAngle: 90 });

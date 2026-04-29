@@ -8,7 +8,7 @@ test.describe('Measure tool', () => {
     await page.getByTestId('tool-measure').click();
     await expect(page.getByTestId('tool-measure')).toHaveAttribute('aria-pressed', 'true');
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.keyboard.press('m');
     await expect(page.getByTestId('tool-measure')).toHaveAttribute('aria-pressed', 'true');
   });

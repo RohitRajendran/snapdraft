@@ -12,7 +12,7 @@ test.describe('Undo and Redo', () => {
 
   test('undo removes a drawn box (properties panel disappears)', async ({ page }) => {
     const { centerX, centerY } = await drawBox(page);
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
 
@@ -28,7 +28,7 @@ test.describe('Undo and Redo', () => {
     await expect(page.getByTestId('tool-redo')).toBeEnabled();
     await page.getByTestId('tool-redo').click();
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('properties-panel')).toBeVisible();
   });
@@ -64,7 +64,7 @@ test.describe('Undo and Redo', () => {
 
     const beforeDrag = await getActivePlanElements(page);
 
-    await page.getByTestId('tool-select').click();
+    await page.getByTestId('tool-select-pan').click();
     await page.mouse.move(centerX - 320, centerY - 180);
     await page.mouse.down();
     await page.mouse.move(centerX + 280, centerY + 180, { steps: 10 });

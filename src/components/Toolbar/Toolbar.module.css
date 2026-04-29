@@ -77,6 +77,191 @@
   outline-offset: 2px;
 }
 
+.selectPanWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: visible;
+}
+
+/* Icon zone — activates the tool */
+.selectPanMain {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px 6px;
+  border: none;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  cursor: pointer;
+  color: #262626;
+  transition: background 0.15s, color 0.15s;
+  min-width: 60px;
+  touch-action: manipulation;
+}
+
+.selectPanMain:hover {
+  background: #f0ede8;
+}
+
+.selectPanMain.active {
+  background: #2c2c2c;
+  color: #ffffff;
+}
+
+.selectPanMain:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
+.selectPanMain .icon {
+  width: 26px;
+  height: 26px;
+}
+
+/* Label + chevron strip — opens the picker */
+.selectPanFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px 8px 6px;
+  border: none;
+  border-radius: 0 0 10px 10px;
+  background: transparent;
+  cursor: pointer;
+  color: #262626;
+  transition: background 0.15s, color 0.15s;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  touch-action: manipulation;
+}
+
+.selectPanFooter:hover {
+  background: #f0ede8;
+}
+
+.selectPanFooter.active {
+  background: #1a1a1a;
+  color: #f5f0e8;
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+.selectPanFooter.active:hover {
+  background: #333333;
+}
+
+.selectPanFooter:focus-visible {
+  outline: 2px solid #4a6fa5;
+  outline-offset: 2px;
+}
+
+.selectPanFooterLabel {
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.selectPanChevron {
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+/* Dropdown panel — position is set via inline style (portal into document.body) */
+.selectPanDropdown {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border: 1px solid #c8c4bc;
+  border-radius: 10px;
+  padding: 4px;
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.14);
+  min-width: 148px;
+  white-space: nowrap;
+  animation: dropdownIn 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.selectPanDropdownClosing {
+  animation: dropdownOut 100ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+@keyframes dropdownOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92) translateX(-6px);
+  }
+}
+
+.selectPanOption {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  color: #262626;
+  width: 100%;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.selectPanOption:hover {
+  background: #f0ede8;
+}
+
+.optionActive {
+  background: #eceae5;
+}
+
+.optionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.optionLabel {
+  flex: 1;
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.optionKey {
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  font-weight: 800;
+  opacity: 0.45;
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 3px;
+  padding: 1px 5px;
+  border: none;
+}
+
+
 .divider {
   height: 1px;
   background: #d0ccc4;
