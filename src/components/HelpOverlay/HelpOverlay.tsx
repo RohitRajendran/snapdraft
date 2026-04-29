@@ -88,7 +88,11 @@ function getHelpContent(profile: InputProfile) {
   const advancedShortcuts = [
     {
       action: 'Select tool',
-      hint: isTouchOnly ? 'Tap Select' : supportsBoth ? 'S or tap Select' : 'S',
+      hint: isTouchOnly ? 'Tap Select' : supportsBoth ? 'S, V or tap Select' : 'S or V',
+    },
+    {
+      action: 'Hand tool',
+      hint: isTouchOnly ? 'Tap Hand' : supportsBoth ? 'H or tap Hand' : 'H',
     },
     {
       action: 'Wall tool',
@@ -133,12 +137,20 @@ function getHelpContent(profile: InputProfile) {
     },
     ...(isTouchOnly ? [] : [{ action: 'Undo / Redo', hint: undoRedoHint }]),
     {
-      action: 'Pan and zoom',
+      action: 'Pan',
       hint: isTouchOnly
-        ? 'Pinch to zoom and use two fingers to pan.'
+        ? 'Two-finger drag.'
         : supportsBoth
-          ? 'Pinch or Ctrl + scroll to zoom; two fingers to pan.'
-          : 'Two-finger scroll or Ctrl + scroll.',
+          ? 'Two-finger drag, or Space + drag or hand tool.'
+          : 'Space + drag or hand tool (H).',
+    },
+    {
+      action: 'Zoom',
+      hint: isTouchOnly
+        ? 'Pinch to zoom.'
+        : supportsBoth
+          ? 'Pinch or Ctrl + scroll.'
+          : 'Ctrl + scroll or two-finger scroll.',
     },
     {
       action: 'Fit content',
@@ -182,9 +194,12 @@ export function HelpOverlay({ onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>
-          <span id={titleId} className={styles.title}>
-            SnapDraft
-          </span>
+          <div className={styles.headerLeft}>
+            <span id={titleId} className={styles.title}>
+              SnapDraft
+            </span>
+            <p className={styles.subtitle}>Sketch floor plans right in your browser.</p>
+          </div>
           <button className={styles.close} onClick={onClose} aria-label="Close help">
             <X size={16} />
           </button>
@@ -218,100 +233,95 @@ export function HelpOverlay({ onClose }: Props) {
           </button>
         </div>
 
-        {activeTab === 'help' && (
-          <>
-            <p className={styles.subtitle}>Sketch floor plans right in your browser.</p>
-            <dl className={styles.grid}>
-              {gettingStarted.map(({ action, hint }) => (
-                <div key={action} className={styles.row}>
-                  <dt className={styles.hint}>{action}</dt>
-                  <dd className={styles.action}>{hint}</dd>
-                </div>
-              ))}
-            </dl>
-            <div className={styles.notice} data-testid="help-save-note">
-              Your work is saved automatically in this browser on this device.
-            </div>
-            <details className={styles.advanced}>
-              <summary className={styles.advancedSummary}>Advanced shortcuts and tips</summary>
+        <div className={styles.tabContent}>
+          {activeTab === 'help' && (
+            <>
               <dl className={styles.grid}>
-                {advancedShortcuts.map(({ action, hint }) => (
+                {gettingStarted.map(({ action, hint }) => (
                   <div key={action} className={styles.row}>
                     <dt className={styles.hint}>{action}</dt>
                     <dd className={styles.action}>{hint}</dd>
                   </div>
                 ))}
               </dl>
-            </details>
-          </>
-        )}
+              <div className={styles.notice} data-testid="help-save-note">
+                Your work is saved automatically in this browser on this device.
+              </div>
+              <details className={styles.advanced}>
+                <summary className={styles.advancedSummary}>Advanced shortcuts and tips</summary>
+                <dl className={styles.grid}>
+                  {advancedShortcuts.map(({ action, hint }) => (
+                    <div key={action} className={styles.row}>
+                      <dt className={styles.hint}>{action}</dt>
+                      <dd className={styles.action}>{hint}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </details>
+            </>
+          )}
 
-        {activeTab === 'preferences' && (
-          <div className={styles.preferences}>
-            <div className={styles.prefRow}>
-              <span className={styles.prefLabel}>Unit system</span>
-              <div className={styles.unitToggle} role="group" aria-label="Unit system">
-                <button
-                  className={`${styles.unitOption} ${unit === 'imperial' ? styles.unitOptionActive : ''}`}
-                  onClick={() => setUnit('imperial')}
-                  aria-pressed={unit === 'imperial'}
-                  data-testid="unit-imperial"
-                >
-                  ft / in
-                </button>
-                <button
-                  className={`${styles.unitOption} ${unit === 'metric' ? styles.unitOptionActive : ''}`}
-                  onClick={() => setUnit('metric')}
-                  aria-pressed={unit === 'metric'}
-                  data-testid="unit-metric"
-                >
-                  m
-                </button>
+          {activeTab === 'preferences' && (
+            <div className={styles.preferences}>
+              <div className={styles.prefRow}>
+                <span className={styles.prefLabel}>Unit system</span>
+                <div className={styles.unitToggle} role="group" aria-label="Unit system">
+                  <button
+                    className={`${styles.unitOption} ${unit === 'imperial' ? styles.unitOptionActive : ''}`}
+                    onClick={() => setUnit('imperial')}
+                    aria-pressed={unit === 'imperial'}
+                    data-testid="unit-imperial"
+                  >
+                    ft / in
+                  </button>
+                  <button
+                    className={`${styles.unitOption} ${unit === 'metric' ? styles.unitOptionActive : ''}`}
+                    onClick={() => setUnit('metric')}
+                    aria-pressed={unit === 'metric'}
+                    data-testid="unit-metric"
+                  >
+                    m
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'about' && (
-          <div className={styles.about}>
-            <p className={styles.aboutText}>Hey,</p>
-            <p className={styles.aboutText}>
-              My wife is an architect (the building kind, not the software kind). Whenever we need
-              to plan anything for our home, she pulls up Revit. It&apos;s been amazing for things
-              like our kitchen renovation, but it&apos;s a lot for simpler things like experimenting
-              with furniture layouts or making sure the side table we spotted at IKEA would actually
-              fit.
-            </p>
-            <p className={styles.aboutText}>
-              I tried a few apps and websites. Everything was either too expensive or more than I
-              was really looking for. So I built SnapDraft: something quick, simple, and easy enough
-              for a non-architect like me to use and pull up from anywhere.
-            </p>
-            <p className={styles.aboutText}>Hope it&apos;s useful for you too.</p>
-            <div className={styles.aboutSignoff}>
-              <p className={styles.aboutText}>— Rohit</p>
+          {activeTab === 'about' && (
+            <div className={styles.about}>
               <p className={styles.aboutText}>
-                P.S. If you have feedback, I&apos;d love to hear it!
+                My wife is an architect. Whenever we need to plan something at home, she uses Revit
+                — great for renovations, but overkill for figuring out if the new couch fits. I
+                tried a few simpler apps; they were either too expensive or too much. So I built
+                SnapDraft.
               </p>
-              <div className={styles.aboutLinks}>
-                <a
-                  href="https://github.com/RohitRajendran/snapdraft"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.aboutLink}
-                >
-                  GitHub
-                </a>
-                <a
-                  href="mailto:rohit@hummingbirdtech.xyz?subject=SnapDraft"
-                  className={styles.aboutLink}
-                >
-                  Email
-                </a>
+              <p className={styles.aboutText}>Hope it&apos;s useful for you too!</p>
+              <div className={styles.aboutSignoff}>
+                <p className={styles.aboutText}>Cheers,</p>
+                <p className={styles.aboutText}>Rohit</p>
+                <p className={styles.aboutText}>
+                  P.S. If you have feedback, I&apos;d love to hear it!
+                </p>
+                <div className={styles.aboutLinks}>
+                  <a
+                    href="https://github.com/RohitRajendran/snapdraft"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.aboutLink}
+                  >
+                    GitHub
+                  </a>
+                  <a
+                    href="mailto:rohit@hummingbirdtech.xyz?subject=SnapDraft"
+                    className={styles.aboutLink}
+                  >
+                    Email
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className={styles.footer}>
           <button className={styles.startBtn} onClick={onClose}>

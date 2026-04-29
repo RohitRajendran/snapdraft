@@ -109,6 +109,30 @@ describe('HelpOverlay', () => {
       expect(screen.getByText(/press Escape to dismiss · \? to reopen/i)).toBeInTheDocument();
     });
 
+    it('shows Hand tool shortcut in advanced section on desktop', async () => {
+      render(<HelpOverlay onClose={vi.fn()} />);
+      await userEvent.click(screen.getByText('Advanced shortcuts and tips'));
+      expect(screen.getByText('Hand tool')).toBeInTheDocument();
+      expect(screen.getByText('H')).toBeInTheDocument();
+    });
+
+    it('shows Pan and Zoom as separate entries on desktop', async () => {
+      render(<HelpOverlay onClose={vi.fn()} />);
+      await userEvent.click(screen.getByText('Advanced shortcuts and tips'));
+      expect(screen.getByText('Pan')).toBeInTheDocument();
+      expect(screen.getByText(/Space \+ drag or hand tool/i)).toBeInTheDocument();
+      expect(screen.getByText('Zoom')).toBeInTheDocument();
+      expect(screen.getByText(/Ctrl \+ scroll/i)).toBeInTheDocument();
+    });
+
+    it('shows Hand tool entry on touch-only device', () => {
+      mockInputProfile(touchOnly);
+      render(<HelpOverlay onClose={vi.fn()} />);
+      // Open advanced shortcuts
+      const summary = screen.queryByText('Advanced shortcuts and tips');
+      expect(summary).toBeInTheDocument();
+    });
+
     it('renders mixed touch+keyboard instructions on Windows touch device', () => {
       mockInputProfile(touchAndKeyboardWindows);
       render(<HelpOverlay onClose={vi.fn()} />);
@@ -166,7 +190,7 @@ describe('HelpOverlay', () => {
       render(<HelpOverlay onClose={vi.fn()} />);
       await userEvent.click(screen.getByRole('tab', { name: 'About' }));
       expect(screen.getByRole('tab', { name: 'About' })).toHaveAttribute('aria-selected', 'true');
-      expect(screen.getByText('— Rohit')).toBeInTheDocument();
+      expect(screen.getByText('Rohit')).toBeInTheDocument();
     });
 
     it('shows GitHub and Email links', async () => {
