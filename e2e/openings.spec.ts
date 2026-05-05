@@ -438,6 +438,65 @@ test.describe('opening drag', () => {
     expect(door.offset + door.width).toBeLessThanOrEqual(10 + 0.01);
   });
 
+  test('dragging a door to the other side of the wall flips facing', async ({ page }) => {
+    await setupEmpty(page);
+    const { centerX, centerY } = await canvasCenter(page);
+    await drawWall(page, centerX - 200, centerY, centerX + 200, centerY);
+
+    // Place door slightly above the wall so initial facing is 'left'
+    await page.keyboard.press('d');
+    await page.mouse.move(centerX, centerY - 5);
+    await page.mouse.click(centerX, centerY - 5);
+    await page.keyboard.press('v');
+
+    let elements = await getActivePlanElements(page);
+    let door = elements.find((el: { type: string }) => el.type === 'door');
+    expect(door.facing).toBe('left');
+
+    const doorScreenX = centerX - 200 + (door.offset + door.width / 2) * 40;
+
+    // Drag from the gap centre downward past the wall — cursor ends 40 px below the wall
+    await page.mouse.move(doorScreenX, centerY);
+    await page.mouse.down();
+    await page.mouse.move(doorScreenX, centerY + 40, { steps: 8 });
+    await page.mouse.up();
+
+    elements = await getActivePlanElements(page);
+    door = elements.find((el: { type: string }) => el.type === 'door');
+    expect(door.facing).toBe('right');
+  });
+
+  test('door can be dragged from the arc and its offset updates', async ({ page }) => {
+    await setupEmpty(page);
+    const { centerX, centerY } = await canvasCenter(page);
+    await drawWall(page, centerX - 200, centerY, centerX + 200, centerY);
+
+    // Place door at centre; default facing='left' → arc extends above the wall
+    await page.keyboard.press('d');
+    await page.mouse.move(centerX, centerY);
+    await page.mouse.click(centerX, centerY);
+    await page.keyboard.press('v');
+
+    const elsBefore = await getActivePlanElements(page);
+    const doorBefore = elsBefore.find((el: { type: string }) => el.type === 'door');
+    const offsetBefore = doorBefore.offset as number;
+
+    // Hinge is at the left edge of the gap: wall starts at centerX-200, gap starts at offset ft
+    const hingeX = Math.round(centerX - 200 + doorBefore.offset * 40);
+
+    // Start drag from inside the arc sector (20px right, 40px above the hinge — well within
+    // the 3ft/120px radius and inside the quarter-circle sector)
+    await page.mouse.move(hingeX + 20, centerY - 40);
+    await page.mouse.down();
+    // Drag 80 px to the right along the wall
+    await page.mouse.move(hingeX + 100, centerY - 40, { steps: 8 });
+    await page.mouse.up();
+
+    const elsAfter = await getActivePlanElements(page);
+    const doorAfter = elsAfter.find((el: { type: string }) => el.type === 'door');
+    expect(doorAfter.offset).toBeGreaterThan(offsetBefore);
+  });
+
   test('arrow keys nudge door along its wall', async ({ page }) => {
     await setupEmpty(page);
     const { centerX, centerY } = await canvasCenter(page);
