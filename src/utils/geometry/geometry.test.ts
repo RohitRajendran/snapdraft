@@ -10,6 +10,8 @@ import {
   formatFeet,
   parseFtIn,
   collectConnectedWallIds,
+  findNearestWallSegment,
+  openingCenter,
   PIXELS_PER_FOOT,
   SNAP_RADIUS_FT,
   GRID_SNAP_FT,
@@ -18,7 +20,7 @@ import {
   getWallSnapIncrement,
   snapWallPoint,
 } from './geometry';
-import type { Element } from '../../types';
+import type { Element, Opening } from '../../types';
 
 describe('ftToPx / pxToFt', () => {
   it('converts feet to pixels', () => {
@@ -316,5 +318,143 @@ describe('parseFtIn', () => {
       expect(parsed).not.toBeNull();
       expect(parsed!).toBeCloseTo(v, 1);
     }
+  });
+});
+
+describe('findNearestWallSegment', () => {
+  const makeWall = (id: string, pts: Array<{ x: number; y: number }>): Element => ({
+    id,
+    type: 'wall',
+    points: pts,
+  });
+
+  it('returns null when no walls exist', () => {
+    expect(findNearestWallSegment({ x: 5, y: 5 }, [])).toBeNull();
+  });
+
+  it('returns null when cursor is beyond maxDistFt', () => {
+    const els = [
+      makeWall('w1', [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ]),
+    ];
+    expect(findNearestWallSegment({ x: 5, y: 2 }, els, 1.0)).toBeNull();
+  });
+
+  it('finds a horizontal wall segment', () => {
+    const els = [
+      makeWall('w1', [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ]),
+    ];
+    const result = findNearestWallSegment({ x: 4, y: 0.3 }, els, 1.0);
+    expect(result).not.toBeNull();
+    expect(result!.wallId).toBe('w1');
+    expect(result!.segmentIndex).toBe(0);
+    expect(result!.offset).toBeCloseTo(4);
+    expect(result!.segmentLength).toBeCloseTo(10);
+    expect(result!.point.x).toBeCloseTo(4);
+    expect(result!.point.y).toBeCloseTo(0);
+  });
+
+  it('handles multi-segment wall and returns correct segment index', () => {
+    const els = [
+      makeWall('w1', [
+        { x: 0, y: 0 },
+        { x: 5, y: 0 },
+        { x: 5, y: 5 },
+      ]),
+    ];
+    const result = findNearestWallSegment({ x: 5, y: 3 }, els, 0.5);
+    expect(result).not.toBeNull();
+    expect(result!.segmentIndex).toBe(1);
+    expect(result!.offset).toBeCloseTo(3);
+  });
+
+  it('picks the closer of two walls', () => {
+    const els = [
+      makeWall('w1', [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ]),
+      makeWall('w2', [
+        { x: 0, y: 0.2 },
+        { x: 10, y: 0.2 },
+      ]),
+    ];
+    const result = findNearestWallSegment({ x: 5, y: 0.05 }, els, 1.0);
+    expect(result!.wallId).toBe('w1');
+  });
+
+  it('ignores non-wall elements', () => {
+    const els: Element[] = [
+      { id: 'b1', type: 'box', x: 0, y: 0, width: 10, height: 1, rotation: 0 },
+    ];
+    expect(findNearestWallSegment({ x: 5, y: 0 }, els, 1.0)).toBeNull();
+  });
+});
+
+describe('openingCenter', () => {
+  const makeWall = (id: string, pts: Array<{ x: number; y: number }>): Element => ({
+    id,
+    type: 'wall',
+    points: pts,
+  });
+
+  const makeOpening = (partial: Partial<Opening> = {}): Opening => ({
+    id: 'o1',
+    type: 'door',
+    wallId: 'w1',
+    segmentIndex: 0,
+    offset: 2,
+    width: 3,
+    facing: 'left',
+    ...partial,
+  });
+
+  it('returns the world midpoint of the opening gap', () => {
+    const els = [
+      makeWall('w1', [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ]),
+    ];
+    const op = makeOpening({ offset: 2, width: 3 }); // gap from 2 to 5, center at 3.5
+    const center = openingCenter(op, els);
+    expect(center).not.toBeNull();
+    expect(center!.x).toBeCloseTo(3.5);
+    expect(center!.y).toBeCloseTo(0);
+  });
+
+  it('returns null when the wall does not exist', () => {
+    const center = openingCenter(makeOpening({ wallId: 'missing' }), []);
+    expect(center).toBeNull();
+  });
+
+  it('returns null when segmentIndex is out of range', () => {
+    const els = [
+      makeWall('w1', [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ]),
+    ];
+    const center = openingCenter(makeOpening({ segmentIndex: 5 }), els);
+    expect(center).toBeNull();
+  });
+
+  it('works the same for type window (no facing field affects center)', () => {
+    const els = [
+      makeWall('w1', [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ]),
+    ];
+    const op = makeOpening({ type: 'window', offset: 4, width: 2 }); // center at 5
+    const center = openingCenter(op, els);
+    expect(center).not.toBeNull();
+    expect(center!.x).toBeCloseTo(5);
+    expect(center!.y).toBeCloseTo(0);
   });
 });
