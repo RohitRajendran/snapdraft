@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { createSampleElements } from './samplePlan';
-import type { Wall } from '../types';
 
 describe('createSampleElements', () => {
   it('returns a non-empty array of elements', () => {
@@ -14,16 +13,28 @@ describe('createSampleElements', () => {
     expect(ids1).not.toEqual(ids2);
   });
 
-  it('includes exactly one wall element', () => {
+  it('includes four wall elements (one per side)', () => {
     const walls = createSampleElements().filter((el) => el.type === 'wall');
-    expect(walls).toHaveLength(1);
+    expect(walls).toHaveLength(4);
   });
 
-  it('wall has a door gap (chain does not close back to its start point)', () => {
-    const wall = createSampleElements().find((el) => el.type === 'wall') as Wall;
-    const first = wall.points[0];
-    const last = wall.points[wall.points.length - 1];
-    expect(first.x === last.x && first.y === last.y).toBe(false);
+  it('includes a door and a window opening', () => {
+    const elements = createSampleElements();
+    const doors = elements.filter((el) => el.type === 'door');
+    const windows = elements.filter((el) => el.type === 'window');
+    expect(doors).toHaveLength(1);
+    expect(windows).toHaveLength(1);
+  });
+
+  it('openings reference valid wall IDs', () => {
+    const elements = createSampleElements();
+    const wallIds = new Set(elements.filter((el) => el.type === 'wall').map((el) => el.id));
+    const openings = elements.filter((el) => el.type === 'door' || el.type === 'window');
+    for (const opening of openings) {
+      if (opening.type === 'door' || opening.type === 'window') {
+        expect(wallIds.has(opening.wallId)).toBe(true);
+      }
+    }
   });
 
   it('includes expected furniture labels', () => {
@@ -44,7 +55,7 @@ describe('createSampleElements', () => {
           expect(p.x).toBeLessThan(MAX_FT);
           expect(p.y).toBeLessThan(MAX_FT);
         }
-      } else {
+      } else if (el.type === 'box') {
         expect(el.x).toBeLessThan(MAX_FT);
         expect(el.y).toBeLessThan(MAX_FT);
         expect(el.width).toBeLessThan(MAX_FT);
