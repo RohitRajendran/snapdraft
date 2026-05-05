@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
-import { Line, Circle } from 'react-konva';
+import { Line, Circle, Arc, Rect } from 'react-konva';
 import type Konva from 'konva';
 import { useToolStore } from '../../../store/useToolStore/useToolStore';
 import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplanStore';
-import type { Wall, Point } from '../../../types';
+import type { Wall, Opening, Point } from '../../../types';
 import {
   ftToPx,
   pxToFt,
@@ -13,6 +13,320 @@ import {
   SNAP_RADIUS_FT,
   getWallSnapIncrement,
 } from '../../../utils/geometry/geometry';
+
+// ── Gap computation ──────────────────────────────────────────────────
+
+type SegmentPart =
+  | { kind: 'solid'; from: number; to: number }
+  | { kind: 'gap'; from: number; to: number; opening: Opening };
+
+function computeSegmentParts(segLen: number, segOpenings: Opening[]): SegmentPart[] {
+  const sorted = [...segOpenings].sort((opA, opB) => opA.offset - opB.offset);
+  const parts: SegmentPart[] = [];
+  let pos = 0;
+
+  for (const op of sorted) {
+    const gapStart = Math.min(Math.max(op.offset, pos), segLen);
+    const gapEnd = Math.min(gapStart + op.width, segLen);
+    if (gapStart > pos + 0.001) parts.push({ kind: 'solid', from: pos, to: gapStart });
+    if (gapEnd > gapStart + 0.001)
+      parts.push({ kind: 'gap', from: gapStart, to: gapEnd, opening: op });
+    pos = gapEnd;
+  }
+
+  if (pos < segLen - 0.001) parts.push({ kind: 'solid', from: pos, to: segLen });
+  return parts;
+}
+
+// Interpolate a world point along a segment at a given fraction [0, 1]
+function segPoint(segStart: Point, segEnd: Point, fraction: number): Point {
+  return {
+    x: segStart.x + (segEnd.x - segStart.x) * fraction,
+    y: segStart.y + (segEnd.y - segStart.y) * fraction,
+  };
+}
+
+// ── Opening symbol renderers ─────────────────────────────────────────
+
+function DoorSymbol({
+  segStart,
+  segEnd,
+  opening,
+  zoom,
+  isSelected,
+  isDraggable,
+  onSelect,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+}: {
+  segStart: Point;
+  segEnd: Point;
+  opening: Opening;
+  zoom: number;
+  isSelected: boolean;
+  isDraggable: boolean;
+  onSelect: (extend: boolean) => void;
+  onDragStart?: () => void;
+  onDragMove?: (cursor: Point) => void;
+  onDragEnd?: (cursor: Point) => void;
+}) {
+  const segLen = distance(segStart, segEnd);
+  if (segLen < 0.001) return null;
+
+  const startPx = { x: ftToPx(segStart.x), y: ftToPx(segStart.y) };
+  const endPx = { x: ftToPx(segEnd.x), y: ftToPx(segEnd.y) };
+  const segLenPx = Math.sqrt((endPx.x - startPx.x) ** 2 + (endPx.y - startPx.y) ** 2);
+  const unitDirX = (endPx.x - startPx.x) / segLenPx;
+  const unitDirY = (endPx.y - startPx.y) / segLenPx;
+  const wallAngleDeg = Math.atan2(endPx.y - startPx.y, endPx.x - startPx.x) * (180 / Math.PI);
+
+  // Perpendicular direction: left = (unitDirY, -unitDirX), right = (-unitDirY, unitDirX) in screen space
+  const perpX = opening.facing === 'left' ? unitDirY : -unitDirY;
+  const perpY = opening.facing === 'left' ? -unitDirX : unitDirX;
+
+  const hingeIsStart = opening.hinge !== 'end';
+  const hingeFraction = hingeIsStart
+    ? opening.offset / segLen
+    : (opening.offset + opening.width) / segLen;
+  const hingeWorld = segPoint(segStart, segEnd, hingeFraction);
+  const hingePx = { x: ftToPx(hingeWorld.x), y: ftToPx(hingeWorld.y) };
+  const widthPx = ftToPx(opening.width);
+
+  const leafTip = {
+    x: hingePx.x + perpX * widthPx,
+    y: hingePx.y + perpY * widthPx,
+  };
+
+  // Arc sweeps the 90° quadrant the door occupies when fully open.
+  // Always clockwise=false (canvas CW / increasing angle) — only the start angle differs.
+  // Using clockwise=true with a 90° sweep would produce a 270° reflex arc instead.
+  // hinge=start: start angle points toward the open position; +90° CW reaches the closed direction.
+  // hinge=end: closed direction is wall-backward (+180°), so start angle shifts accordingly.
+  const arcRotation = hingeIsStart
+    ? opening.facing === 'left'
+      ? wallAngleDeg - 90
+      : wallAngleDeg
+    : opening.facing === 'left'
+      ? wallAngleDeg + 180
+      : wallAngleDeg + 90;
+  const stroke = isSelected ? '#0066cc' : '#2c2c2c';
+
+  const gapMidFraction = (opening.offset + opening.width / 2) / segLen;
+  const gapMid = segPoint(segStart, segEnd, gapMidFraction);
+  const gapMidPx = { x: ftToPx(gapMid.x), y: ftToPx(gapMid.y) };
+
+  return (
+    <>
+      {/* Door leaf — straight line from hinge pin to the open position */}
+      <Line
+        points={[hingePx.x, hingePx.y, leafTip.x, leafTip.y]}
+        stroke={stroke}
+        strokeWidth={1.5 / zoom}
+        listening={false}
+      />
+      {/* Swing arc — also acts as a click/tap target for selection */}
+      <Arc
+        x={hingePx.x}
+        y={hingePx.y}
+        innerRadius={0}
+        outerRadius={widthPx}
+        angle={90}
+        rotation={arcRotation}
+        clockwise={false}
+        fill="rgba(255,255,255,0.3)"
+        stroke={stroke}
+        strokeWidth={1.5 / zoom}
+        onClick={(e) => {
+          e.cancelBubble = true;
+          onSelect(Boolean(e.evt?.shiftKey));
+        }}
+        onTap={(e) => {
+          e.cancelBubble = true;
+          onSelect(false);
+        }}
+      />
+      {/* Hit area — draggable in select mode; position is reset each frame so hit area stays on the opening */}
+      <Rect
+        x={gapMidPx.x}
+        y={gapMidPx.y}
+        width={ftToPx(opening.width)}
+        height={20 / zoom}
+        offsetX={ftToPx(opening.width) / 2}
+        offsetY={10 / zoom}
+        rotation={wallAngleDeg}
+        fill="transparent"
+        hitStrokeWidth={0}
+        draggable={isDraggable}
+        onClick={(e) => {
+          e.cancelBubble = true;
+          onSelect(Boolean(e.evt?.shiftKey));
+        }}
+        onTap={(e) => {
+          e.cancelBubble = true;
+          onSelect(false);
+        }}
+        onDragStart={(e) => {
+          e.cancelBubble = true;
+          onDragStart?.();
+        }}
+        onDragMove={(e) => {
+          e.cancelBubble = true;
+          e.target.setAttrs({ x: gapMidPx.x, y: gapMidPx.y });
+          const pos = e.target.getStage()?.getRelativePointerPosition();
+          if (pos) onDragMove?.({ x: pxToFt(pos.x), y: pxToFt(pos.y) });
+        }}
+        onDragEnd={(e) => {
+          e.cancelBubble = true;
+          e.target.setAttrs({ x: gapMidPx.x, y: gapMidPx.y });
+          const pos = e.target.getStage()?.getRelativePointerPosition();
+          if (pos) onDragEnd?.({ x: pxToFt(pos.x), y: pxToFt(pos.y) });
+        }}
+      />
+    </>
+  );
+}
+
+// Half the perpendicular extent of the window jamb lines (in feet)
+const JAMB_HALF_FT = 0.25;
+
+function WindowSymbol({
+  segStart,
+  segEnd,
+  opening,
+  zoom,
+  isSelected,
+  isDraggable,
+  onSelect,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+}: {
+  segStart: Point;
+  segEnd: Point;
+  opening: Opening;
+  zoom: number;
+  isSelected: boolean;
+  isDraggable: boolean;
+  onSelect: (extend: boolean) => void;
+  onDragStart?: () => void;
+  onDragMove?: (cursor: Point) => void;
+  onDragEnd?: (cursor: Point) => void;
+}) {
+  const segLen = distance(segStart, segEnd);
+  if (segLen < 0.001) return null;
+
+  const startPx = { x: ftToPx(segStart.x), y: ftToPx(segStart.y) };
+  const endPx = { x: ftToPx(segEnd.x), y: ftToPx(segEnd.y) };
+  const segLenPx = Math.sqrt((endPx.x - startPx.x) ** 2 + (endPx.y - startPx.y) ** 2);
+  const unitDirX = (endPx.x - startPx.x) / segLenPx;
+  const unitDirY = (endPx.y - startPx.y) / segLenPx;
+  const wallAngleDeg = Math.atan2(endPx.y - startPx.y, endPx.x - startPx.x) * (180 / Math.PI);
+
+  // Perpendicular unit pointing to the left side of the wall (in screen space)
+  const perpX = unitDirY;
+  const perpY = -unitDirX;
+  const jambPx = ftToPx(JAMB_HALF_FT);
+
+  const gapStartFraction = opening.offset / segLen;
+  const gapEndFraction = (opening.offset + opening.width) / segLen;
+  const gapStartWorld = segPoint(segStart, segEnd, gapStartFraction);
+  const gapEndWorld = segPoint(segStart, segEnd, gapEndFraction);
+  const gapStartPx = { x: ftToPx(gapStartWorld.x), y: ftToPx(gapStartWorld.y) };
+  const gapEndPx = { x: ftToPx(gapEndWorld.x), y: ftToPx(gapEndWorld.y) };
+
+  const gapMidFraction = (opening.offset + opening.width / 2) / segLen;
+  const gapMid = segPoint(segStart, segEnd, gapMidFraction);
+  const gapMidPx = { x: ftToPx(gapMid.x), y: ftToPx(gapMid.y) };
+
+  const stroke = isSelected ? '#0066cc' : '#2c2c2c';
+
+  return (
+    <>
+      {/* Jamb lines at each end of the opening (perpendicular to wall) */}
+      <Line
+        points={[
+          gapStartPx.x - perpX * jambPx,
+          gapStartPx.y - perpY * jambPx,
+          gapStartPx.x + perpX * jambPx,
+          gapStartPx.y + perpY * jambPx,
+        ]}
+        stroke={stroke}
+        strokeWidth={2 / zoom}
+        listening={false}
+      />
+      <Line
+        points={[
+          gapEndPx.x - perpX * jambPx,
+          gapEndPx.y - perpY * jambPx,
+          gapEndPx.x + perpX * jambPx,
+          gapEndPx.y + perpY * jambPx,
+        ]}
+        stroke={stroke}
+        strokeWidth={2 / zoom}
+        listening={false}
+      />
+      {/* Glazing: two parallel lines representing the glass pane */}
+      {[1 / 3, 2 / 3].map((frac) => {
+        const glazingOffsetX = perpX * jambPx * (frac * 2 - 1);
+        const glazingOffsetY = perpY * jambPx * (frac * 2 - 1);
+        return (
+          <Line
+            key={frac}
+            points={[
+              gapStartPx.x + glazingOffsetX,
+              gapStartPx.y + glazingOffsetY,
+              gapEndPx.x + glazingOffsetX,
+              gapEndPx.y + glazingOffsetY,
+            ]}
+            stroke={stroke}
+            strokeWidth={1 / zoom}
+            listening={false}
+          />
+        );
+      })}
+      {/* Hit area — draggable in select mode; position is reset each frame so hit area stays on the opening */}
+      <Rect
+        x={gapMidPx.x}
+        y={gapMidPx.y}
+        width={ftToPx(opening.width)}
+        height={20 / zoom}
+        offsetX={ftToPx(opening.width) / 2}
+        offsetY={10 / zoom}
+        rotation={wallAngleDeg}
+        fill="transparent"
+        hitStrokeWidth={0}
+        draggable={isDraggable}
+        onClick={(e) => {
+          e.cancelBubble = true;
+          onSelect(Boolean(e.evt?.shiftKey));
+        }}
+        onTap={(e) => {
+          e.cancelBubble = true;
+          onSelect(false);
+        }}
+        onDragStart={(e) => {
+          e.cancelBubble = true;
+          onDragStart?.();
+        }}
+        onDragMove={(e) => {
+          e.cancelBubble = true;
+          e.target.setAttrs({ x: gapMidPx.x, y: gapMidPx.y });
+          const pos = e.target.getStage()?.getRelativePointerPosition();
+          if (pos) onDragMove?.({ x: pxToFt(pos.x), y: pxToFt(pos.y) });
+        }}
+        onDragEnd={(e) => {
+          e.cancelBubble = true;
+          e.target.setAttrs({ x: gapMidPx.x, y: gapMidPx.y });
+          const pos = e.target.getStage()?.getRelativePointerPosition();
+          if (pos) onDragEnd?.({ x: pxToFt(pos.x), y: pxToFt(pos.y) });
+        }}
+      />
+    </>
+  );
+}
+
+// ── Multi-select drag helper ─────────────────────────────────────────
 
 function moveOtherSelected(
   node: Konva.Node,
@@ -40,16 +354,34 @@ function moveOtherSelected(
   }
 }
 
+// ── Props ────────────────────────────────────────────────────────────
+
 type Props = {
   wall: Wall;
+  openings: Opening[];
   selected: boolean;
   onSelect: (extendSelection: boolean) => void;
+  onOpeningSelect?: (id: string, extend: boolean) => void;
+  onOpeningDragStart?: (id: string, type: 'door' | 'window') => void;
+  onOpeningDragMove?: (cursor: Point) => void;
+  onOpeningDragEnd?: (cursor: Point) => void;
   onGroupDrag?: (id: string, dxFt: number, dyFt: number, targetIds?: Set<string>) => void;
   onEndpointDrag?: (wallId: string, pointIndex: number, newPos: Point) => void;
 };
 
-export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointDrag }: Props) {
-  const { zoom, activeTool } = useToolStore();
+export function WallElement({
+  wall,
+  openings,
+  selected,
+  onSelect,
+  onOpeningSelect,
+  onOpeningDragStart,
+  onOpeningDragMove,
+  onOpeningDragEnd,
+  onGroupDrag,
+  onEndpointDrag,
+}: Props) {
+  const { zoom, activeTool, selectedIds } = useToolStore();
   const { updateElement } = useFloorplanStore();
   const [endpointSnapTarget, setEndpointSnapTarget] = useState<Point | null>(null);
   const [draggingEndpoint, setDraggingEndpoint] = useState<{ idx: number; pos: Point } | null>(
@@ -81,13 +413,11 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
     const ids = dragSelectionRef.current;
     dragSelectionRef.current = new Set();
 
-    // Multi-select: delegate all movement to parent handler
     if (ids.size > 1 && onGroupDrag) {
       onGroupDrag(wall.id, snapToGrid(dxFt), snapToGrid(dyFt), ids);
       return;
     }
 
-    // Single wall drag — try to snap endpoints to nearby wall endpoints
     const candidates = wall.points.map((p) => ({ x: p.x + dxFt, y: p.y + dyFt }));
     const allElements = useFloorplanStore.getState().activePlan()?.elements ?? [];
     const otherEndpoints: Point[] = [];
@@ -144,6 +474,28 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
         .flatMap((p) => [ftToPx(p.x), ftToPx(p.y)])
     : null;
 
+  // Build visible wall segments with gaps cut out for openings
+  const visibleSegments: { points: number[]; key: string }[] = [];
+  for (let segIdx = 0; segIdx < wall.points.length - 1; segIdx++) {
+    const segStart = wall.points[segIdx];
+    const segEnd = wall.points[segIdx + 1];
+    const segLen = distance(segStart, segEnd);
+    if (segLen < 0.001) continue;
+    const segOpenings = openings.filter((o) => o.segmentIndex === segIdx);
+    const parts = computeSegmentParts(segLen, segOpenings);
+    for (const part of parts) {
+      if (part.kind !== 'solid') continue;
+      const partStart = segPoint(segStart, segEnd, part.from / segLen);
+      const partEnd = segPoint(segStart, segEnd, part.to / segLen);
+      visibleSegments.push({
+        points: [ftToPx(partStart.x), ftToPx(partStart.y), ftToPx(partEnd.x), ftToPx(partEnd.y)],
+        key: `${wall.id}-${segIdx}-${part.from}`,
+      });
+    }
+  }
+
+  const wallStroke = selected ? '#0066cc' : '#2c2c2c';
+
   return (
     <>
       {ghostFlatPoints && (
@@ -158,12 +510,14 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
           listening={false}
         />
       )}
+
+      {/* Invisible drag-target — handles all pointer events for the wall */}
       <Line
         id={`sd-${wall.id}`}
         x={0}
         y={0}
         points={flatPoints}
-        stroke={selected ? '#0066cc' : '#2c2c2c'}
+        stroke="rgba(0,0,0,0)"
         strokeWidth={3 / zoom}
         lineCap="square"
         lineJoin="miter"
@@ -177,7 +531,60 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
         data-testid={`wall-${wall.id}`}
       />
 
-      {/* Endpoint snap ring shown while dragging an endpoint near another wall's endpoint */}
+      {/* Visible wall segments (with gaps for openings) */}
+      {visibleSegments.map((seg) => (
+        <Line
+          key={seg.key}
+          points={seg.points}
+          stroke={wallStroke}
+          strokeWidth={3 / zoom}
+          lineCap="square"
+          lineJoin="miter"
+          listening={false}
+        />
+      ))}
+
+      {/* Opening symbols */}
+      {wall.points.slice(0, -1).map((segStart, segIdx) => {
+        const segEnd = wall.points[segIdx + 1];
+        const segLen = distance(segStart, segEnd);
+        if (segLen < 0.001) return null;
+        return openings
+          .filter((o) => o.segmentIndex === segIdx)
+          .map((op) =>
+            op.type === 'door' ? (
+              <DoorSymbol
+                key={op.id}
+                segStart={segStart}
+                segEnd={segEnd}
+                opening={op}
+                zoom={zoom}
+                isSelected={selectedIds.has(op.id)}
+                isDraggable={activeTool === 'select'}
+                onSelect={(extend) => onOpeningSelect?.(op.id, extend)}
+                onDragStart={() => onOpeningDragStart?.(op.id, 'door')}
+                onDragMove={onOpeningDragMove}
+                onDragEnd={onOpeningDragEnd}
+              />
+            ) : (
+              <WindowSymbol
+                key={op.id}
+                segStart={segStart}
+                segEnd={segEnd}
+                opening={op}
+                zoom={zoom}
+                isSelected={selectedIds.has(op.id)}
+                isDraggable={activeTool === 'select'}
+                onSelect={(extend) => onOpeningSelect?.(op.id, extend)}
+                onDragStart={() => onOpeningDragStart?.(op.id, 'window')}
+                onDragMove={onOpeningDragMove}
+                onDragEnd={onOpeningDragEnd}
+              />
+            ),
+          );
+      })}
+
+      {/* Endpoint snap ring */}
       {endpointSnapTarget && (
         <Circle
           x={ftToPx(endpointSnapTarget.x)}
@@ -194,10 +601,9 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
       {selected &&
         activeTool === 'select' &&
         wall.points.map((pt, idx) => {
-          const bx = ftToPx(pt.x);
-          const by = ftToPx(pt.y);
+          const ptPxX = ftToPx(pt.x);
+          const ptPxY = ftToPx(pt.y);
 
-          // Determine the actual target index (may redirect to free end if connected)
           const isConnected =
             useFloorplanStore
               .getState()
@@ -213,8 +619,8 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
           return (
             <Circle
               key={idx}
-              x={bx}
-              y={by}
+              x={ptPxX}
+              y={ptPxY}
               radius={6 / zoom}
               fill="#0066cc"
               stroke="white"
@@ -241,7 +647,6 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
 
                 const allElements = useFloorplanStore.getState().activePlan()?.elements ?? [];
 
-                // Check if the dragged endpoint is shared with another wall
                 const draggedPt = wall.points[idx];
                 const connected = allElements.some(
                   (el) =>
@@ -250,7 +655,6 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
                     el.points.some((p) => distance(p, draggedPt) < 0.05),
                 );
 
-                // If connected, redirect the resize to the OTHER (free) endpoint
                 const resolvedIdx = connected ? (idx === 0 ? wall.points.length - 1 : 0) : idx;
                 const otherEndpoints = getOtherEndpoints(resolvedIdx);
                 const snapIncrement = getWallSnapIncrement(Boolean(e.evt?.shiftKey));
@@ -263,7 +667,6 @@ export function WallElement({ wall, selected, onSelect, onGroupDrag, onEndpointD
                 const newPoints = wall.points.map((p, i) => (i === resolvedIdx ? snapped : p));
                 updateElement(wall.id, { points: newPoints });
 
-                // Reset handle to its unchanged position if we redirected the drag
                 if (connected) {
                   node.position({ x: ftToPx(draggedPt.x), y: ftToPx(draggedPt.y) });
                 } else {
