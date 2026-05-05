@@ -101,6 +101,44 @@
   outline-offset: 2px;
 }
 
+.toggleRow {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.toggle {
+  flex: 1;
+  background: white;
+  border: 1px solid #c8c4bc;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #2c2c2c;
+  cursor: pointer;
+  min-height: 36px;
+  touch-action: manipulation;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.toggle:hover {
+  background: #f0ede8;
+}
+
+.toggleActive {
+  background: #2c2c2c;
+  color: #f5f0e8;
+  border-color: #2c2c2c;
+}
+
+.toggleActive:hover {
+  background: #444;
+}
+
 @media (max-width: 730px) {
   .panel {
     left: 12px;
