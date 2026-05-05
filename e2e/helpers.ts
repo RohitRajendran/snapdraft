@@ -110,7 +110,8 @@ export async function drawWall(
   toX: number,
   toY: number,
 ) {
-  await page.getByTestId('tool-wall').click();
+  // Wall is inside the Wall/Door/Window group dropdown; use the keyboard shortcut instead.
+  await page.keyboard.press('w');
   await page.mouse.move(fromX, fromY);
   await page.mouse.click(fromX, fromY);
   await page.mouse.move(toX, toY);
