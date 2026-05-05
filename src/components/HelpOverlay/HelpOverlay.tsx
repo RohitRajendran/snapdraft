@@ -65,6 +65,11 @@ function getHelpContent(profile: InputProfile) {
           hint: 'Wall tool — tap points; use Done, Cancel, and Length to tune the last wall.',
         },
         { action: 'Draw boxes', hint: 'Box tool — drag to create.' },
+        { action: 'Place doors', hint: 'Door tool — tap a wall to place.' },
+        {
+          action: 'Place windows',
+          hint: 'Window tool — tap a wall to place.',
+        },
         { action: 'Select and edit', hint: 'Select tool — tap an item to edit.' },
         { action: 'Measure', hint: 'Measure tool — tap two points.' },
       ]
@@ -72,6 +77,11 @@ function getHelpContent(profile: InputProfile) {
       ? [
           { action: 'Draw walls', hint: 'Wall tool — drag or click points.' },
           { action: 'Draw boxes', hint: 'Box tool — drag to create.' },
+          { action: 'Place doors', hint: 'Door tool — click a wall to place.' },
+          {
+            action: 'Place windows',
+            hint: 'Window tool — click a wall to place.',
+          },
           { action: 'Select and edit', hint: 'Select tool — click an item to edit.' },
           { action: 'Measure', hint: 'Measure tool — click two points.' },
         ]
@@ -81,6 +91,14 @@ function getHelpContent(profile: InputProfile) {
             hint: 'Wall tool — tap, click, or drag points; use Done, Cancel, and Length on touch.',
           },
           { action: 'Draw boxes', hint: 'Box tool — drag to create.' },
+          {
+            action: 'Place doors',
+            hint: 'Door tool — tap or click a wall to place.',
+          },
+          {
+            action: 'Place windows',
+            hint: 'Window tool — tap or click a wall to place.',
+          },
           { action: 'Select and edit', hint: 'Select tool — tap or click an item to edit.' },
           { action: 'Measure', hint: 'Measure tool — tap or click two points.' },
         ];
@@ -105,6 +123,14 @@ function getHelpContent(profile: InputProfile) {
     {
       action: 'Measure tool',
       hint: isTouchOnly ? 'Tap Measure' : supportsBoth ? 'M or tap Measure' : 'M',
+    },
+    {
+      action: 'Door tool',
+      hint: isTouchOnly ? 'Tap Door' : supportsBoth ? 'D or tap Door' : 'D',
+    },
+    {
+      action: 'Window tool',
+      hint: isTouchOnly ? 'Tap Window' : supportsBoth ? 'N or tap Window' : 'N',
     },
     {
       action: 'Exact wall length',
