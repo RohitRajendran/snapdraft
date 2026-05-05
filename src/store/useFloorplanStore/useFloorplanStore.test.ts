@@ -535,4 +535,33 @@ describe('opening elements', () => {
     const op = getElements().find((el) => el.id === 'd1') as Opening;
     expect(op.hinge).toBe('end');
   });
+
+  it('updateElement changing facing pushes history and persists the value', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door()); // facing: 'left'
+    const histBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElement('d1', { facing: 'right' });
+    expect(useFloorplanStore.getState().past.length).toBe(histBefore + 1);
+    const op = getElements().find((el) => el.id === 'd1') as Opening;
+    expect(op.facing).toBe('right');
+  });
+
+  it('updateElement with same facing is a no-op (does not push history)', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door()); // facing: 'left'
+    const histBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElement('d1', { facing: 'left' });
+    expect(useFloorplanStore.getState().past.length).toBe(histBefore);
+  });
+
+  it('updateElements can update facing and offset on a door in one call', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door()); // offset: 1, facing: 'left'
+    const histBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElements({ d1: { offset: 2, facing: 'right' } });
+    expect(useFloorplanStore.getState().past.length).toBe(histBefore + 1);
+    const op = getElements().find((el) => el.id === 'd1') as Opening;
+    expect(op.offset).toBe(2);
+    expect(op.facing).toBe('right');
+  });
 });
