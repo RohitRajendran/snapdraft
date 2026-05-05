@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useFloorplanStore } from './useFloorplanStore';
 import { FLOORPLAN_VERSION } from '../../utils/storage/storage';
-import type { Element } from '../../types';
+import type { Element, Opening } from '../../types';
 
 const wall = (id = 'w1'): Element => ({
   id,
@@ -413,5 +413,155 @@ describe('persistence to localStorage', () => {
     const id = useFloorplanStore.getState().activeId!;
     useFloorplanStore.getState().setActivePlan(id);
     expect(localStorage.getItem('snapdraft_active')).toBe(id);
+  });
+});
+
+const door = (id = 'd1', wallId = 'w1'): Opening => ({
+  id,
+  type: 'door',
+  wallId,
+  segmentIndex: 0,
+  offset: 1,
+  width: 3,
+  facing: 'left',
+});
+
+const win = (id = 'win1', wallId = 'w1'): Opening => ({
+  id,
+  type: 'window',
+  wallId,
+  segmentIndex: 0,
+  offset: 2,
+  width: 2,
+  facing: 'left',
+});
+
+describe('opening elements', () => {
+  it('persists a door in the store', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door());
+    const els = getElements();
+    expect(els).toHaveLength(2);
+    const op = els.find((el) => el.id === 'd1');
+    expect(op?.type).toBe('door');
+  });
+
+  it('sameElement treats openings with identical fields as equal', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door());
+    const histBefore = useFloorplanStore.getState().past.length;
+    // updateElement with no-op → should not push to history
+    useFloorplanStore.getState().updateElement('d1', { offset: 1 });
+    expect(useFloorplanStore.getState().past.length).toBe(histBefore);
+  });
+
+  it('deleteElement(wallId) also removes its openings', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door());
+    expect(getElements()).toHaveLength(2);
+    useFloorplanStore.getState().deleteElement('w1');
+    const remaining = getElements();
+    expect(remaining).toHaveLength(0);
+  });
+
+  it('deleteElements cascades to openings for all deleted walls', () => {
+    useFloorplanStore.getState().addElement(wall('w1'));
+    useFloorplanStore.getState().addElement(wall('w2'));
+    useFloorplanStore.getState().addElement(door('d1', 'w1'));
+    useFloorplanStore.getState().addElement(door('d2', 'w2'));
+    expect(getElements()).toHaveLength(4);
+    useFloorplanStore.getState().deleteElements(new Set(['w1', 'w2']));
+    expect(getElements()).toHaveLength(0);
+  });
+
+  it('deleteElement(openingId) removes only the opening', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door());
+    useFloorplanStore.getState().deleteElement('d1');
+    const remaining = getElements();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].type).toBe('wall');
+  });
+
+  it('undo restores opening after deletion', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door());
+    useFloorplanStore.getState().deleteElement('d1');
+    expect(getElements()).toHaveLength(1);
+    useFloorplanStore.getState().undo();
+    expect(getElements()).toHaveLength(2);
+  });
+
+  it('persists a window in the store', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(win());
+    const els = getElements();
+    const op = els.find((el) => el.id === 'win1');
+    expect(op?.type).toBe('window');
+  });
+
+  it('updateElement changes window offset and pushes history', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(win());
+    const histBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElement('win1', { offset: 5 });
+    expect(useFloorplanStore.getState().past.length).toBe(histBefore + 1);
+    const op = getElements().find((el) => el.id === 'win1') as Opening;
+    expect(op.offset).toBe(5);
+  });
+
+  it('deleteElement(wallId) removes a window on that wall', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(win());
+    useFloorplanStore.getState().deleteElement('w1');
+    expect(getElements()).toHaveLength(0);
+  });
+
+  it('wall with both a door and a window is fully cleaned up on wall delete', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door());
+    useFloorplanStore.getState().addElement(win());
+    expect(getElements()).toHaveLength(3);
+    useFloorplanStore.getState().deleteElement('w1');
+    expect(getElements()).toHaveLength(0);
+  });
+
+  it('updateElement can set hinge to end and sameElement detects the change', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door());
+    const histBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElement('d1', { hinge: 'end' });
+    expect(useFloorplanStore.getState().past.length).toBe(histBefore + 1);
+    const op = getElements().find((el) => el.id === 'd1') as Opening;
+    expect(op.hinge).toBe('end');
+  });
+
+  it('updateElement changing facing pushes history and persists the value', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door()); // facing: 'left'
+    const histBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElement('d1', { facing: 'right' });
+    expect(useFloorplanStore.getState().past.length).toBe(histBefore + 1);
+    const op = getElements().find((el) => el.id === 'd1') as Opening;
+    expect(op.facing).toBe('right');
+  });
+
+  it('updateElement with same facing is a no-op (does not push history)', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door()); // facing: 'left'
+    const histBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElement('d1', { facing: 'left' });
+    expect(useFloorplanStore.getState().past.length).toBe(histBefore);
+  });
+
+  it('updateElements can update facing and offset on a door in one call', () => {
+    useFloorplanStore.getState().addElement(wall());
+    useFloorplanStore.getState().addElement(door()); // offset: 1, facing: 'left'
+    const histBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElements({ d1: { offset: 2, facing: 'right' } });
+    expect(useFloorplanStore.getState().past.length).toBe(histBefore + 1);
+    const op = getElements().find((el) => el.id === 'd1') as Opening;
+    expect(op.offset).toBe(2);
+    expect(op.facing).toBe('right');
   });
 });

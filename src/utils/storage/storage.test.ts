@@ -257,6 +257,61 @@ describe('parseImportedPlan', () => {
     const plan = { ...mockPlan, elements: [{ id: 'x1', type: 'circle' }] };
     expect(parseImportedPlan(plan)).toBeNull();
   });
+
+  const validDoor = {
+    id: 'd1',
+    type: 'door',
+    wallId: 'w1',
+    segmentIndex: 0,
+    offset: 1,
+    width: 2.5,
+    facing: 'left',
+  };
+
+  it('accepts a door without hinge field (backward compat)', () => {
+    const plan = { ...mockPlan, elements: [validDoor] };
+    expect(parseImportedPlan(plan)).not.toBeNull();
+  });
+
+  it('accepts a door with hinge=start', () => {
+    const plan = { ...mockPlan, elements: [{ ...validDoor, hinge: 'start' }] };
+    expect(parseImportedPlan(plan)).not.toBeNull();
+  });
+
+  it('accepts a door with hinge=end', () => {
+    const plan = { ...mockPlan, elements: [{ ...validDoor, hinge: 'end' }] };
+    const result = parseImportedPlan(plan);
+    expect(result).not.toBeNull();
+    expect((result!.elements[0] as { hinge: string }).hinge).toBe('end');
+  });
+
+  it('returns null for door with invalid hinge value', () => {
+    const plan = { ...mockPlan, elements: [{ ...validDoor, hinge: 'top' }] };
+    expect(parseImportedPlan(plan)).toBeNull();
+  });
+
+  it('accepts a window element', () => {
+    const plan = {
+      ...mockPlan,
+      elements: [
+        {
+          id: 'win1',
+          type: 'window',
+          wallId: 'w1',
+          segmentIndex: 0,
+          offset: 2,
+          width: 3,
+          facing: 'left',
+        },
+      ],
+    };
+    expect(parseImportedPlan(plan)).not.toBeNull();
+  });
+
+  it('returns null for door with invalid facing', () => {
+    const plan = { ...mockPlan, elements: [{ ...validDoor, facing: 'up' }] };
+    expect(parseImportedPlan(plan)).toBeNull();
+  });
 });
 
 describe('encodePlanToUrl / decodePlanFromUrl', () => {

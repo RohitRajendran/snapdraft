@@ -6,7 +6,7 @@ test.describe('Wall drawing', () => {
 
   test('two clicks draw a wall that shows properties panel', async ({ page }) => {
     const { centerX, centerY } = await canvasCenter(page);
-    await page.getByTestId('tool-wall').click();
+    await page.getByTestId('tool-wall-group').click();
     await page.mouse.move(centerX - 80, centerY);
     await page.mouse.click(centerX - 80, centerY);
     await page.mouse.move(centerX + 80, centerY);
@@ -21,7 +21,7 @@ test.describe('Wall drawing', () => {
 
   test('dimension input appears when chain is armed', async ({ page }) => {
     const { centerX, centerY } = await canvasCenter(page);
-    await page.getByTestId('tool-wall').click();
+    await page.getByTestId('tool-wall-group').click();
     await page.mouse.move(centerX, centerY);
     await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('dim-input')).toBeVisible();
@@ -30,7 +30,7 @@ test.describe('Wall drawing', () => {
 
   test('typing exact length in dimension input places wall at that length', async ({ page }) => {
     const { centerX, centerY } = await canvasCenter(page);
-    await page.getByTestId('tool-wall').click();
+    await page.getByTestId('tool-wall-group').click();
     await page.mouse.move(centerX, centerY);
     await page.mouse.click(centerX, centerY);
 
@@ -49,7 +49,7 @@ test.describe('Wall drawing', () => {
   });
 
   test('wall drawing snaps to inches by default', async ({ page }) => {
-    await page.getByTestId('tool-wall').click();
+    await page.getByTestId('tool-wall-group').click();
     const canvas = page.getByTestId('drawing-canvas');
     await canvas.click({ position: { x: 40, y: 40 } });
     await canvas.click({ position: { x: 88, y: 40 } });
@@ -66,7 +66,7 @@ test.describe('Wall drawing', () => {
   });
 
   test('holding Shift snaps wall drawing to quarter inches', async ({ page }) => {
-    await page.getByTestId('tool-wall').click();
+    await page.getByTestId('tool-wall-group').click();
     const canvas = page.getByTestId('drawing-canvas');
     await canvas.click({ position: { x: 40, y: 40 }, modifiers: ['Shift'] });
     await canvas.click({ position: { x: 88, y: 40 }, modifiers: ['Shift'] });
@@ -84,7 +84,7 @@ test.describe('Wall drawing', () => {
 
   test('Escape ends wall chain', async ({ page }) => {
     const { centerX, centerY } = await canvasCenter(page);
-    await page.getByTestId('tool-wall').click();
+    await page.getByTestId('tool-wall-group').click();
     await page.mouse.click(centerX, centerY);
     await expect(page.getByTestId('dim-input')).toBeVisible();
     await page.keyboard.press('Escape');
@@ -98,7 +98,7 @@ test.describe('Wall drawing', () => {
       await page.reload();
       await dismissHelp(page);
 
-      await page.getByTestId('tool-wall').click();
+      await page.getByTestId('tool-wall-group').click();
       const canvas = page.getByTestId('drawing-canvas');
       await canvas.click({ position: { x: 40, y: 40 } });
       await canvas.click({ position: { x: 120, y: 40 } });
@@ -138,7 +138,7 @@ test.describe('Wall drawing', () => {
       await page.reload();
       await dismissHelp(page);
 
-      await page.getByTestId('tool-wall').click();
+      await page.getByTestId('tool-wall-group').click();
       const canvas = page.getByTestId('drawing-canvas');
       await canvas.click({ position: { x: 40, y: 40 } });
       await canvas.click({ position: { x: 120, y: 40 } });

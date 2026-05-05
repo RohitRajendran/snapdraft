@@ -7,7 +7,7 @@ test.describe('App shell', () => {
   test('loads and shows all UI regions', async ({ page }) => {
     await expect(page.getByTestId('drawing-canvas')).toBeVisible();
     await expect(page.getByTestId('tool-select-pan')).toBeVisible();
-    await expect(page.getByTestId('tool-wall')).toBeVisible();
+    await expect(page.getByTestId('tool-wall-group')).toBeVisible();
     await expect(page.getByTestId('tool-box')).toBeVisible();
     await expect(page.getByTestId('tool-undo')).toBeVisible();
     await expect(page.getByTestId('tool-redo')).toBeVisible();

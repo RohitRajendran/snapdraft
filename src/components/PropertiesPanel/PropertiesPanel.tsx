@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanStore';
 import { useToolStore } from '../../store/useToolStore/useToolStore';
-import type { Box, Element, Wall } from '../../types';
+import type { Box, Element, Opening, Wall } from '../../types';
 import { collectConnectedWallIds } from '../../utils/geometry/geometry';
 import { formatDimension } from '../../utils/units/units';
 import { shouldUseMobileOverlayLayout } from '../Canvas/layout';
@@ -185,6 +185,82 @@ function BoxProperties({
   );
 }
 
+function OpeningProperties({
+  opening,
+  onDelete,
+  showDelete,
+}: {
+  opening: Opening;
+  onDelete: () => void;
+  showDelete: boolean;
+}) {
+  const { updateElement } = useFloorplanStore();
+
+  return (
+    <div className={styles.fields}>
+      <FtInInput
+        label="Width"
+        value={opening.width}
+        onChange={(w) => updateElement(opening.id, { width: Math.max(0.5, w) })}
+        min={0.5}
+        testId="opening-width-input"
+      />
+      {opening.type === 'door' && (
+        <>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Swing</span>
+            <div className={styles.toggleRow}>
+              <button
+                className={`${styles.toggle} ${opening.facing === 'left' ? styles.toggleActive : ''}`}
+                onClick={() => updateElement(opening.id, { facing: 'left' })}
+                data-testid="facing-left"
+              >
+                Left
+              </button>
+              <button
+                className={`${styles.toggle} ${opening.facing === 'right' ? styles.toggleActive : ''}`}
+                onClick={() => updateElement(opening.id, { facing: 'right' })}
+                data-testid="facing-right"
+              >
+                Right
+              </button>
+            </div>
+          </div>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Hinge</span>
+            <div className={styles.toggleRow}>
+              <button
+                className={`${styles.toggle} ${(opening.hinge ?? 'start') === 'start' ? styles.toggleActive : ''}`}
+                onClick={() => updateElement(opening.id, { hinge: 'start' })}
+                data-testid="hinge-start"
+              >
+                Left
+              </button>
+              <button
+                className={`${styles.toggle} ${opening.hinge === 'end' ? styles.toggleActive : ''}`}
+                onClick={() => updateElement(opening.id, { hinge: 'end' })}
+                data-testid="hinge-end"
+              >
+                Right
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+      {showDelete && (
+        <button
+          className={styles.deleteBtn}
+          onClick={onDelete}
+          aria-label={`Delete ${opening.type}`}
+          data-testid="delete-element"
+        >
+          Delete
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function PropertiesPanel() {
   const { activePlan, deleteElement } = useFloorplanStore();
   const { selectedId, selectedIds, setSelectedId, propertiesPanelOpen } = useToolStore();
@@ -203,6 +279,15 @@ export function PropertiesPanel() {
 
   const showDelete = !shouldUseMobileOverlayLayout(window.innerWidth);
 
+  const title =
+    element.type === 'wall'
+      ? 'Wall'
+      : element.type === 'door'
+        ? 'Door'
+        : element.type === 'window'
+          ? 'Window'
+          : 'Box';
+
   return (
     <div
       className={styles.panel}
@@ -211,12 +296,19 @@ export function PropertiesPanel() {
       data-testid="properties-panel"
     >
       <div className={styles.header}>
-        <h2 className={styles.title}>{element.type === 'wall' ? 'Wall' : 'Box'}</h2>
+        <h2 className={styles.title}>{title}</h2>
       </div>
       {element.type === 'wall' ? (
         <WallProperties
           key={element.id}
           wall={element as Wall}
+          onDelete={handleDelete}
+          showDelete={showDelete}
+        />
+      ) : element.type === 'door' || element.type === 'window' ? (
+        <OpeningProperties
+          key={element.id}
+          opening={element as Opening}
           onDelete={handleDelete}
           showDelete={showDelete}
         />

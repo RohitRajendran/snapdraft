@@ -3,12 +3,14 @@ import { createPortal } from 'react-dom';
 import {
   MousePointer2,
   Hand,
-  PenLine,
+  BrickWall,
+  Blinds,
   RectangleHorizontal,
   RulerDimensionLine,
   Undo2,
   Redo2,
   HelpCircle,
+  DoorOpen,
 } from 'lucide-react';
 import { useToolStore } from '../../store/useToolStore/useToolStore';
 import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanStore';
@@ -17,35 +19,30 @@ import type { ToolType } from '../../types';
 import styles from './Toolbar.module.css';
 
 const TOOLS: { type: ToolType; label: string; icon: React.ReactNode; key: string }[] = [
-  { type: 'wall', label: 'Wall', icon: <PenLine />, key: 'W' },
   { type: 'box', label: 'Box', icon: <RectangleHorizontal />, key: 'B' },
   { type: 'measure', label: 'Measure', icon: <RulerDimensionLine />, key: 'M' },
 ];
 
-function SelectPanGroup({
-  activeTool,
-  setActiveTool,
-}: {
-  activeTool: ToolType;
-  setActiveTool: (t: ToolType) => void;
-}) {
+const WALL_GROUP_TOOLS: { type: ToolType; label: string; icon: React.ReactNode; key: string }[] = [
+  { type: 'wall', label: 'Wall', icon: <BrickWall />, key: 'W' },
+  { type: 'door', label: 'Door', icon: <DoorOpen />, key: 'D' },
+  { type: 'window', label: 'Window', icon: <Blinds />, key: 'N' },
+];
+
+function useDropdown(activeTool: ToolType) {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Derived state: close immediately when activeTool changes via keyboard shortcut
+  // Close immediately when the active tool changes via keyboard shortcut.
   const [prevActiveTool, setPrevActiveTool] = useState(activeTool);
   if (prevActiveTool !== activeTool) {
     setPrevActiveTool(activeTool);
     setIsOpen(false);
     setIsClosing(false);
   }
-
-  const isGroupActive = activeTool === 'select' || activeTool === 'pan';
-  const currentTool = activeTool === 'pan' ? 'pan' : 'select';
-  const icon = currentTool === 'pan' ? <Hand /> : <MousePointer2 />;
-  const label = currentTool === 'pan' ? 'Hand' : 'Select';
 
   function openDropdown() {
     if (wrapperRef.current) {
@@ -90,19 +87,17 @@ function SelectPanGroup({
     }
   }
 
-  // Close (animated) on outside click
   useEffect(() => {
     if (!isOpen) return;
     function handleDown(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        closeDropdown();
-      }
+      const inWrapper = wrapperRef.current?.contains(e.target as Node) ?? false;
+      const inDropdown = dropdownRef.current?.contains(e.target as Node) ?? false;
+      if (!inWrapper && !inDropdown) closeDropdown();
     }
     document.addEventListener('mousedown', handleDown);
     return () => document.removeEventListener('mousedown', handleDown);
   }, [isOpen, closeDropdown]);
 
-  // Close (animated) on Escape
   useEffect(() => {
     if (!isOpen) return;
     function handleKey(e: KeyboardEvent) {
@@ -112,9 +107,43 @@ function SelectPanGroup({
     return () => document.removeEventListener('keydown', handleKey);
   }, [isOpen, closeDropdown]);
 
+  return {
+    isOpen,
+    isClosing,
+    dropdownStyle,
+    wrapperRef,
+    dropdownRef,
+    openDropdown,
+    closeDropdown,
+    handleAnimationEnd,
+  };
+}
+
+function SelectPanGroup({
+  activeTool,
+  setActiveTool,
+}: {
+  activeTool: ToolType;
+  setActiveTool: (t: ToolType) => void;
+}) {
+  const {
+    isOpen,
+    isClosing,
+    dropdownStyle,
+    wrapperRef,
+    dropdownRef,
+    openDropdown,
+    closeDropdown,
+    handleAnimationEnd,
+  } = useDropdown(activeTool);
+
+  const isGroupActive = activeTool === 'select' || activeTool === 'pan';
+  const currentTool = activeTool === 'pan' ? 'pan' : 'select';
+  const icon = currentTool === 'pan' ? <Hand /> : <MousePointer2 />;
+  const label = currentTool === 'pan' ? 'Hand' : 'Select';
+
   return (
     <div className={styles.selectPanWrapper} ref={wrapperRef}>
-      {/* Icon area — activates the current sub-tool */}
       <button
         className={`${styles.selectPanMain} ${isGroupActive ? styles.active : ''}`}
         onClick={() => setActiveTool(currentTool)}
@@ -124,8 +153,6 @@ function SelectPanGroup({
       >
         <span className={styles.icon}>{icon}</span>
       </button>
-
-      {/* Label + chevron strip — opens the picker dropdown */}
       <button
         className={`${styles.selectPanFooter} ${isGroupActive ? styles.active : ''}`}
         onClick={() => (isOpen ? closeDropdown() : openDropdown())}
@@ -143,6 +170,7 @@ function SelectPanGroup({
       {isOpen &&
         createPortal(
           <div
+            ref={dropdownRef}
             className={`${styles.selectPanDropdown} ${isClosing ? styles.selectPanDropdownClosing : ''}`}
             style={dropdownStyle}
             role="menu"
@@ -185,6 +213,85 @@ function SelectPanGroup({
   );
 }
 
+function WallDoorWindowGroup({
+  activeTool,
+  setActiveTool,
+}: {
+  activeTool: ToolType;
+  setActiveTool: (t: ToolType) => void;
+}) {
+  const {
+    isOpen,
+    isClosing,
+    dropdownStyle,
+    wrapperRef,
+    dropdownRef,
+    openDropdown,
+    closeDropdown,
+    handleAnimationEnd,
+  } = useDropdown(activeTool);
+
+  const isGroupActive = activeTool === 'wall' || activeTool === 'door' || activeTool === 'window';
+  const currentEntry = WALL_GROUP_TOOLS.find((t) => t.type === activeTool) ?? WALL_GROUP_TOOLS[0];
+
+  return (
+    <div className={styles.selectPanWrapper} ref={wrapperRef}>
+      <button
+        className={`${styles.selectPanMain} ${isGroupActive ? styles.active : ''}`}
+        onClick={() => setActiveTool(currentEntry.type)}
+        title={`${currentEntry.label} (${currentEntry.key})`}
+        aria-pressed={isGroupActive}
+        data-testid="tool-wall-group"
+        data-active-tool={currentEntry.type}
+      >
+        <span className={styles.icon}>{currentEntry.icon}</span>
+      </button>
+      <button
+        className={`${styles.selectPanFooter} ${isGroupActive ? styles.active : ''}`}
+        onClick={() => (isOpen ? closeDropdown() : openDropdown())}
+        aria-label="Switch between Wall, Door and Window"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        data-testid="tool-wall-group-toggle"
+      >
+        <span className={styles.selectPanFooterLabel}>{currentEntry.label}</span>
+        <span className={styles.selectPanChevron} aria-hidden>
+          ▾
+        </span>
+      </button>
+
+      {isOpen &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className={`${styles.selectPanDropdown} ${isClosing ? styles.selectPanDropdownClosing : ''}`}
+            style={dropdownStyle}
+            role="menu"
+            onAnimationEnd={handleAnimationEnd}
+          >
+            {WALL_GROUP_TOOLS.map((tool) => (
+              <button
+                key={tool.type}
+                className={`${styles.selectPanOption} ${activeTool === tool.type ? styles.optionActive : ''}`}
+                role="menuitem"
+                onClick={() => {
+                  setActiveTool(tool.type);
+                  closeDropdown(true);
+                }}
+                data-testid={`tool-${tool.type}`}
+              >
+                <span className={styles.optionIcon}>{tool.icon}</span>
+                <span className={styles.optionLabel}>{tool.label}</span>
+                <kbd className={styles.optionKey}>{tool.key}</kbd>
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+}
+
 type Props = {
   onHelpOpen: () => void;
 };
@@ -204,6 +311,8 @@ export function Toolbar({ onHelpOpen }: Props) {
       if (e.key === 'w' || e.key === 'W') setActiveTool('wall');
       if (e.key === 'b' || e.key === 'B') setActiveTool('box');
       if (e.key === 'm' || e.key === 'M') setActiveTool('measure');
+      if (e.key === 'd' || e.key === 'D') setActiveTool('door');
+      if (e.key === 'n' || e.key === 'N') setActiveTool('window');
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -218,6 +327,7 @@ export function Toolbar({ onHelpOpen }: Props) {
       style={selectionBarVisible ? { display: 'none' } : undefined}
     >
       <SelectPanGroup activeTool={activeTool} setActiveTool={setActiveTool} />
+      <WallDoorWindowGroup activeTool={activeTool} setActiveTool={setActiveTool} />
       {TOOLS.map((tool) => (
         <button
           key={tool.type}

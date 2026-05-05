@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { Stage, Layer, Line, Rect, Circle, Text, Group } from 'react-konva';
+import { Stage, Layer, Line, Rect, Circle, Text, Group, Arc } from 'react-konva';
 import type Konva from 'konva';
 import { nanoid } from 'nanoid';
 import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplanStore';
@@ -18,6 +18,9 @@ import {
   NUDGE_FT,
   FINE_NUDGE_FT,
   getWallSnapIncrement,
+  findNearestWallSegment,
+  nearestPointOnSegment,
+  openingCenter,
 } from '../../../utils/geometry/geometry';
 import {
   formatDimension,
@@ -25,7 +28,7 @@ import {
   NUDGE_METRIC_FT,
   FINE_NUDGE_METRIC_FT,
 } from '../../../utils/units/units';
-import type { Point, Element } from '../../../types';
+import type { Point, Element, Opening, Box } from '../../../types';
 import {
   FIT_CONTENT_PADDING_PX,
   MOBILE_OVERLAY_CLEARANCE_PX,
@@ -52,11 +55,87 @@ function rectsOverlap(
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
 
-function elementOverlapsRect(el: Element, rx: number, ry: number, rw: number, rh: number): boolean {
+function elementOverlapsRect(
+  el: Element,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
+  allElements: Element[],
+): boolean {
   if (el.type === 'box') {
     return rectsOverlap(el.x, el.y, el.width, el.height, rx, ry, rw, rh);
   }
-  return el.points.some((p) => p.x >= rx && p.x <= rx + rw && p.y >= ry && p.y <= ry + rh);
+  if (el.type === 'door' || el.type === 'window') {
+    const center = openingCenter(el, allElements);
+    if (!center) return false;
+    return center.x >= rx && center.x <= rx + rw && center.y >= ry && center.y <= ry + rh;
+  }
+  if (el.type === 'wall') {
+    return el.points.some((p) => p.x >= rx && p.x <= rx + rw && p.y >= ry && p.y <= ry + rh);
+  }
+  return false;
+}
+
+/** Returns 'left' or 'right' based on which side of the wall segment the cursor is on. */
+function segmentFacing(
+  cursor: Point,
+  nearPt: Point,
+  uDirX: number,
+  uDirY: number,
+): 'left' | 'right' {
+  return uDirX * (cursor.y - nearPt.y) - uDirY * (cursor.x - nearPt.x) <= 0 ? 'left' : 'right';
+}
+
+/** Returns true if [offset, offset+width] overlaps any existing opening on the same segment. */
+function hasOverlapWithExisting(
+  openings: Opening[],
+  wallId: string,
+  segIdx: number,
+  offset: number,
+  width: number,
+): boolean {
+  for (const o of openings) {
+    if (o.wallId !== wallId || o.segmentIndex !== segIdx) continue;
+    if (offset < o.offset + o.width - 0.01 && offset + width > o.offset + 0.01) return true;
+  }
+  return false;
+}
+
+/**
+ * Compute the ghost offset/width for a new window hover, auto-sizing to fill the
+ * available slot the cursor falls in (bounded by adjacent openings and wall ends).
+ * If the slot is wider than the default, the window uses the default width centered
+ * at the cursor. If the slot is narrower than the default, the window fills the slot.
+ * If the slot is smaller than minWidth the ghost is marked invalid.
+ */
+function windowGhostInSlot(
+  cursorOffset: number,
+  segLen: number,
+  segOpenings: { offset: number; width: number }[],
+  defaultWidth: number,
+  minWidth: number,
+): { offset: number; width: number; isValid: boolean } {
+  let slotStart = 0;
+  let slotEnd = segLen;
+  for (const o of segOpenings) {
+    if (o.offset + o.width <= cursorOffset) {
+      slotStart = Math.max(slotStart, o.offset + o.width);
+    } else if (o.offset >= cursorOffset) {
+      slotEnd = Math.min(slotEnd, o.offset);
+    }
+  }
+  const slotWidth = slotEnd - slotStart;
+  if (slotWidth < minWidth) {
+    const offset = Math.max(0, Math.min(segLen - minWidth, cursorOffset - minWidth / 2));
+    return { offset, width: minWidth, isValid: false };
+  }
+  const width = Math.min(defaultWidth, slotWidth);
+  const offset =
+    slotWidth < defaultWidth
+      ? slotStart
+      : Math.max(slotStart, Math.min(slotEnd - width, cursorOffset - width / 2));
+  return { offset, width, isValid: true };
 }
 
 export function DrawingCanvas() {
@@ -79,6 +158,34 @@ export function DrawingCanvas() {
   const [dimInputError, setDimInputError] = useState(false);
   const [mobileDimInputOpen, setMobileDimInputOpen] = useState(false);
   const [lastPlacedWallId, setLastPlacedWallId] = useState<string | null>(null);
+  const [ghostOpening, setGhostOpening] = useState<{
+    wallId: string;
+    segmentIndex: number;
+    offset: number;
+    width: number;
+    segmentLength: number;
+    isValid: boolean;
+    facing: 'left' | 'right';
+  } | null>(null);
+  // Tracks the wall segment anchored during a new-opening placement drag (door/window tools).
+  const openingDragRef = useRef<{
+    wallId: string;
+    segmentIndex: number;
+    anchorOffset: number;
+    segmentLength: number;
+    a: Point;
+    b: Point;
+  } | null>(null);
+  const [openingDragInfo, setOpeningDragInfo] = useState<{
+    id: string;
+    type: 'door' | 'window';
+    width: number;
+  } | null>(null);
+  // Ref mirrors state so drag-end handlers always see the current value even if React
+  // hasn't re-rendered between onDragStart and onDragEnd (common with fast event dispatch).
+  const openingDragInfoRef = useRef<{ id: string; type: 'door' | 'window'; width: number } | null>(
+    null,
+  );
   const dimInputRef = useRef<HTMLInputElement>(null);
   const lastWallTapRef = useRef<{ time: number; point: Point | null }>({ time: 0, point: null });
   const touchGestureRef = useRef<{
@@ -117,6 +224,9 @@ export function DrawingCanvas() {
 
   const plan = activePlan();
   const elements = plan?.elements ?? [];
+  const openings = elements.filter(
+    (el): el is Opening => el.type === 'door' || el.type === 'window',
+  );
 
   // Reads from refs/store so it can be called from inside the keydown useEffect
   // without needing to be added to its dependency array.
@@ -136,12 +246,13 @@ export function DrawingCanvas() {
           maxX = Math.max(maxX, p.x);
           maxY = Math.max(maxY, p.y);
         }
-      } else {
+      } else if (el.type === 'box') {
         minX = Math.min(minX, el.x);
         minY = Math.min(minY, el.y);
         maxX = Math.max(maxX, el.x + el.width);
         maxY = Math.max(maxY, el.y + el.height);
       }
+      // Openings have no independent bounds — their host wall covers them
     }
 
     const width = containerRef.current.offsetWidth;
@@ -414,6 +525,20 @@ export function DrawingCanvas() {
             updates[id] = { points: el.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
           } else if (el.type === 'box') {
             updates[id] = { x: el.x + dx, y: el.y + dy };
+          } else if (el.type === 'door' || el.type === 'window') {
+            const hostWall = allEls.find((e) => e.id === el.wallId);
+            if (!hostWall || hostWall.type !== 'wall') return;
+            const segStart = hostWall.points[el.segmentIndex];
+            const segEnd = hostWall.points[el.segmentIndex + 1];
+            if (!segStart || !segEnd) return;
+            const segLen = distance(segStart, segEnd);
+            if (segLen < 0.001) return;
+            // Project the nudge delta onto the wall direction to move along the wall
+            const unitDirX = (segEnd.x - segStart.x) / segLen;
+            const unitDirY = (segEnd.y - segStart.y) / segLen;
+            const nudgeAlong = dx * unitDirX + dy * unitDirY;
+            const newOffset = Math.max(0, Math.min(segLen - el.width, el.offset + nudgeAlong));
+            updates[id] = { offset: newOffset };
           }
         });
         store.updateElements(updates);
@@ -488,13 +613,38 @@ export function DrawingCanvas() {
     if (activeTool === 'select') {
       // Only clear selection when clicking empty canvas
       if (isCanvasBackgroundTarget(e.target)) clearSelection();
-      setPointerDown({ pos: world, time: Date.now() });
+      setPointerDown({ pos: world, time: e.evt.timeStamp });
+      return;
+    }
+
+    if (activeTool === 'door' || activeTool === 'window') {
+      setPointerDown({ pos: world, time: e.evt.timeStamp });
+      const hit = findNearestWallSegment(world, elements, 1.5);
+      if (hit) {
+        const wall = elements.find((el) => el.id === hit.wallId);
+        if (wall && wall.type === 'wall') {
+          const a = wall.points[hit.segmentIndex];
+          const b = wall.points[hit.segmentIndex + 1];
+          if (a && b) {
+            openingDragRef.current = {
+              wallId: hit.wallId,
+              segmentIndex: hit.segmentIndex,
+              anchorOffset: hit.offset,
+              segmentLength: hit.segmentLength,
+              a,
+              b,
+            };
+          }
+        }
+      } else {
+        openingDragRef.current = null;
+      }
       return;
     }
 
     // Wall and box tools: allow starting on any point including over elements.
     // Elements in drawing mode only respond to select-tool taps.
-    setPointerDown({ pos: world, time: Date.now() });
+    setPointerDown({ pos: world, time: e.evt.timeStamp });
   }
 
   function handlePointerMove(e: Konva.KonvaEventObject<PointerEvent>) {
@@ -518,6 +668,103 @@ export function DrawingCanvas() {
     if (activeTool === 'measure') {
       // Measure tool: fully free — no snapping of any kind
       setCursor(measureEnd ? null : world);
+      setCursorSnappedToEndpoint(false);
+      setCursorSnappedToSegment(false);
+      setCursorSnappedToAxis(false);
+    } else if (activeTool === 'door' || activeTool === 'window') {
+      const defaultWidth = 3;
+      const minWidth = 0.5;
+      let newGhost: typeof ghostOpening = null;
+
+      const drag = pointerDown ? openingDragRef.current : null;
+
+      if (drag) {
+        // User is holding down on a wall — drag determines the opening width.
+        const nearPt = nearestPointOnSegment(world, drag.a, drag.b);
+        const currentOffset = distance(drag.a, nearPt);
+        const rawWidth = Math.abs(currentOffset - drag.anchorOffset);
+
+        let offset: number, width: number;
+        if (rawWidth > 0.2) {
+          offset = Math.min(drag.anchorOffset, currentOffset);
+          width = Math.min(rawWidth, drag.segmentLength - offset);
+        } else {
+          // Tiny drag — show default centered at anchor
+          const eff = Math.max(minWidth, Math.min(defaultWidth, drag.segmentLength));
+          offset = Math.max(0, Math.min(drag.segmentLength - eff, drag.anchorOffset - eff / 2));
+          width = eff;
+        }
+
+        const uDirX = (drag.b.x - drag.a.x) / drag.segmentLength;
+        const uDirY = (drag.b.y - drag.a.y) / drag.segmentLength;
+        const facing = segmentFacing(world, nearPt, uDirX, uDirY);
+        const isValid =
+          width >= minWidth &&
+          !hasOverlapWithExisting(openings, drag.wallId, drag.segmentIndex, offset, width);
+        newGhost = {
+          wallId: drag.wallId,
+          segmentIndex: drag.segmentIndex,
+          offset,
+          width,
+          segmentLength: drag.segmentLength,
+          isValid,
+          facing,
+        };
+        const segPt = {
+          x: drag.a.x + (drag.b.x - drag.a.x) * (currentOffset / drag.segmentLength),
+          y: drag.a.y + (drag.b.y - drag.a.y) * (currentOffset / drag.segmentLength),
+        };
+        setCursor(segPt);
+      } else {
+        // Hovering — snap to nearest wall, center at cursor with auto-sized default width.
+        const hit = findNearestWallSegment(world, elements, 1.5);
+        if (hit) {
+          let offset: number, width: number, isValid: boolean;
+          if (activeTool === 'window') {
+            // Windows resize to fill the available slot between adjacent openings.
+            const segOpenings = openings.filter(
+              (o) => o.wallId === hit.wallId && o.segmentIndex === hit.segmentIndex,
+            );
+            ({ offset, width, isValid } = windowGhostInSlot(
+              hit.offset,
+              hit.segmentLength,
+              segOpenings,
+              defaultWidth,
+              minWidth,
+            ));
+          } else {
+            // Doors: center at cursor, go red on overlap.
+            width = Math.max(minWidth, Math.min(defaultWidth, hit.segmentLength));
+            offset = Math.max(0, Math.min(hit.segmentLength - width, hit.offset - width / 2));
+            isValid =
+              width >= minWidth &&
+              !hasOverlapWithExisting(openings, hit.wallId, hit.segmentIndex, offset, width);
+          }
+          const hitWall = elements.find((el) => el.id === hit.wallId);
+          let facing: 'left' | 'right' = 'left';
+          if (hitWall && hitWall.type === 'wall') {
+            const a = hitWall.points[hit.segmentIndex];
+            const b = hitWall.points[hit.segmentIndex + 1];
+            const uDirX = (b.x - a.x) / hit.segmentLength;
+            const uDirY = (b.y - a.y) / hit.segmentLength;
+            facing = segmentFacing(world, hit.point, uDirX, uDirY);
+          }
+          newGhost = {
+            wallId: hit.wallId,
+            segmentIndex: hit.segmentIndex,
+            offset,
+            width,
+            segmentLength: hit.segmentLength,
+            isValid,
+            facing,
+          };
+          setCursor(hit.point);
+        } else {
+          setCursor(world);
+        }
+      }
+
+      setGhostOpening(newGhost);
       setCursorSnappedToEndpoint(false);
       setCursorSnappedToSegment(false);
       setCursorSnappedToAxis(false);
@@ -561,6 +808,30 @@ export function DrawingCanvas() {
     const isDrag = dragDist > DRAG_THRESHOLD_FT;
     const wallSnapIncrement = getWallSnapIncrement(Boolean(e.evt?.shiftKey));
     const snappedEnd = activeTool === 'wall' ? snap(world, wallSnapIncrement) : snap(world);
+
+    if (activeTool === 'door' || activeTool === 'window') {
+      const ghost = ghostOpening;
+      if (ghost && ghost.isValid) {
+        const id = nanoid();
+        addElement({
+          id,
+          type: activeTool,
+          wallId: ghost.wallId,
+          segmentIndex: ghost.segmentIndex,
+          offset: ghost.offset,
+          width: ghost.width,
+          facing: ghost.facing,
+          hinge: 'start',
+        } satisfies Opening);
+        const toolStore = useToolStore.getState();
+        toolStore.setSelectedId(id);
+        toolStore.setPropertiesPanelOpen(true);
+      }
+      openingDragRef.current = null;
+      setGhostOpening(null);
+      setPointerDown(null);
+      return;
+    }
 
     if (activeTool === 'measure') {
       // Use raw world coords — measure tool intentionally bypasses snapping
@@ -606,7 +877,7 @@ export function DrawingCanvas() {
         const ry = Math.min(marquee.start.y, marquee.end.y);
         const rw = Math.abs(marquee.end.x - marquee.start.x);
         const rh = Math.abs(marquee.end.y - marquee.start.y);
-        const hit = elements.filter((el) => elementOverlapsRect(el, rx, ry, rw, rh));
+        const hit = elements.filter((el) => elementOverlapsRect(el, rx, ry, rw, rh, elements));
         setSelectedIds(new Set(hit.map((el) => el.id)));
         if (hit.length === 1 && !shouldUseMobileOverlayLayout(window.innerWidth)) {
           useToolStore.getState().setPropertiesPanelOpen(true);
@@ -654,6 +925,108 @@ export function DrawingCanvas() {
         addChainPoint(endPt);
       }
     }
+  }
+
+  // ── Opening drag (move existing door/window to a new wall position) ──
+
+  function handleOpeningDragStart(id: string, type: 'door' | 'window') {
+    const el = elements.find((e) => e.id === id);
+    if (!el || (el.type !== 'door' && el.type !== 'window')) return;
+    useToolStore.getState().setSelectedId(id);
+    useToolStore.getState().setPropertiesPanelOpen(true);
+    const info = { id, type, width: el.width };
+    setOpeningDragInfo(info);
+    openingDragInfoRef.current = info;
+  }
+
+  function handleOpeningDragMove(cursor: Point) {
+    const info = openingDragInfoRef.current;
+    if (!info) return;
+    const hit = findNearestWallSegment(cursor, elements, 1.5);
+    if (hit) {
+      const effectiveWidth = Math.min(info.width, hit.segmentLength);
+      const offset = Math.max(
+        0,
+        Math.min(hit.segmentLength - effectiveWidth, hit.offset - effectiveWidth / 2),
+      );
+      const otherOpenings = openings.filter((o) => o.id !== info.id);
+      const isValid = !hasOverlapWithExisting(
+        otherOpenings,
+        hit.wallId,
+        hit.segmentIndex,
+        offset,
+        effectiveWidth,
+      );
+      let facing: 'left' | 'right' = 'left';
+      if (info.type === 'door') {
+        const hitWall = elements.find((el) => el.id === hit.wallId);
+        if (hitWall && hitWall.type === 'wall') {
+          const a = hitWall.points[hit.segmentIndex];
+          const b = hitWall.points[hit.segmentIndex + 1];
+          if (a && b) {
+            const uDirX = (b.x - a.x) / hit.segmentLength;
+            const uDirY = (b.y - a.y) / hit.segmentLength;
+            facing = segmentFacing(cursor, hit.point, uDirX, uDirY);
+          }
+        }
+      }
+      setGhostOpening({
+        wallId: hit.wallId,
+        segmentIndex: hit.segmentIndex,
+        offset,
+        width: effectiveWidth,
+        segmentLength: hit.segmentLength,
+        isValid,
+        facing,
+      });
+    } else {
+      setGhostOpening(null);
+    }
+  }
+
+  function handleOpeningDragEnd(cursor: Point) {
+    const info = openingDragInfoRef.current;
+    if (!info) return;
+    const hit = findNearestWallSegment(cursor, elements, 1.5);
+    if (hit) {
+      const effectiveWidth = Math.min(info.width, hit.segmentLength);
+      const offset = Math.max(
+        0,
+        Math.min(hit.segmentLength - effectiveWidth, hit.offset - effectiveWidth / 2),
+      );
+      const otherOpenings = openings.filter((o) => o.id !== info.id);
+      const isValid = !hasOverlapWithExisting(
+        otherOpenings,
+        hit.wallId,
+        hit.segmentIndex,
+        offset,
+        effectiveWidth,
+      );
+      if (isValid) {
+        const update: Record<string, unknown> = {
+          wallId: hit.wallId,
+          segmentIndex: hit.segmentIndex,
+          offset,
+          width: effectiveWidth,
+        };
+        if (info.type === 'door') {
+          const hitWall = elements.find((el) => el.id === hit.wallId);
+          if (hitWall && hitWall.type === 'wall') {
+            const a = hitWall.points[hit.segmentIndex];
+            const b = hitWall.points[hit.segmentIndex + 1];
+            if (a && b) {
+              const uDirX = (b.x - a.x) / hit.segmentLength;
+              const uDirY = (b.y - a.y) / hit.segmentLength;
+              update.facing = segmentFacing(cursor, hit.point, uDirX, uDirY);
+            }
+          }
+        }
+        updateElements({ [info.id]: update });
+      }
+    }
+    openingDragInfoRef.current = null;
+    setOpeningDragInfo(null);
+    setGhostOpening(null);
   }
 
   function commitWall(points: Point[]) {
@@ -830,6 +1203,61 @@ export function DrawingCanvas() {
     };
   })();
 
+  // ── Ghost opening (door/window placement preview, or opening drag target) ──
+  const ghostToolType =
+    openingDragInfo?.type ?? (activeTool === 'door' || activeTool === 'window' ? activeTool : null);
+  const ghostOpeningRender = (() => {
+    if (!ghostOpening || !ghostToolType) return null;
+    const wall = elements.find((el) => el.id === ghostOpening.wallId);
+    if (!wall || wall.type !== 'wall') return null;
+    const segStart = wall.points[ghostOpening.segmentIndex];
+    const segEnd = wall.points[ghostOpening.segmentIndex + 1];
+    if (!segStart || !segEnd) return null;
+    const segLen = distance(segStart, segEnd);
+    if (segLen < 0.001) return null;
+
+    const { offset, width, isValid } = ghostOpening;
+    const startPx = { x: ftToPx(segStart.x), y: ftToPx(segStart.y) };
+    const endPx = { x: ftToPx(segEnd.x), y: ftToPx(segEnd.y) };
+    const segLenPx = Math.sqrt((endPx.x - startPx.x) ** 2 + (endPx.y - startPx.y) ** 2);
+    const unitDirX = (endPx.x - startPx.x) / segLenPx;
+    const unitDirY = (endPx.y - startPx.y) / segLenPx;
+    const wallAngleDeg = Math.atan2(endPx.y - startPx.y, endPx.x - startPx.x) * (180 / Math.PI);
+    const gapStartFraction = offset / segLen;
+    const hingeWorld = {
+      x: segStart.x + (segEnd.x - segStart.x) * gapStartFraction,
+      y: segStart.y + (segEnd.y - segStart.y) * gapStartFraction,
+    };
+    const hingePx = { x: ftToPx(hingeWorld.x), y: ftToPx(hingeWorld.y) };
+    const widthPx = ftToPx(width);
+
+    if (ghostToolType === 'door') {
+      const facing = ghostOpening.facing;
+      const perpX = facing === 'left' ? unitDirY : -unitDirY;
+      const perpY = facing === 'left' ? -unitDirX : unitDirX;
+      const leafTip = { x: hingePx.x + perpX * widthPx, y: hingePx.y + perpY * widthPx };
+      const arcRotation = facing === 'left' ? wallAngleDeg - 90 : wallAngleDeg;
+      return { kind: 'door' as const, hingePx, leafTip, widthPx, arcRotation, isValid };
+    } else {
+      const gapEndFraction = (offset + width) / segLen;
+      const gapEndWorld = {
+        x: segStart.x + (segEnd.x - segStart.x) * gapEndFraction,
+        y: segStart.y + (segEnd.y - segStart.y) * gapEndFraction,
+      };
+      const gapEndPx = { x: ftToPx(gapEndWorld.x), y: ftToPx(gapEndWorld.y) };
+      const tickPx = ftToPx(0.2);
+      return {
+        kind: 'window' as const,
+        gsPx: hingePx,
+        gePx: gapEndPx,
+        unitDirX,
+        unitDirY,
+        tickPx,
+        isValid,
+      };
+    }
+  })();
+
   // ── Marquee rect ─────────────────────────────────────────────────
   const marqueeRect = (() => {
     if (!marquee) return null;
@@ -931,35 +1359,59 @@ export function DrawingCanvas() {
         </Layer>
 
         <Layer>
-          {elements.map((el) =>
-            el.type === 'wall' ? (
-              <WallElement
-                key={el.id}
-                wall={el}
-                selected={selectedIds.has(el.id)}
-                onSelect={(extendSelection) => {
-                  if (activeTool !== 'select') return;
-                  const toolStore = useToolStore.getState();
-                  const isMobile = shouldUseMobileOverlayLayout(window.innerWidth);
-                  if (extendSelection) {
-                    toolStore.toggleSelectedId(el.id);
-                    const single = useToolStore.getState().selectedIds.size === 1;
-                    toolStore.setPropertiesPanelOpen(!isMobile && single);
-                  } else {
-                    const alreadySelected =
-                      toolStore.selectedIds.has(el.id) && toolStore.selectedIds.size === 1;
-                    toolStore.setSelectedId(el.id);
-                    if (!isMobile || alreadySelected) {
+          {elements.map((el) => {
+            // Openings are rendered inside their host WallElement
+            if (el.type === 'door' || el.type === 'window') return null;
+
+            if (el.type === 'wall') {
+              return (
+                <WallElement
+                  key={el.id}
+                  wall={el}
+                  openings={openings.filter((o) => o.wallId === el.id)}
+                  selected={selectedIds.has(el.id)}
+                  onSelect={(extendSelection) => {
+                    if (activeTool !== 'select') return;
+                    const toolStore = useToolStore.getState();
+                    const isMobile = shouldUseMobileOverlayLayout(window.innerWidth);
+                    if (extendSelection) {
+                      toolStore.toggleSelectedId(el.id);
+                      const single = useToolStore.getState().selectedIds.size === 1;
+                      toolStore.setPropertiesPanelOpen(!isMobile && single);
+                    } else {
+                      const alreadySelected =
+                        toolStore.selectedIds.has(el.id) && toolStore.selectedIds.size === 1;
+                      toolStore.setSelectedId(el.id);
+                      if (!isMobile || alreadySelected) {
+                        toolStore.setPropertiesPanelOpen(true);
+                      }
+                    }
+                  }}
+                  onOpeningSelect={(id, extend) => {
+                    if (activeTool !== 'select') return;
+                    const toolStore = useToolStore.getState();
+                    const isMobile = shouldUseMobileOverlayLayout(window.innerWidth);
+                    if (extend) {
+                      toolStore.toggleSelectedId(id);
+                      const single = useToolStore.getState().selectedIds.size === 1;
+                      toolStore.setPropertiesPanelOpen(!isMobile && single);
+                    } else {
+                      toolStore.setSelectedId(id);
                       toolStore.setPropertiesPanelOpen(true);
                     }
-                  }
-                }}
-                onGroupDrag={handleGroupDrag}
-              />
-            ) : (
+                  }}
+                  onGroupDrag={handleGroupDrag}
+                  onOpeningDragStart={handleOpeningDragStart}
+                  onOpeningDragMove={handleOpeningDragMove}
+                  onOpeningDragEnd={handleOpeningDragEnd}
+                />
+              );
+            }
+
+            return (
               <BoxElement
                 key={el.id}
-                box={el}
+                box={el as Box}
                 selected={selectedIds.has(el.id)}
                 onSelect={(extendSelection) => {
                   if (activeTool !== 'select') return;
@@ -980,8 +1432,8 @@ export function DrawingCanvas() {
                 }}
                 onGroupDrag={handleGroupDrag}
               />
-            ),
-          )}
+            );
+          })}
 
           {/* Ghost line — wall preview */}
           {ghostPoints && (
@@ -1032,6 +1484,90 @@ export function DrawingCanvas() {
               />
             </Group>
           )}
+
+          {/* Ghost opening preview (door/window placement) */}
+          {ghostOpeningRender &&
+            ghostOpeningRender.kind === 'door' &&
+            (() => {
+              const stroke = ghostOpeningRender.isValid ? '#2c2c2c' : '#cc2200';
+              const fill = ghostOpeningRender.isValid
+                ? 'rgba(255,255,255,0.6)'
+                : 'rgba(204,34,0,0.12)';
+              return (
+                <Group listening={false} opacity={0.55}>
+                  <Line
+                    points={[
+                      ghostOpeningRender.hingePx.x,
+                      ghostOpeningRender.hingePx.y,
+                      ghostOpeningRender.leafTip.x,
+                      ghostOpeningRender.leafTip.y,
+                    ]}
+                    stroke={stroke}
+                    strokeWidth={1.5 / zoom}
+                  />
+                  {/* clockwise={false} draws the 90° CW sector (not the 270° arc) */}
+                  <Arc
+                    x={ghostOpeningRender.hingePx.x}
+                    y={ghostOpeningRender.hingePx.y}
+                    innerRadius={0}
+                    outerRadius={ghostOpeningRender.widthPx}
+                    angle={90}
+                    rotation={ghostOpeningRender.arcRotation}
+                    clockwise={false}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={1.5 / zoom}
+                  />
+                </Group>
+              );
+            })()}
+          {ghostOpeningRender &&
+            ghostOpeningRender.kind === 'window' &&
+            (() => {
+              const stroke = ghostOpeningRender.isValid ? '#2c2c2c' : '#cc2200';
+              return (
+                <Group listening={false} opacity={0.55}>
+                  <Line
+                    points={[
+                      ghostOpeningRender.gsPx.x,
+                      ghostOpeningRender.gsPx.y,
+                      ghostOpeningRender.gePx.x,
+                      ghostOpeningRender.gePx.y,
+                    ]}
+                    stroke={stroke}
+                    strokeWidth={1 / zoom}
+                  />
+                  <Line
+                    points={[
+                      ghostOpeningRender.gsPx.x -
+                        ghostOpeningRender.unitDirY * ghostOpeningRender.tickPx,
+                      ghostOpeningRender.gsPx.y +
+                        ghostOpeningRender.unitDirX * ghostOpeningRender.tickPx,
+                      ghostOpeningRender.gsPx.x +
+                        ghostOpeningRender.unitDirY * ghostOpeningRender.tickPx,
+                      ghostOpeningRender.gsPx.y -
+                        ghostOpeningRender.unitDirX * ghostOpeningRender.tickPx,
+                    ]}
+                    stroke={stroke}
+                    strokeWidth={1 / zoom}
+                  />
+                  <Line
+                    points={[
+                      ghostOpeningRender.gePx.x -
+                        ghostOpeningRender.unitDirY * ghostOpeningRender.tickPx,
+                      ghostOpeningRender.gePx.y +
+                        ghostOpeningRender.unitDirX * ghostOpeningRender.tickPx,
+                      ghostOpeningRender.gePx.x +
+                        ghostOpeningRender.unitDirY * ghostOpeningRender.tickPx,
+                      ghostOpeningRender.gePx.y -
+                        ghostOpeningRender.unitDirX * ghostOpeningRender.tickPx,
+                    ]}
+                    stroke={stroke}
+                    strokeWidth={1 / zoom}
+                  />
+                </Group>
+              );
+            })()}
 
           {/* Marquee selection rect */}
           {marqueeRect && (

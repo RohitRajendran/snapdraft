@@ -38,7 +38,8 @@ describe('Toolbar', () => {
     render(<Toolbar onHelpOpen={vi.fn()} />);
     expect(screen.getByTestId('tool-select-pan')).toBeInTheDocument();
     expect(screen.getByTestId('tool-select-pan-toggle')).toBeInTheDocument();
-    expect(screen.getByTestId('tool-wall')).toBeInTheDocument();
+    expect(screen.getByTestId('tool-wall-group')).toBeInTheDocument();
+    expect(screen.getByTestId('tool-wall-group-toggle')).toBeInTheDocument();
     expect(screen.getByTestId('tool-box')).toBeInTheDocument();
     expect(screen.getByTestId('tool-measure')).toBeInTheDocument();
   });
@@ -47,7 +48,7 @@ describe('Toolbar', () => {
     useToolStore.setState({ activeTool: 'select' });
     render(<Toolbar onHelpOpen={vi.fn()} />);
     expect(screen.getByTestId('tool-select-pan')).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('tool-wall-group')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('select/pan slot shows aria-pressed when pan is active', () => {

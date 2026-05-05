@@ -93,6 +93,17 @@ function sameElement(a: Element, b: Element): boolean {
     );
   }
 
+  if ((a.type === 'door' || a.type === 'window') && (b.type === 'door' || b.type === 'window')) {
+    return (
+      a.wallId === b.wallId &&
+      a.segmentIndex === b.segmentIndex &&
+      a.offset === b.offset &&
+      a.width === b.width &&
+      a.facing === b.facing &&
+      (a.hinge ?? 'start') === (b.hinge ?? 'start')
+    );
+  }
+
   return false;
 }
 
@@ -242,9 +253,18 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
   deleteElement: (id) => {
     set((state) => {
       const current = state.plans.find((p) => p.id === state.activeId)?.elements ?? [];
+      const target = current.find((el) => el.id === id);
       return applyElements(
         state,
-        current.filter((el) => el.id !== id),
+        current.filter(
+          (el) =>
+            el.id !== id &&
+            !(
+              target?.type === 'wall' &&
+              (el.type === 'door' || el.type === 'window') &&
+              el.wallId === id
+            ),
+        ),
       );
     });
   },
@@ -254,9 +274,16 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
       const idSet = new Set(ids);
       if (idSet.size === 0) return {};
       const current = state.plans.find((p) => p.id === state.activeId)?.elements ?? [];
+      const deletedWallIds = new Set(
+        current.filter((el) => el.type === 'wall' && idSet.has(el.id)).map((el) => el.id),
+      );
       return applyElements(
         state,
-        current.filter((el) => !idSet.has(el.id)),
+        current.filter(
+          (el) =>
+            !idSet.has(el.id) &&
+            !((el.type === 'door' || el.type === 'window') && deletedWallIds.has(el.wallId)),
+        ),
       );
     });
   },

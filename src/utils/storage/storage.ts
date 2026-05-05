@@ -110,6 +110,14 @@ export function parseImportedPlan(raw: unknown): FloorPlan | null {
       if (typeof elem.height !== 'number' || !isFinite(elem.height as number)) return null;
       if (typeof elem.rotation !== 'number' || !isFinite(elem.rotation as number)) return null;
       if (elem.label !== undefined && typeof elem.label !== 'string') return null;
+    } else if (elem.type === 'door' || elem.type === 'window') {
+      if (typeof elem.wallId !== 'string') return null;
+      if (typeof elem.segmentIndex !== 'number' || !isFinite(elem.segmentIndex as number))
+        return null;
+      if (typeof elem.offset !== 'number' || !isFinite(elem.offset as number)) return null;
+      if (typeof elem.width !== 'number' || !isFinite(elem.width as number)) return null;
+      if (elem.facing !== 'left' && elem.facing !== 'right') return null;
+      if (elem.hinge !== undefined && elem.hinge !== 'start' && elem.hinge !== 'end') return null;
     } else {
       return null;
     }

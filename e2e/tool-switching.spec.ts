@@ -15,14 +15,13 @@ test.describe('Tool switching', () => {
     await page.keyboard.press('b');
     await expect(page.getByTestId('tool-box')).toHaveAttribute('aria-pressed', 'true');
     await page.keyboard.press('w');
-    await expect(page.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('H key activates hand tool and slot shows as active', async ({ page }) => {
     await page.keyboard.press('h');
     await expect(page.getByTestId('tool-select-pan')).toHaveAttribute('aria-pressed', 'true');
-    // Wall tool should no longer be active
-    await expect(page.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('V key activates select tool', async ({ page }) => {
@@ -31,25 +30,60 @@ test.describe('Tool switching', () => {
     await expect(page.getByTestId('tool-select-pan')).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('dropdown opens on footer click and shows both options', async ({ page }) => {
+  test('Select/Pan dropdown opens on footer click and shows both options', async ({ page }) => {
     await page.getByTestId('tool-select-pan-toggle').click();
     await expect(page.getByTestId('tool-select')).toBeVisible();
     await expect(page.getByTestId('tool-pan')).toBeVisible();
   });
 
-  test('choosing Hand from dropdown activates pan tool', async ({ page }) => {
+  test('choosing Hand from Select/Pan dropdown activates pan tool', async ({ page }) => {
     await page.getByTestId('tool-select-pan-toggle').click();
     await page.getByTestId('tool-pan').click();
     await expect(page.getByTestId('tool-select-pan')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('aria-pressed', 'false');
   });
 
-  test('choosing Select from dropdown activates select tool', async ({ page }) => {
-    // Switch to pan first, then switch back via dropdown
+  test('choosing Select from Select/Pan dropdown activates select tool', async ({ page }) => {
     await page.keyboard.press('h');
     await page.getByTestId('tool-select-pan-toggle').click();
     await page.getByTestId('tool-select').click();
     await expect(page.getByTestId('tool-select-pan')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('choosing Door from Wall/Door/Window dropdown activates door tool', async ({ page }) => {
+    await page.getByTestId('tool-wall-group-toggle').click();
+    await page.getByTestId('tool-door').click();
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('data-active-tool', 'door');
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('choosing Window from Wall/Door/Window dropdown activates window tool', async ({ page }) => {
+    await page.getByTestId('tool-wall-group-toggle').click();
+    await page.getByTestId('tool-window').click();
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('data-active-tool', 'window');
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('choosing Wall from Wall/Door/Window dropdown activates wall tool', async ({ page }) => {
+    // Switch to door first, then back to wall via dropdown
+    await page.keyboard.press('d');
+    await page.getByTestId('tool-wall-group-toggle').click();
+    await page.getByTestId('tool-wall').click();
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('data-active-tool', 'wall');
+  });
+
+  test('Wall/Door/Window dropdown closes after selecting a tool', async ({ page }) => {
+    await page.getByTestId('tool-wall-group-toggle').click();
+    await expect(page.getByTestId('tool-door')).toBeVisible();
+    await page.getByTestId('tool-door').click();
+    await expect(page.getByTestId('tool-door')).not.toBeVisible();
+  });
+
+  test('Select/Pan dropdown closes after selecting a tool', async ({ page }) => {
+    await page.getByTestId('tool-select-pan-toggle').click();
+    await expect(page.getByTestId('tool-pan')).toBeVisible();
+    await page.getByTestId('tool-pan').click();
+    await expect(page.getByTestId('tool-pan')).not.toBeVisible();
   });
 });
 
@@ -77,8 +111,7 @@ test.describe('Pan tool', () => {
   });
 
   test('space + drag pans the canvas from any tool', async ({ page }) => {
-    // Start on wall tool (default with empty plan)
-    await expect(page.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('aria-pressed', 'true');
 
     const canvas = page.getByTestId('drawing-canvas');
     const box = await canvas.boundingBox();
@@ -88,7 +121,6 @@ test.describe('Pan tool', () => {
     const cy = box.y + box.height / 2;
     const before = await getCanvasPan(page);
 
-    // Hold space, drag, release space
     await page.keyboard.down('Space');
     await page.mouse.move(cx, cy);
     await page.mouse.down();
@@ -102,9 +134,9 @@ test.describe('Pan tool', () => {
   });
 
   test('space + drag returns to original tool after release', async ({ page }) => {
-    await page.keyboard.press('h'); // switch to pan
-    await page.keyboard.press('w'); // switch to wall
-    await expect(page.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('h');
+    await page.keyboard.press('w');
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('aria-pressed', 'true');
 
     const canvas = page.getByTestId('drawing-canvas');
     const box = await canvas.boundingBox();
@@ -117,7 +149,6 @@ test.describe('Pan tool', () => {
     await page.mouse.up();
     await page.keyboard.up('Space');
 
-    // Wall tool should still be active after space+drag
-    await expect(page.getByTestId('tool-wall')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('tool-wall-group')).toHaveAttribute('aria-pressed', 'true');
   });
 });

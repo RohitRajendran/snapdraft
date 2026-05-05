@@ -1,4 +1,4 @@
-import type { Element, Point } from '../../types';
+import type { Element, Opening, Point } from '../../types';
 
 export const PIXELS_PER_FOOT = 40;
 export const SNAP_RADIUS_FT = 0.4;
@@ -151,4 +151,61 @@ export function parseFtIn(input: string): number | null {
   if (!isNaN(decimal)) return decimal;
 
   return null;
+}
+
+/**
+ * Find the closest wall segment to `cursor` within `maxDistFt` feet.
+ * Returns null if no wall is within range.
+ */
+export function findNearestWallSegment(
+  cursor: Point,
+  elements: Element[],
+  maxDistFt = 1.0,
+): {
+  wallId: string;
+  segmentIndex: number;
+  offset: number;
+  segmentLength: number;
+  point: Point;
+} | null {
+  let best: ReturnType<typeof findNearestWallSegment> = null;
+  let bestDist = maxDistFt;
+
+  for (const el of elements) {
+    if (el.type !== 'wall') continue;
+    for (let i = 0; i < el.points.length - 1; i++) {
+      const a = el.points[i];
+      const b = el.points[i + 1];
+      const nearest = nearestPointOnSegment(cursor, a, b);
+      const d = distance(cursor, nearest);
+      if (d < bestDist) {
+        bestDist = d;
+        const segLen = distance(a, b);
+        best = {
+          wallId: el.id,
+          segmentIndex: i,
+          offset: distance(a, nearest),
+          segmentLength: segLen,
+          point: nearest,
+        };
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * Returns the world-space centre point of an opening (midpoint of the gap).
+ * Used for marquee hit-testing.
+ */
+export function openingCenter(opening: Opening, elements: Element[]): Point | null {
+  const wall = elements.find((el) => el.id === opening.wallId);
+  if (!wall || wall.type !== 'wall') return null;
+  const a = wall.points[opening.segmentIndex];
+  const b = wall.points[opening.segmentIndex + 1];
+  if (!a || !b) return null;
+  const segLen = distance(a, b);
+  if (segLen === 0) return null;
+  const t = (opening.offset + opening.width / 2) / segLen;
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
