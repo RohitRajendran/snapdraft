@@ -125,7 +125,7 @@ function DoorSymbol({
         strokeWidth={1.5 / zoom}
         listening={false}
       />
-      {/* Swing arc — click/tap target for selection; hitStrokeWidth enlarges the hittable border */}
+      {/* Swing arc — draggable and click/tap target; hitStrokeWidth enlarges the hittable border */}
       <Arc
         x={hingePx.x}
         y={hingePx.y}
@@ -138,6 +138,7 @@ function DoorSymbol({
         stroke={stroke}
         strokeWidth={1.5 / zoom}
         hitStrokeWidth={12 / zoom}
+        draggable={isDraggable}
         onClick={(e) => {
           e.cancelBubble = true;
           onSelect(Boolean(e.evt?.shiftKey));
@@ -145,6 +146,22 @@ function DoorSymbol({
         onTap={(e) => {
           e.cancelBubble = true;
           onSelect(false);
+        }}
+        onDragStart={(e) => {
+          e.cancelBubble = true;
+          onDragStart?.();
+        }}
+        onDragMove={(e) => {
+          e.cancelBubble = true;
+          e.target.setAttrs({ x: hingePx.x, y: hingePx.y });
+          const pos = e.target.getStage()?.getRelativePointerPosition();
+          if (pos) onDragMove?.({ x: pxToFt(pos.x), y: pxToFt(pos.y) });
+        }}
+        onDragEnd={(e) => {
+          e.cancelBubble = true;
+          e.target.setAttrs({ x: hingePx.x, y: hingePx.y });
+          const pos = e.target.getStage()?.getRelativePointerPosition();
+          if (pos) onDragEnd?.({ x: pxToFt(pos.x), y: pxToFt(pos.y) });
         }}
       />
       {/* Hit area — draggable in select mode; position is reset each frame so hit area stays on the opening */}

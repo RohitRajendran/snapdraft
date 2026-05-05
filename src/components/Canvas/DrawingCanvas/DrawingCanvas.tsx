@@ -957,6 +957,19 @@ export function DrawingCanvas() {
         offset,
         effectiveWidth,
       );
+      let facing: 'left' | 'right' = 'left';
+      if (info.type === 'door') {
+        const hitWall = elements.find((el) => el.id === hit.wallId);
+        if (hitWall && hitWall.type === 'wall') {
+          const a = hitWall.points[hit.segmentIndex];
+          const b = hitWall.points[hit.segmentIndex + 1];
+          if (a && b) {
+            const uDirX = (b.x - a.x) / hit.segmentLength;
+            const uDirY = (b.y - a.y) / hit.segmentLength;
+            facing = segmentFacing(cursor, hit.point, uDirX, uDirY);
+          }
+        }
+      }
       setGhostOpening({
         wallId: hit.wallId,
         segmentIndex: hit.segmentIndex,
@@ -964,6 +977,7 @@ export function DrawingCanvas() {
         width: effectiveWidth,
         segmentLength: hit.segmentLength,
         isValid,
+        facing,
       });
     } else {
       setGhostOpening(null);
@@ -989,14 +1003,25 @@ export function DrawingCanvas() {
         effectiveWidth,
       );
       if (isValid) {
-        updateElements({
-          [info.id]: {
-            wallId: hit.wallId,
-            segmentIndex: hit.segmentIndex,
-            offset,
-            width: effectiveWidth,
-          },
-        });
+        const update: Record<string, unknown> = {
+          wallId: hit.wallId,
+          segmentIndex: hit.segmentIndex,
+          offset,
+          width: effectiveWidth,
+        };
+        if (info.type === 'door') {
+          const hitWall = elements.find((el) => el.id === hit.wallId);
+          if (hitWall && hitWall.type === 'wall') {
+            const a = hitWall.points[hit.segmentIndex];
+            const b = hitWall.points[hit.segmentIndex + 1];
+            if (a && b) {
+              const uDirX = (b.x - a.x) / hit.segmentLength;
+              const uDirY = (b.y - a.y) / hit.segmentLength;
+              update.facing = segmentFacing(cursor, hit.point, uDirX, uDirY);
+            }
+          }
+        }
+        updateElements({ [info.id]: update });
       }
     }
     openingDragInfoRef.current = null;
