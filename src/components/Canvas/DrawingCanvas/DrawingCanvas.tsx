@@ -77,6 +77,16 @@ function elementOverlapsRect(
   return false;
 }
 
+/** Returns 'left' or 'right' based on which side of the wall segment the cursor is on. */
+function segmentFacing(
+  cursor: Point,
+  nearPt: Point,
+  uDirX: number,
+  uDirY: number,
+): 'left' | 'right' {
+  return uDirX * (cursor.y - nearPt.y) - uDirY * (cursor.x - nearPt.x) <= 0 ? 'left' : 'right';
+}
+
 /** Returns true if [offset, offset+width] overlaps any existing opening on the same segment. */
 function hasOverlapWithExisting(
   openings: Opening[],
@@ -155,6 +165,7 @@ export function DrawingCanvas() {
     width: number;
     segmentLength: number;
     isValid: boolean;
+    facing: 'left' | 'right';
   } | null>(null);
   // Tracks the wall segment anchored during a new-opening placement drag (door/window tools).
   const openingDragRef = useRef<{
@@ -669,7 +680,8 @@ export function DrawingCanvas() {
 
       if (drag) {
         // User is holding down on a wall — drag determines the opening width.
-        const currentOffset = distance(drag.a, nearestPointOnSegment(world, drag.a, drag.b));
+        const nearPt = nearestPointOnSegment(world, drag.a, drag.b);
+        const currentOffset = distance(drag.a, nearPt);
         const rawWidth = Math.abs(currentOffset - drag.anchorOffset);
 
         let offset: number, width: number;
@@ -683,6 +695,9 @@ export function DrawingCanvas() {
           width = eff;
         }
 
+        const uDirX = (drag.b.x - drag.a.x) / drag.segmentLength;
+        const uDirY = (drag.b.y - drag.a.y) / drag.segmentLength;
+        const facing = segmentFacing(world, nearPt, uDirX, uDirY);
         const isValid =
           width >= minWidth &&
           !hasOverlapWithExisting(openings, drag.wallId, drag.segmentIndex, offset, width);
@@ -693,6 +708,7 @@ export function DrawingCanvas() {
           width,
           segmentLength: drag.segmentLength,
           isValid,
+          facing,
         };
         const segPt = {
           x: drag.a.x + (drag.b.x - drag.a.x) * (currentOffset / drag.segmentLength),
@@ -724,6 +740,15 @@ export function DrawingCanvas() {
               width >= minWidth &&
               !hasOverlapWithExisting(openings, hit.wallId, hit.segmentIndex, offset, width);
           }
+          const hitWall = elements.find((el) => el.id === hit.wallId);
+          let facing: 'left' | 'right' = 'left';
+          if (hitWall && hitWall.type === 'wall') {
+            const a = hitWall.points[hit.segmentIndex];
+            const b = hitWall.points[hit.segmentIndex + 1];
+            const uDirX = (b.x - a.x) / hit.segmentLength;
+            const uDirY = (b.y - a.y) / hit.segmentLength;
+            facing = segmentFacing(world, hit.point, uDirX, uDirY);
+          }
           newGhost = {
             wallId: hit.wallId,
             segmentIndex: hit.segmentIndex,
@@ -731,6 +756,7 @@ export function DrawingCanvas() {
             width,
             segmentLength: hit.segmentLength,
             isValid,
+            facing,
           };
           setCursor(hit.point);
         } else {
@@ -794,7 +820,7 @@ export function DrawingCanvas() {
           segmentIndex: ghost.segmentIndex,
           offset: ghost.offset,
           width: ghost.width,
-          facing: 'left',
+          facing: ghost.facing,
           hinge: 'start',
         } satisfies Opening);
         const toolStore = useToolStore.getState();
@@ -1181,10 +1207,11 @@ export function DrawingCanvas() {
     const widthPx = ftToPx(width);
 
     if (ghostToolType === 'door') {
-      const perpX = unitDirY;
-      const perpY = -unitDirX;
+      const facing = ghostOpening.facing;
+      const perpX = facing === 'left' ? unitDirY : -unitDirY;
+      const perpY = facing === 'left' ? -unitDirX : unitDirX;
       const leafTip = { x: hingePx.x + perpX * widthPx, y: hingePx.y + perpY * widthPx };
-      const arcRotation = wallAngleDeg - 90;
+      const arcRotation = facing === 'left' ? wallAngleDeg - 90 : wallAngleDeg;
       return { kind: 'door' as const, hingePx, leafTip, widthPx, arcRotation, isValid };
     } else {
       const gapEndFraction = (offset + width) / segLen;

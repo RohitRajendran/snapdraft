@@ -125,7 +125,7 @@ function DoorSymbol({
         strokeWidth={1.5 / zoom}
         listening={false}
       />
-      {/* Swing arc — also acts as a click/tap target for selection */}
+      {/* Swing arc — click/tap target for selection; hitStrokeWidth enlarges the hittable border */}
       <Arc
         x={hingePx.x}
         y={hingePx.y}
@@ -137,6 +137,7 @@ function DoorSymbol({
         fill="rgba(255,255,255,0.3)"
         stroke={stroke}
         strokeWidth={1.5 / zoom}
+        hitStrokeWidth={12 / zoom}
         onClick={(e) => {
           e.cancelBubble = true;
           onSelect(Boolean(e.evt?.shiftKey));
