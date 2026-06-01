@@ -149,10 +149,10 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       align-items: center;
-      gap: 56px;
+      gap: 48px;
       max-width: 1160px;
       margin: 0 auto;
-      padding: 72px 40px;
+      padding: 48px 40px;
     }
 
     .hero-text { display: flex; flex-direction: column; gap: 0; }
@@ -210,28 +210,28 @@
     }
 
     h1 {
-      font-size: clamp(38px, 4.5vw, 68px);
+      font-size: clamp(34px, 4vw, 54px);
       font-weight: 700;
-      line-height: 1.06;
-      letter-spacing: 0.03em;
+      line-height: 1.08;
+      letter-spacing: 0.02em;
       color: var(--ink-dark);
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       text-indent: 0;
     }
 
     .hero-sub {
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.75;
       color: var(--ink-mid);
-      margin-bottom: 12px;
-      max-width: 460px;
+      margin-bottom: 10px;
+      max-width: 440px;
     }
 
     .hero-sub-small {
       font-size: 12px;
       color: var(--ink-light);
       letter-spacing: 0.03em;
-      margin-bottom: 36px;
+      margin-bottom: 28px;
     }
 
     .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -309,6 +309,9 @@
 
     /* ── FEATURES ───────────────────────────────── */
     #features {
+      border-top: 1px solid var(--border-light);
+    }
+    .features-inner {
       padding: 80px 40px;
       max-width: 1160px;
       margin: 0 auto;
@@ -354,7 +357,7 @@
 
     .feature-demo {
       width: 100%;
-      height: 90px;
+      height: 112px;
       border-radius: 8px;
       overflow: hidden;
       background: var(--bg);
@@ -376,37 +379,37 @@
 
     /* Demo SVG animations */
     /* Wall draw */
-    .wall-line-1 { stroke-dasharray: 120; stroke-dashoffset: 120; }
-    .wall-line-2 { stroke-dasharray: 80; stroke-dashoffset: 80; }
+    .wall-line-1 { stroke-dasharray: 220; stroke-dashoffset: 220; }
+    .wall-line-2 { stroke-dasharray: 100; stroke-dashoffset: 100; }
     .snap-ring { opacity: 0; }
-    .playing .wall-line-1 { animation: drawWall1 0.6s ease 0.3s forwards; }
-    .playing .wall-line-2 { animation: drawWall2 0.5s ease 1.2s forwards; }
-    .playing .snap-ring { animation: snapFlash 0.4s ease 1.1s forwards; }
+    .playing .wall-line-1 { animation: drawWall1 0.9s ease 0.2s forwards; }
+    .playing .wall-line-2 { animation: drawWall2 0.5s ease 1.4s forwards; }
+    .playing .snap-ring { animation: snapFlash 0.5s ease 1.2s forwards; }
     @keyframes drawWall1 { to { stroke-dashoffset: 0; } }
     @keyframes drawWall2 { to { stroke-dashoffset: 0; } }
     @keyframes snapFlash {
-      0%   { opacity: 0; r: 5; }
-      40%  { opacity: 1; r: 9; }
-      100% { opacity: 0; r: 5; }
+      0%   { opacity: 0; r: 6; }
+      40%  { opacity: 1; r: 11; }
+      100% { opacity: 0; r: 6; }
     }
 
-    /* Door draw */
-    .demo-door-arc { stroke-dasharray: 70; stroke-dashoffset: 70; }
-    .demo-door-gap-cover { opacity: 1; }
-    .playing .demo-door-arc { animation: drawDoorArc 0.5s ease 0.5s forwards, swingDoor 0.6s ease-in-out 1.4s forwards; }
-    .playing .demo-door-gap-cover { animation: hideCover 0.1s ease 0.5s forwards; }
-    @keyframes drawDoorArc { to { stroke-dashoffset: 0; } }
-    @keyframes swingDoor { 0% { transform: rotate(0deg); } 100% { transform: rotate(-80deg); } }
-    @keyframes hideCover { to { opacity: 0; } }
+    /* Door swing (pre-placed door, arc oscillates open/closed) */
+    .demo-door-arc { }
+    .playing .demo-door-arc { animation: swingDoor 2.8s ease-in-out 0.4s infinite; }
+    @keyframes swingDoor {
+      0%, 15% { transform: rotate(0deg); }
+      40%, 65% { transform: rotate(-82deg); }
+      90%, 100% { transform: rotate(0deg); }
+    }
 
-    /* Dimension typing */
+    /* Dimension typing — looping input box */
     .demo-dim-texts text { opacity: 0; }
-    .playing .demo-dim-t1 { animation: fadeIn 0.2s ease 0.4s forwards; }
-    .playing .demo-dim-t2 { animation: fadeIn 0.2s ease 0.9s forwards; }
-    .playing .demo-dim-t3 { animation: fadeIn 0.2s ease 1.4s forwards; }
-    .playing .demo-dim-t1-fade { animation: fadeIn 0.2s ease 0.4s forwards, fadeOut 0.15s ease 0.85s forwards; }
-    .playing .demo-dim-t2-fade { animation: fadeIn 0.2s ease 0.9s forwards, fadeOut 0.15s ease 1.35s forwards; }
-    @keyframes fadeOut { to { opacity: 0; } }
+    .playing .demo-dim-t1-fade { animation: dimType1 3.6s ease 0.3s infinite; }
+    .playing .demo-dim-t2-fade { animation: dimType2 3.6s ease 0.3s infinite; }
+    .playing .demo-dim-t3    { animation: dimType3 3.6s ease 0.3s infinite; }
+    @keyframes dimType1 { 0%,6%{opacity:0} 11%,22%{opacity:1} 27%,100%{opacity:0} }
+    @keyframes dimType2 { 0%,27%{opacity:0} 32%,44%{opacity:1} 49%,100%{opacity:0} }
+    @keyframes dimType3 { 0%,49%{opacity:0} 54%,82%{opacity:1} 88%,100%{opacity:0} }
 
     /* Undo demo */
     .demo-box-item { opacity: 0; }
@@ -445,20 +448,18 @@
     }
 
     /* iPad pinch */
-    .pinch-f1 { }
-    .pinch-f2 { }
-    .playing .pinch-f1 { animation: finger1 2.5s ease 0.3s infinite; }
-    .playing .pinch-f2 { animation: finger2 2.5s ease 0.3s infinite; }
+    .playing .pinch-f1 { animation: finger1 2.6s ease 0.3s infinite; }
+    .playing .pinch-f2 { animation: finger2 2.6s ease 0.3s infinite; }
     @keyframes finger1 {
       0%,100% { transform: translate(0,0); }
-      40%     { transform: translate(-14px, -8px); }
-      60%     { transform: translate(-14px, -8px); }
+      40%     { transform: translate(-22px, -12px); }
+      62%     { transform: translate(-22px, -12px); }
       90%     { transform: translate(0,0); }
     }
     @keyframes finger2 {
       0%,100% { transform: translate(0,0); }
-      40%     { transform: translate(14px, 8px); }
-      60%     { transform: translate(14px, 8px); }
+      40%     { transform: translate(22px, 12px); }
+      62%     { transform: translate(22px, 12px); }
       90%     { transform: translate(0,0); }
     }
 
@@ -746,7 +747,8 @@
       .steps-grid { grid-template-columns: 1fr; }
       .everywhere-inner { grid-template-columns: 1fr; gap: 40px; }
       .site-header { padding: 0 24px; }
-      #features, #how, #tools, #everywhere, #cta { padding: 56px 24px; }
+      .features-inner { padding: 56px 24px; }
+      #how, #tools, #everywhere, #cta { padding: 56px 24px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -836,18 +838,18 @@
           </g>
 
           <!-- WALLS: 15ft×11ft room at 28px/ft. Origin (76,66). Width=420, Height=308 -->
-          <!-- Bottom wall has door gap at x=300..384 (3ft door) -->
+          <!-- Bottom wall has door gap at x=216..300 (3ft door, center-left) -->
           <!-- Left wall has window gap at y=150..234 (3ft window) -->
           <polyline
             points="76,374 76,234"
             fill="none" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
           <!-- window gap in left wall -->
           <polyline
-            points="76,150 76,66 496,66 496,374 384,374"
+            points="76,150 76,66 496,66 496,374 300,374"
             fill="none" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
           <!-- door gap in bottom wall -->
           <polyline
-            points="76,374 300,374"
+            points="76,374 216,374"
             fill="none" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
 
           <!-- Window symbol (left wall, centered in gap) -->
@@ -855,15 +857,15 @@
           <line x1="84" y1="150" x2="84" y2="234" stroke="#2c2c2c" stroke-width="2"/>
           <line x1="68" y1="192" x2="84" y2="192" stroke="#2d5490" stroke-width="1" stroke-dasharray="3 2"/>
 
-          <!-- Door (bottom wall, clickable) -->
+          <!-- Door (bottom wall, clickable) — hinge at (216,374), swings into room -->
           <g id="hero-door" style="cursor:pointer" aria-label="Click to open or close the door">
             <!-- door leaf -->
-            <line id="door-leaf" x1="300" y1="374" x2="300" y2="290" stroke="#2c2c2c" stroke-width="2"/>
-            <!-- door arc: quarter circle from (300,290) rotating around hinge (300,374) -->
+            <line id="door-leaf" x1="216" y1="374" x2="216" y2="290" stroke="#2c2c2c" stroke-width="2"/>
+            <!-- door arc: quarter circle from (216,290) around hinge (216,374) to (300,374) -->
             <path id="door-arc-path" class="door-arc"
-              d="M 300,290 A 84,84 0 0,1 384,374"
+              d="M 216,290 A 84,84 0 0,1 300,374"
               fill="none" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <text x="320" y="350" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.7">door</text>
+            <text x="230" y="355" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.7">door</text>
           </g>
 
           <!-- FURNITURE (each has a tooltip title and wiggle on hover) -->
@@ -891,12 +893,12 @@
             <text x="385" y="82" font-family="Courier New" font-size="10" fill="#2d5490">NS</text>
           </g>
 
-          <!-- Dresser -->
+          <!-- Dresser — flush with right wall (x=356..496 = 5ft, y=318..374 = 2ft) -->
           <g class="furniture-item fi-3" id="fi-dresser" data-label="Dresser" data-dims="5' × 2'">
-            <rect x="330" y="318" width="140" height="56"
+            <rect x="356" y="318" width="140" height="56"
               fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
               stroke-dasharray="4 3" rx="1"/>
-            <text x="334" y="332" font-family="Courier New" font-size="10" fill="#2d5490">Dresser</text>
+            <text x="360" y="332" font-family="Courier New" font-size="10" fill="#2d5490">Dresser</text>
           </g>
 
           <!-- Armchair (rotated) -->
@@ -915,6 +917,7 @@
 
     <!-- FEATURES -->
     <section id="features" aria-labelledby="features-heading">
+      <div class="features-inner">
       <div class="reveal">
         <p class="section-label">WHAT IT DOES</p>
         <h2 class="section-heading" id="features-heading">Everything you need.<br>Nothing you don't.</h2>
@@ -923,20 +926,21 @@
 
         <!-- 1. Smart walls -->
         <div class="feature-card reveal">
-          <svg class="feature-demo demo-svg" viewBox="0 0 320 90" xmlns="http://www.w3.org/2000/svg">
-            <rect width="320" height="90" fill="#f5f0e8"/>
-            <rect width="320" height="90" fill="url(#hp-major)"/>
-            <!-- endpoint dot A -->
-            <circle cx="40" cy="45" r="4" fill="#2d5490"/>
-            <!-- wall line 1 drawing -->
-            <line class="wall-line-1" x1="40" y1="45" x2="180" y2="45" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
-            <!-- snap ring at endpoint -->
-            <circle class="snap-ring" cx="180" cy="45" r="5" fill="none" stroke="#2d5490" stroke-width="1.5"/>
-            <!-- endpoint dot B -->
-            <circle cx="180" cy="45" r="4" fill="#2d5490"/>
-            <!-- wall line 2 snapping downward -->
-            <line class="wall-line-2" x1="180" y1="45" x2="180" y2="80" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
-            <text x="200" y="30" font-family="Courier New" font-size="10" fill="#2d5490" opacity="0.8">snaps to endpoint</text>
+          <svg class="feature-demo demo-svg" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="112" fill="#f5f0e8"/>
+            <rect width="320" height="112" fill="url(#hp-major)"/>
+            <!-- Pre-existing 3 walls forming a U-shape -->
+            <line x1="56" y1="20" x2="240" y2="20" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square"/>
+            <line x1="56" y1="20" x2="56" y2="90" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square"/>
+            <line x1="240" y1="20" x2="240" y2="90" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square"/>
+            <!-- Start endpoint for new wall -->
+            <circle cx="56" cy="90" r="4.5" fill="#2d5490"/>
+            <!-- Animated: bottom wall closing the room -->
+            <line class="wall-line-1" x1="56" y1="90" x2="240" y2="90" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square"/>
+            <!-- Snap ring flashes when wall reaches the existing corner -->
+            <circle class="snap-ring" cx="240" cy="90" r="9" fill="none" stroke="#2d5490" stroke-width="2"/>
+            <text x="260" y="54" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.8">snaps to</text>
+            <text x="260" y="66" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.8">endpoint</text>
           </svg>
           <div class="feature-title">Draw walls your way</div>
           <div class="feature-body">Click, drag, or type <code>5'6"</code>. Snaps to endpoints, wall centerlines, and the grid automatically.</div>
@@ -944,21 +948,28 @@
 
         <!-- 2. Doors & windows -->
         <div class="feature-card reveal">
-          <svg class="feature-demo demo-svg" viewBox="0 0 320 90" xmlns="http://www.w3.org/2000/svg">
-            <rect width="320" height="90" fill="#f5f0e8"/>
-            <rect width="320" height="90" fill="url(#hp-major)"/>
-            <!-- wall segment -->
-            <line x1="60" y1="55" x2="260" y2="55" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square"/>
-            <!-- door gap cover (hides gap until arc draws) -->
-            <line class="demo-door-gap-cover" x1="148" y1="55" x2="220" y2="55" stroke="#f5f0e8" stroke-width="7"/>
-            <!-- door leaf -->
-            <line x1="148" y1="55" x2="148" y2="12" stroke="#2c2c2c" stroke-width="2"/>
-            <!-- door arc -->
+          <svg class="feature-demo demo-svg" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="112" fill="#f5f0e8"/>
+            <rect width="320" height="112" fill="url(#hp-major)"/>
+            <!-- Wall with door gap (left section) and window gap (right section) -->
+            <line x1="20" y1="68" x2="88" y2="68" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square"/>
+            <!-- door gap x=88..134 (46px) — open -->
+            <line x1="134" y1="68" x2="192" y2="68" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square"/>
+            <!-- window gap x=192..242 -->
+            <line x1="242" y1="68" x2="300" y2="68" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square"/>
+            <!-- Door: hinge at (88,68), leaf goes up 46px, arc sweeps right -->
+            <line x1="88" y1="68" x2="88" y2="22" stroke="#2c2c2c" stroke-width="2"/>
             <path class="demo-door-arc"
               style="transform-box:fill-box; transform-origin: 0% 100%;"
-              d="M 148,12 A 43,43 0 0,1 191,55"
+              d="M 88,22 A 46,46 0 0,1 134,68"
               fill="none" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <text x="200" y="30" font-family="Courier New" font-size="10" fill="#2d5490" opacity="0.8">click wall to place</text>
+            <!-- Window symbol: two parallel lines in the gap -->
+            <line x1="192" y1="61" x2="242" y2="61" stroke="#2c2c2c" stroke-width="1.5"/>
+            <line x1="192" y1="75" x2="242" y2="75" stroke="#2c2c2c" stroke-width="1.5"/>
+            <line x1="217" y1="61" x2="217" y2="75" stroke="#2d5490" stroke-width="1" stroke-dasharray="3 2"/>
+            <!-- Labels -->
+            <text x="96" y="14" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.8">door</text>
+            <text x="196" y="14" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.8">window</text>
           </svg>
           <div class="feature-title">Doors &amp; windows</div>
           <div class="feature-body">Click any wall segment to place a door or window. Reposition by dragging. The opening stays anchored as you edit.</div>
@@ -966,25 +977,28 @@
 
         <!-- 3. Dimensions -->
         <div class="feature-card reveal">
-          <svg class="feature-demo demo-svg" viewBox="0 0 320 90" xmlns="http://www.w3.org/2000/svg">
-            <rect width="320" height="90" fill="#f5f0e8"/>
-            <rect width="320" height="90" fill="url(#hp-major)"/>
-            <!-- wall -->
-            <line x1="50" y1="55" x2="270" y2="55" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
-            <!-- dimension line below -->
-            <line x1="50" y1="68" x2="270" y2="68" stroke="#2d5490" stroke-width="1" stroke-dasharray="3 2"/>
-            <line x1="50" y1="63" x2="50" y2="73" stroke="#2d5490" stroke-width="1"/>
-            <line x1="270" y1="63" x2="270" y2="73" stroke="#2d5490" stroke-width="1"/>
-            <!-- typing animation labels (stacked, show/hide) -->
+          <svg class="feature-demo demo-svg" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="112" fill="#f5f0e8"/>
+            <rect width="320" height="112" fill="url(#hp-major)"/>
+            <!-- Wall segment being drawn -->
+            <line x1="36" y1="72" x2="218" y2="72" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square"/>
+            <!-- Active endpoint marker -->
+            <circle cx="218" cy="72" r="5.5" fill="none" stroke="#2d5490" stroke-width="2"/>
+            <circle cx="218" cy="72" r="2.5" fill="#2d5490"/>
+            <!-- Inline dimension input box (floating above endpoint) -->
+            <rect x="168" y="30" width="76" height="28" rx="5"
+              fill="white" stroke="#2d5490" stroke-width="1.5"
+              filter="url(#shadow)"/>
+            <!-- Typed value animating: "5" → "5'" → "5'6"" -->
             <g class="demo-dim-texts">
-              <text class="demo-dim-t1-fade" x="160" y="80" text-anchor="middle" font-family="Courier New" font-size="12" fill="#2d5490" font-weight="700">5</text>
-              <text class="demo-dim-t2-fade" x="160" y="80" text-anchor="middle" font-family="Courier New" font-size="12" fill="#2d5490" font-weight="700">5'</text>
-              <text class="demo-dim-t3" x="160" y="80" text-anchor="middle" font-family="Courier New" font-size="12" fill="#2d5490" font-weight="700">5'6"</text>
+              <text class="demo-dim-t1-fade" x="206" y="50" text-anchor="middle" font-family="Courier New" font-size="14" fill="#1a1a1a" font-weight="700">5</text>
+              <text class="demo-dim-t2-fade" x="206" y="50" text-anchor="middle" font-family="Courier New" font-size="14" fill="#1a1a1a" font-weight="700">5'</text>
+              <text class="demo-dim-t3"      x="206" y="50" text-anchor="middle" font-family="Courier New" font-size="14" fill="#1a1a1a" font-weight="700">5'6"</text>
             </g>
-            <!-- cursor blink -->
-            <text x="188" y="80" font-family="Courier New" font-size="12" fill="#2d5490" opacity="0.6">|</text>
-            <!-- label -->
-            <text x="200" y="25" font-family="Courier New" font-size="10" fill="#2d5490" opacity="0.8">type to set length</text>
+            <!-- Connector line from box to endpoint -->
+            <line x1="206" y1="58" x2="218" y2="72" stroke="#2d5490" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+            <!-- Hint label -->
+            <text x="36" y="94" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.7">type  5'6"  ·  5 6  ·  3.5 m  ·  170 cm</text>
           </svg>
           <div class="feature-title">Type in real dimensions</div>
           <div class="feature-body"><code>5'6"</code>, <code>5 6</code>, <code>3.5 m</code>, <code>350 cm</code> — parses the notation architects and homeowners already know.</div>
@@ -992,21 +1006,34 @@
 
         <!-- 4. Multiple plans -->
         <div class="feature-card reveal">
-          <svg class="feature-demo demo-svg" viewBox="0 0 320 90" xmlns="http://www.w3.org/2000/svg">
-            <rect width="320" height="90" fill="#f5f0e8"/>
-            <!-- Plan A: living room shape -->
+          <svg class="feature-demo demo-svg" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="112" fill="#f5f0e8"/>
+            <!-- Tab bar -->
+            <rect x="0" y="0" width="320" height="26" fill="rgba(255,255,255,0.75)"/>
+            <line x1="0" y1="26" x2="320" y2="26" stroke="#c8c4bc" stroke-width="0.75"/>
+            <!-- State A: Bedroom active, Kitchen inactive -->
             <g class="demo-plan-a">
-              <rect x="40" y="15" width="240" height="60" fill="url(#hp-major)"/>
-              <rect x="40" y="15" width="240" height="60" fill="none" stroke="#c8c4bc" stroke-width="1" rx="4"/>
-              <polyline points="60,55 60,25 260,25 260,65 90,65" fill="none" stroke="#2c2c2c" stroke-width="4" stroke-linecap="square"/>
-              <text x="55" y="70" font-family="Courier New" font-size="10" fill="#2d5490">Living Room</text>
+              <rect x="6" y="4" width="76" height="18" rx="3" fill="#2c2c2c"/>
+              <text x="44" y="16" text-anchor="middle" font-family="Courier New" font-size="8" fill="#f5f0e8" font-weight="700">Bedroom</text>
+              <rect x="88" y="4" width="64" height="18" rx="3" fill="transparent" stroke="#c8c4bc" stroke-width="0.75"/>
+              <text x="120" y="16" text-anchor="middle" font-family="Courier New" font-size="8" fill="#8a8a8a">Kitchen</text>
+              <!-- Bedroom floor plan -->
+              <rect x="0" y="26" width="320" height="86" fill="url(#hp-major)"/>
+              <polyline points="52,96 52,36 256,36 256,96 52,96" fill="none" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
+              <rect x="62" y="38" width="120" height="56" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="3 2" rx="1"/>
+              <text x="70" y="52" font-family="Courier New" font-size="10" fill="#2d5490">Bed</text>
             </g>
-            <!-- Plan B: kitchen shape -->
+            <!-- State B: Kitchen active, Bedroom inactive -->
             <g class="demo-plan-b">
-              <rect x="40" y="15" width="240" height="60" fill="url(#hp-major)"/>
-              <rect x="40" y="15" width="240" height="60" fill="none" stroke="#c8c4bc" stroke-width="1" rx="4"/>
-              <polyline points="60,65 60,25 200,25 200,65 60,65" fill="none" stroke="#2c2c2c" stroke-width="4" stroke-linecap="square"/>
-              <text x="55" y="70" font-family="Courier New" font-size="10" fill="#2d5490">Kitchen</text>
+              <rect x="6" y="4" width="76" height="18" rx="3" fill="transparent" stroke="#c8c4bc" stroke-width="0.75"/>
+              <text x="44" y="16" text-anchor="middle" font-family="Courier New" font-size="8" fill="#8a8a8a">Bedroom</text>
+              <rect x="88" y="4" width="64" height="18" rx="3" fill="#2c2c2c"/>
+              <text x="120" y="16" text-anchor="middle" font-family="Courier New" font-size="8" fill="#f5f0e8" font-weight="700">Kitchen</text>
+              <!-- Kitchen floor plan (L-shape) -->
+              <rect x="0" y="26" width="320" height="86" fill="url(#hp-major)"/>
+              <polyline points="52,96 52,36 256,36 256,62 176,62 176,96 52,96" fill="none" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
+              <rect x="62" y="38" width="88" height="22" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="3 2" rx="1"/>
+              <text x="70" y="52" font-family="Courier New" font-size="10" fill="#2d5490">Counter</text>
             </g>
           </svg>
           <div class="feature-title">Multiple plans</div>
@@ -1015,19 +1042,19 @@
 
         <!-- 5. Undo -->
         <div class="feature-card reveal">
-          <svg class="feature-demo demo-svg" viewBox="0 0 320 90" xmlns="http://www.w3.org/2000/svg">
-            <rect width="320" height="90" fill="#f5f0e8"/>
-            <rect width="320" height="90" fill="url(#hp-major)"/>
+          <svg class="feature-demo demo-svg" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="112" fill="#f5f0e8"/>
+            <rect width="320" height="112" fill="url(#hp-major)"/>
             <!-- existing furniture stays static -->
-            <rect x="70" y="20" width="80" height="56" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3" rx="1"/>
-            <text x="75" y="34" font-family="Courier New" font-size="10" fill="#2d5490">Bed</text>
+            <rect x="70" y="28" width="80" height="58" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3" rx="1"/>
+            <text x="75" y="42" font-family="Courier New" font-size="10" fill="#2d5490">Bed</text>
             <!-- animated box (undo/redo) -->
             <g class="demo-box-item" style="transform-box:fill-box;transform-origin:center;">
-              <rect x="175" y="28" width="70" height="44" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3" rx="1"/>
-              <text x="180" y="42" font-family="Courier New" font-size="10" fill="#2d5490">Chair</text>
+              <rect x="176" y="34" width="70" height="48" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3" rx="1"/>
+              <text x="181" y="50" font-family="Courier New" font-size="10" fill="#2d5490">Chair</text>
             </g>
             <!-- cmd+z label -->
-            <text class="demo-cmd-z" x="255" y="50" font-family="Courier New" font-size="11" fill="#2d5490" font-weight="700">⌘Z</text>
+            <text class="demo-cmd-z" x="255" y="62" font-family="Courier New" font-size="11" fill="#2d5490" font-weight="700">⌘Z</text>
           </svg>
           <div class="feature-title">Undo everything</div>
           <div class="feature-body">Full undo/redo history for the session. <code>Cmd+Z</code> works exactly how you expect.</div>
@@ -1035,29 +1062,35 @@
 
         <!-- 6. iPad -->
         <div class="feature-card reveal">
-          <svg class="feature-demo demo-svg" viewBox="0 0 320 90" xmlns="http://www.w3.org/2000/svg">
-            <rect width="320" height="90" fill="#f5f0e8"/>
-            <!-- iPad outline -->
-            <rect x="90" y="8" width="140" height="74" rx="8" fill="white" stroke="#c8c4bc" stroke-width="1.5"/>
-            <rect x="94" y="12" width="132" height="66" rx="4" fill="#f5f0e8" stroke="#d0ccc4" stroke-width="0.75"/>
-            <!-- mini floor plan on screen -->
-            <polyline points="105,60 105,22 215,22 215,60 105,60" fill="none" stroke="#2c2c2c" stroke-width="2" stroke-linecap="square"/>
-            <!-- finger 1 (top-left) -->
+          <svg class="feature-demo demo-svg" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="112" fill="#f5f0e8"/>
+            <!-- iPad outline (larger, centered) -->
+            <rect x="72" y="4" width="172" height="104" rx="10" fill="white" stroke="#c8c4bc" stroke-width="2"/>
+            <rect x="77" y="9" width="162" height="94" rx="5" fill="#f5f0e8" stroke="#d0ccc4" stroke-width="0.75"/>
+            <!-- Floor plan on screen -->
+            <polyline points="90,88 90,18 226,18 226,88 90,88" fill="none" stroke="#2c2c2c" stroke-width="2.5" stroke-linecap="square"/>
+            <rect x="96" y="22" width="68" height="46" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1" stroke-dasharray="3 2" rx="1"/>
+            <!-- Finger 1 (upper-left of screen) -->
             <g class="pinch-f1" style="transform-box:fill-box;transform-origin:center;">
-              <circle cx="124" cy="36" r="7" fill="rgba(44,74,122,0.25)" stroke="#2c4a7a" stroke-width="1"/>
+              <circle cx="116" cy="44" r="13" fill="rgba(44,74,122,0.18)" stroke="#2c4a7a" stroke-width="1.5"/>
+              <circle cx="116" cy="44" r="5" fill="rgba(44,74,122,0.4)"/>
             </g>
-            <!-- finger 2 (bottom-right) -->
+            <!-- Finger 2 (lower-right of screen) -->
             <g class="pinch-f2" style="transform-box:fill-box;transform-origin:center;">
-              <circle cx="196" cy="54" r="7" fill="rgba(44,74,122,0.25)" stroke="#2c4a7a" stroke-width="1"/>
+              <circle cx="200" cy="72" r="13" fill="rgba(44,74,122,0.18)" stroke="#2c4a7a" stroke-width="1.5"/>
+              <circle cx="200" cy="72" r="5" fill="rgba(44,74,122,0.4)"/>
             </g>
-            <text x="240" y="35" font-family="Courier New" font-size="10" fill="#2d5490" opacity="0.8">pinch to zoom</text>
-            <text x="240" y="50" font-family="Courier New" font-size="10" fill="#2d5490" opacity="0.8">two-finger pan</text>
+            <text x="256" y="44" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.85">pinch to</text>
+            <text x="256" y="56" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.85">zoom</text>
+            <text x="256" y="72" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.7">two-finger</text>
+            <text x="256" y="84" font-family="Courier New" font-size="9" fill="#2d5490" opacity="0.7">pan</text>
           </svg>
           <div class="feature-title">Desktop and iPad</div>
           <div class="feature-body">Touch gestures, pinch to zoom, two-finger pan. Full drawing support on iPad with or without Apple Pencil.</div>
         </div>
 
       </div>
+      </div><!-- /.features-inner -->
     </section>
 
     <!-- HOW IT WORKS -->
@@ -1226,6 +1259,11 @@
       });
     }, { threshold: 0.1 });
     document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+    // Fallback: reveal all if observer never fires (instant-scroll, prefers-reduced-motion, etc.)
+    setTimeout(function () {
+      document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in-view'); });
+    }, 1500);
 
     // ── Furniture scroll-in ───────────────────────────────────
     var heroSvg = document.getElementById('hero-svg-wrapper');
