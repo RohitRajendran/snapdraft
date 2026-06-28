@@ -9,8 +9,8 @@
 }
 
 .panel {
-  background: #f5f0e8;
-  border: 1px solid #c8c4bc;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 24px;
   width: 360px;
@@ -20,7 +20,7 @@
   flex-direction: column;
   gap: 10px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-body);
 }
 
 .header {
@@ -34,7 +34,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #2c2c2c;
+  color: var(--ink);
   margin: 0;
 }
 
@@ -43,19 +43,23 @@
   border: none;
   font-size: 16px;
   cursor: pointer;
-  color: #2c2c2c;
+  color: var(--ink);
   min-height: 44px;
   min-width: 44px;
   touch-action: manipulation;
   border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .close:hover {
-  background: #ece8e0;
+  background: var(--surface-hover);
 }
 
 .close:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -71,8 +75,8 @@
 }
 
 .empty {
-  font-size: 12px;
-  color: #3a3a3a;
+  font-size: 14px;
+  color: var(--ink-mid);
   text-align: center;
   padding: 20px 0;
 }
@@ -87,8 +91,8 @@
 }
 
 .item.active {
-  background: #ece8e0;
-  border-color: #c0bbb2;
+  background: var(--surface-hover);
+  border-color: var(--border);
 }
 
 .name {
@@ -96,8 +100,8 @@
   background: none;
   border: none;
   font-family: inherit;
-  font-size: 13px;
-  color: #2c2c2c;
+  font-size: 14px;
+  color: var(--ink);
   cursor: pointer;
   text-align: left;
   padding: 4px;
@@ -106,28 +110,28 @@
 }
 
 .name:hover {
-  background: #ece8e0;
+  background: var(--surface-hover);
 }
 
 .name:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .nameInput {
   flex: 1;
   background: white;
-  border: 1px solid #b8c9e0;
+  border: 1px solid var(--border);
   border-radius: 4px;
   font-family: inherit;
   font-size: 13px;
   padding: 4px 8px;
-  color: #2c2c2c;
+  color: var(--ink);
   min-height: 44px;
 }
 
 .nameInput:focus {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -141,7 +145,7 @@
   border: none;
   font-size: 15px;
   cursor: pointer;
-  color: #2c2c2c;
+  color: var(--ink);
   padding: 4px 8px;
   min-height: 44px;
   min-width: 44px;
@@ -150,12 +154,12 @@
 }
 
 .actionBtn:hover {
-  background: #e0dcd4;
-  color: #1a1a1a;
+  background: var(--surface-hover);
+  color: var(--ink-dark);
 }
 
 .actionBtn:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -170,8 +174,8 @@
 }
 
 .importError {
-  font-size: 11px;
-  color: #b94a4a;
+  font-size: 12px;
+  color: var(--color-destructive);
   margin: 0;
 }
 
@@ -181,24 +185,24 @@
   justify-content: center;
   gap: 6px;
   background: none;
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.05em;
   cursor: pointer;
   min-height: 44px;
   touch-action: manipulation;
-  color: #2c2c2c;
+  color: var(--ink);
 }
 
 .importBtn:hover {
-  background: #ece8e0;
+  background: var(--surface-hover);
 }
 
 .importBtn:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -207,13 +211,13 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: #2c2c2c;
-  color: #f5f0e8;
+  background: var(--ink);
+  color: var(--bg);
   border: none;
   border-radius: 8px;
   padding: 12px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.05em;
   cursor: pointer;
   min-height: 44px;
@@ -225,6 +229,6 @@
 }
 
 .createBtn:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }

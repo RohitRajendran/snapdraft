@@ -20,12 +20,17 @@
     Cache-Control = "no-cache"
 
 [[redirects]]
-  from = "/home.html"
+  from = "/"
   to = "/home.html"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/*"
+  from = "/app"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/*"
   to = "/index.html"
   status = 200

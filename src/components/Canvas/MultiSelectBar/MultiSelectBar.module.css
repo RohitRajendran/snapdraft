@@ -10,33 +10,37 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-body);
   z-index: 150;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .count {
-  font-size: 11px;
-  color: #d0ccc4;
+  font-size: 12px;
+  color: var(--border-light);
   letter-spacing: 0.05em;
 }
 
 .deleteBtn {
-  background: #cc4444;
+  background: var(--color-destructive);
   border: none;
   border-radius: 6px;
   color: white;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   padding: 6px 12px;
   cursor: pointer;
   min-height: 44px;
   min-width: 44px;
   touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .deleteBtn:hover {
-  background: #b83333;
+  background: var(--color-destructive-hover);
 }
 
 .deleteBtn:focus-visible {
@@ -46,16 +50,20 @@
 
 .clearBtn {
   background: none;
-  border: 1px solid #6a6a6a;
+  border: 1px solid var(--ink-light);
   border-radius: 6px;
-  color: #d0ccc4;
+  color: var(--border-light);
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   padding: 6px 12px;
   cursor: pointer;
   min-height: 44px;
   min-width: 44px;
   touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .clearBtn:hover {
