@@ -3,7 +3,6 @@ import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanSto
 import { useToolStore } from '../../store/useToolStore/useToolStore';
 import type { Box, Element, Opening, Wall } from '../../types';
 import { collectConnectedWallIds } from '../../utils/geometry/geometry';
-import { formatDimension } from '../../utils/units/units';
 import { shouldUseMobileOverlayLayout } from '../Canvas/layout';
 import { FtInInput } from './FtInInput/FtInInput';
 import styles from './PropertiesPanel.module.css';
@@ -30,10 +29,6 @@ function WallProperties({
           return { from: pt, to, len };
         })
       : [];
-
-  const totalLen = segments.reduce((sum, s) => sum + s.len, 0);
-  const isSimple = segments.length === 1;
-  const unit = useToolStore((s) => s.unit);
 
   function applySegmentLength(segIdx: number, newLen: number) {
     if (newLen <= 0) return;
@@ -68,18 +63,14 @@ function WallProperties({
 
   return (
     <div className={styles.fields}>
-      <div className={styles.row}>
-        <span className={styles.fieldLabel}>Total length</span>
-        <span className={styles.value}>{formatDimension(totalLen, unit)}</span>
-      </div>
       {segments.map((seg, i) => (
         <FtInInput
           key={i}
-          label={isSimple ? 'Length' : `Segment ${i + 1}`}
+          label="Length"
           value={seg.len}
           onChange={(newLen) => applySegmentLength(i, newLen)}
           min={0.1}
-          testId={isSimple ? 'wall-length-input' : `wall-segment-${i}-input`}
+          testId="wall-length-input"
         />
       ))}
       {showDelete && (

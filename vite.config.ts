@@ -40,6 +40,8 @@ export default defineConfig({
       workbox: {
         // Cache the entire app shell
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallback: 'index.html',
+        navigateFallbackAllowlist: [/^\/app/],
         runtimeCaching: [
           {
             // Cache Google Fonts if ever added

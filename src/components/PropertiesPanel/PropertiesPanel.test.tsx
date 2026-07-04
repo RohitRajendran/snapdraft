@@ -73,12 +73,6 @@ describe('PropertiesPanel', () => {
       expect(screen.getByTestId('wall-length-input')).toHaveValue("10'");
     });
 
-    it('shows total length', () => {
-      selectElement(wall);
-      render(<PropertiesPanel />);
-      expect(screen.getByText("10'")).toBeInTheDocument();
-    });
-
     it('deletes the wall when Delete is clicked', async () => {
       selectElement(wall);
       render(<PropertiesPanel />);
