@@ -23,11 +23,11 @@ test.describe('Box drawing', () => {
     await expect(widthInput).toHaveValue("10'");
   });
 
-  test('can edit box height in properties panel', async ({ page }) => {
-    const heightInput = page.getByTestId('box-height-input');
-    await heightInput.fill("5'");
-    await heightInput.press('Enter');
-    await expect(heightInput).toHaveValue("5'");
+  test('can edit box length in properties panel', async ({ page }) => {
+    const lengthInput = page.getByTestId('box-length-input');
+    await lengthInput.fill("5'");
+    await lengthInput.press('Enter');
+    await expect(lengthInput).toHaveValue("5'");
   });
 
   test('can edit box rotation in properties panel', async ({ page }) => {

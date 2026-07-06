@@ -64,7 +64,7 @@ function elementOverlapsRect(
   allElements: Element[],
 ): boolean {
   if (el.type === 'box') {
-    return rectsOverlap(el.x, el.y, el.width, el.height, rx, ry, rw, rh);
+    return rectsOverlap(el.x, el.y, el.width, el.length, rx, ry, rw, rh);
   }
   if (el.type === 'door' || el.type === 'window') {
     const center = openingCenter(el, allElements);
@@ -250,7 +250,7 @@ export function DrawingCanvas() {
         minX = Math.min(minX, el.x);
         minY = Math.min(minY, el.y);
         maxX = Math.max(maxX, el.x + el.width);
-        maxY = Math.max(maxY, el.y + el.height);
+        maxY = Math.max(maxY, el.y + el.length);
       }
       // Openings have no independent bounds — their host wall covers them
     }
@@ -1096,9 +1096,9 @@ export function DrawingCanvas() {
     const x = Math.min(start.x, end.x);
     const y = Math.min(start.y, end.y);
     const width = Math.abs(end.x - start.x);
-    const height = Math.abs(end.y - start.y);
-    if (width < 0.5 || height < 0.5) return;
-    addElement({ id: nanoid(), type: 'box', x, y, width, height, rotation: 0 });
+    const length = Math.abs(end.y - start.y);
+    if (width < 0.5 || length < 0.5) return;
+    addElement({ id: nanoid(), type: 'box', x, y, width, length, rotation: 0 });
   }
 
   // ── Wheel: pinch/Ctrl+scroll → zoom, two-finger scroll → pan ────
