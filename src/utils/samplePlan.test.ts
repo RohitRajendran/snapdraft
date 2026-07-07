@@ -59,7 +59,7 @@ describe('createSampleElements', () => {
         expect(el.x).toBeLessThan(MAX_FT);
         expect(el.y).toBeLessThan(MAX_FT);
         expect(el.width).toBeLessThan(MAX_FT);
-        expect(el.height).toBeLessThan(MAX_FT);
+        expect(el.length).toBeLessThan(MAX_FT);
       }
     }
   });

@@ -15,12 +15,12 @@ async function setupSingleLegacyBox(page: Page) {
       JSON.stringify([
         {
           id,
-          version: 1,
+          version: 2,
           name: 'Legacy',
           createdAt: Date.now(),
           updatedAt: Date.now(),
           elements: [
-            { id: 'legacy-box', type: 'box', x: 0, y: 0, width: 4, height: 3, rotation: 0 },
+            { id: 'legacy-box', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0 },
           ],
         },
       ]),

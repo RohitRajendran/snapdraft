@@ -15,7 +15,7 @@ export type Box = {
   x: number; // in feet
   y: number; // in feet
   width: number; // in feet
-  height: number; // in feet
+  length: number; // in feet
   rotation: number; // in degrees
   label?: string;
   color?: string; // hex string; undefined = legacy default (Blueprint Blue)

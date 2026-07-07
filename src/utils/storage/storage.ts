@@ -3,17 +3,38 @@ import type { FloorPlan } from '../../types';
 
 const STORAGE_KEY = 'snapdraft_floorplans';
 const ACTIVE_KEY = 'snapdraft_active';
-export const FLOORPLAN_VERSION = 1;
+export const FLOORPLAN_VERSION = 2;
 
 type LegacyFloorPlan = Omit<FloorPlan, 'version'> & {
   version?: unknown;
 };
 
+// v1 boxes stored their second dimension as `height`; v2 renamed it to `length`.
+function migrateBoxHeightToLength(elements: unknown[]): FloorPlan['elements'] {
+  return (elements ?? []).map((el) => {
+    if (typeof el !== 'object' || el === null) return el as FloorPlan['elements'][number];
+    const elem = el as Record<string, unknown>;
+    if (elem.type === 'box' && 'height' in elem && !('length' in elem)) {
+      const { height, ...rest } = elem;
+      return { ...rest, length: height } as FloorPlan['elements'][number];
+    }
+    return el as FloorPlan['elements'][number];
+  });
+}
+
 function normalizeFloorPlan(plan: LegacyFloorPlan): FloorPlan | null {
   if (typeof plan !== 'object' || plan === null) return null;
 
   if (plan.version === undefined) {
-    return { ...plan, version: FLOORPLAN_VERSION };
+    return normalizeFloorPlan({ ...plan, version: 1 });
+  }
+
+  if (plan.version === 1) {
+    return {
+      ...plan,
+      version: 2,
+      elements: migrateBoxHeightToLength((plan as unknown as FloorPlan).elements),
+    } as FloorPlan;
   }
 
   if (plan.version === FLOORPLAN_VERSION) {
@@ -37,12 +58,11 @@ export function loadFloorPlans(): FloorPlan[] {
       .map((plan) => normalizeFloorPlan(plan as LegacyFloorPlan))
       .filter((plan): plan is FloorPlan => plan !== null);
 
-    const needsMigration = rawPlans.some(
-      (plan) =>
-        typeof plan === 'object' &&
-        plan !== null &&
-        (!('version' in plan) || (plan as { version?: unknown }).version === undefined),
-    );
+    const needsMigration = rawPlans.some((plan) => {
+      if (typeof plan !== 'object' || plan === null) return false;
+      const version = (plan as { version?: unknown }).version;
+      return version === undefined || version === 1;
+    });
 
     if (needsMigration) {
       saveFloorPlans(plans);
@@ -107,7 +127,9 @@ export function parseImportedPlan(raw: unknown): FloorPlan | null {
       if (typeof elem.x !== 'number' || !isFinite(elem.x as number)) return null;
       if (typeof elem.y !== 'number' || !isFinite(elem.y as number)) return null;
       if (typeof elem.width !== 'number' || !isFinite(elem.width as number)) return null;
-      if (typeof elem.height !== 'number' || !isFinite(elem.height as number)) return null;
+      // Accept legacy `height` (pre-rename, schema v1) alongside current `length`.
+      const boxLength = elem.length !== undefined ? elem.length : elem.height;
+      if (typeof boxLength !== 'number' || !isFinite(boxLength as number)) return null;
       if (typeof elem.rotation !== 'number' || !isFinite(elem.rotation as number)) return null;
       if (elem.label !== undefined && typeof elem.label !== 'string') return null;
       if (elem.color !== undefined && typeof elem.color !== 'string') return null;

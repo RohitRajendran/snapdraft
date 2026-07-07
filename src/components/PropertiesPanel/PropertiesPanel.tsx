@@ -128,11 +128,11 @@ function BoxProperties({
         testId="box-width-input"
       />
       <FtInInput
-        label="Height"
-        value={box.height}
-        onChange={(h) => updateElement(box.id, { height: h })}
+        label="Length"
+        value={box.length}
+        onChange={(l) => updateElement(box.id, { length: l })}
         min={0.1}
-        testId="box-height-input"
+        testId="box-length-input"
       />
       <div className={styles.field}>
         <span className={styles.fieldLabel}>Color</span>

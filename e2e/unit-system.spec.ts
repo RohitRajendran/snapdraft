@@ -80,7 +80,7 @@ test.describe('Unit system', () => {
     await page.mouse.click(centerX, centerY);
 
     await expect(page.getByTestId('box-width-input')).toHaveValue(/m$/);
-    await expect(page.getByTestId('box-height-input')).toHaveValue(/m$/);
+    await expect(page.getByTestId('box-length-input')).toHaveValue(/m$/);
   });
 
   test('editing box width in metric stores the correct feet value', async ({ page }) => {
@@ -181,6 +181,6 @@ test.describe('Unit system', () => {
 
     // Properties should display the stored feet values converted to metric
     await expect(page.getByTestId('box-width-input')).toHaveValue('2 m');
-    await expect(page.getByTestId('box-height-input')).toHaveValue('1 m');
+    await expect(page.getByTestId('box-length-input')).toHaveValue('1 m');
   });
 });

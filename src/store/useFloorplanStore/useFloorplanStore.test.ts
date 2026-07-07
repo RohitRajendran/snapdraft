@@ -19,7 +19,7 @@ const box = (id = 'b1'): Element => ({
   x: 1,
   y: 1,
   width: 4,
-  height: 3,
+  length: 3,
   rotation: 0,
 });
 
@@ -216,7 +216,7 @@ describe('updateElement', () => {
     useFloorplanStore.getState().addElement(box());
     useFloorplanStore.getState().updateElement('b1', { width: 10 });
     const el = getElements()[0] as Extract<Element, { type: 'box' }>;
-    expect(el.height).toBe(3); // unchanged
+    expect(el.length).toBe(3); // unchanged
     expect(el.x).toBe(1); // unchanged
   });
 

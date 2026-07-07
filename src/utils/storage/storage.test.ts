@@ -54,6 +54,48 @@ describe('loadFloorPlans', () => {
     expect(loadFloorPlans()).toEqual([]);
   });
 
+  it('migrates v1 plans, renaming box `height` to `length`, and persists the upgrade', () => {
+    const legacyPlan = {
+      ...mockPlan,
+      version: 1,
+      elements: [{ id: 'b1', type: 'box', x: 0, y: 0, width: 4, height: 3, rotation: 0 }],
+    };
+    localStorage.setItem('snapdraft_floorplans', JSON.stringify([legacyPlan]));
+
+    const loaded = loadFloorPlans();
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0].version).toBe(FLOORPLAN_VERSION);
+    const box = loaded[0].elements[0] as unknown as { length: number; height?: number };
+    expect(box.length).toBe(3);
+    expect(box.height).toBeUndefined();
+
+    const stored = JSON.parse(localStorage.getItem('snapdraft_floorplans')!);
+    expect(stored[0].version).toBe(FLOORPLAN_VERSION);
+    expect(stored[0].elements[0].length).toBe(3);
+    expect(stored[0].elements[0].height).toBeUndefined();
+  });
+
+  it('leaves non-box v1 elements untouched during migration', () => {
+    const legacyPlan = {
+      ...mockPlan,
+      version: 1,
+      elements: [
+        {
+          id: 'w1',
+          type: 'wall',
+          points: [
+            { x: 0, y: 0 },
+            { x: 5, y: 0 },
+          ],
+        },
+      ],
+    };
+    localStorage.setItem('snapdraft_floorplans', JSON.stringify([legacyPlan]));
+
+    const loaded = loadFloorPlans();
+    expect(loaded[0].elements).toEqual(legacyPlan.elements);
+  });
+
   it('ignores plans with unsupported versions', () => {
     localStorage.setItem(
       'snapdraft_floorplans',
@@ -228,7 +270,7 @@ describe('parseImportedPlan', () => {
   it('returns null for invalid box fields', () => {
     const plan = {
       ...mockPlan,
-      elements: [{ id: 'b1', type: 'box', x: NaN, y: 0, width: 4, height: 3, rotation: 0 }],
+      elements: [{ id: 'b1', type: 'box', x: NaN, y: 0, width: 4, length: 3, rotation: 0 }],
     };
     expect(parseImportedPlan(plan)).toBeNull();
   });
@@ -237,7 +279,7 @@ describe('parseImportedPlan', () => {
     const plan = {
       ...mockPlan,
       elements: [
-        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, height: 3, rotation: 0, label: 42 },
+        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0, label: 42 },
       ],
     };
     expect(parseImportedPlan(plan)).toBeNull();
@@ -247,7 +289,7 @@ describe('parseImportedPlan', () => {
     const plan = {
       ...mockPlan,
       elements: [
-        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, height: 3, rotation: 0, label: 'Room' },
+        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0, label: 'Room' },
       ],
     };
     expect(parseImportedPlan(plan)).not.toBeNull();
@@ -257,7 +299,7 @@ describe('parseImportedPlan', () => {
     const plan = {
       ...mockPlan,
       elements: [
-        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, height: 3, rotation: 0, color: 42 },
+        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0, color: 42 },
       ],
     };
     expect(parseImportedPlan(plan)).toBeNull();
@@ -267,7 +309,7 @@ describe('parseImportedPlan', () => {
     const plan = {
       ...mockPlan,
       elements: [
-        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, height: 3, rotation: 0, color: '#2d5490' },
+        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0, color: '#2d5490' },
       ],
     };
     expect(parseImportedPlan(plan)).not.toBeNull();
@@ -276,11 +318,34 @@ describe('parseImportedPlan', () => {
   it('accepts a box without color field (backward compat)', () => {
     const plan = {
       ...mockPlan,
-      elements: [{ id: 'b1', type: 'box', x: 0, y: 0, width: 4, height: 3, rotation: 0 }],
+      elements: [{ id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0 }],
     };
     const result = parseImportedPlan(plan);
     expect(result).not.toBeNull();
     expect((result!.elements[0] as { color?: string }).color).toBeUndefined();
+  });
+
+  it('accepts a legacy (v1) box using `height` and migrates it to `length`', () => {
+    const plan = {
+      ...mockPlan,
+      version: 1,
+      elements: [{ id: 'b1', type: 'box', x: 0, y: 0, width: 4, height: 3, rotation: 0 }],
+    };
+    const result = parseImportedPlan(plan);
+    expect(result).not.toBeNull();
+    expect(result!.version).toBe(FLOORPLAN_VERSION);
+    const box = result!.elements[0] as unknown as { length: number; height?: number };
+    expect(box.length).toBe(3);
+    expect(box.height).toBeUndefined();
+  });
+
+  it('returns null for a legacy box missing both height and length', () => {
+    const plan = {
+      ...mockPlan,
+      version: 1,
+      elements: [{ id: 'b1', type: 'box', x: 0, y: 0, width: 4, rotation: 0 }],
+    };
+    expect(parseImportedPlan(plan)).toBeNull();
   });
 
   it('returns null for unknown element type', () => {
@@ -364,7 +429,7 @@ describe('encodePlanToUrl / decodePlanFromUrl', () => {
             { x: 5, y: 0 },
           ],
         },
-        { id: 'b1', type: 'box', x: 1, y: 1, width: 3, height: 2, rotation: 0 },
+        { id: 'b1', type: 'box', x: 1, y: 1, width: 3, length: 2, rotation: 0 },
       ],
     };
     const url = encodePlanToUrl(planWithElements);
