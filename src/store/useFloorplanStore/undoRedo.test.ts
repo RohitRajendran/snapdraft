@@ -17,7 +17,7 @@ const box = (id: string): Element => ({
   x: 1,
   y: 1,
   width: 4,
-  height: 3,
+  length: 3,
   rotation: 0,
 });
 

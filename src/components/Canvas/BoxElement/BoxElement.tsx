@@ -25,7 +25,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
   const bx = ftToPx(box.x);
   const by = ftToPx(box.y);
   const bw = ftToPx(box.width);
-  const bh = ftToPx(box.height);
+  const bl = ftToPx(box.length);
 
   function handleDragStart() {
     if (isRotatingRef.current) {
@@ -42,7 +42,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
     if (ids.size <= 1) return;
     const node = e.target;
     const dxFt = pxToFt(node.x()) - (box.x + box.width / 2);
-    const dyFt = pxToFt(node.y()) - (box.y + box.height / 2);
+    const dyFt = pxToFt(node.y()) - (box.y + box.length / 2);
     const stage = node.getStage();
     if (!stage) return;
     const allEls = useFloorplanStore.getState().activePlan()?.elements ?? [];
@@ -54,7 +54,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
       if (!other) continue;
       if (el.type === 'box') {
         other.x(ftToPx(el.x + el.width / 2 + dxFt));
-        other.y(ftToPx(el.y + el.height / 2 + dyFt));
+        other.y(ftToPx(el.y + el.length / 2 + dyFt));
       } else if (el.type === 'wall') {
         other.x(ftToPx(dxFt));
         other.y(ftToPx(dyFt));
@@ -67,19 +67,19 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
     const node = e.target;
     // node.x()/y() is the center (anchor) — subtract half-size to get top-left
     const rawXFt = pxToFt(node.x()) - box.width / 2;
-    const rawYFt = pxToFt(node.y()) - box.height / 2;
+    const rawYFt = pxToFt(node.y()) - box.length / 2;
 
     const ids = dragSelectionRef.current;
     dragSelectionRef.current = new Set();
 
     if (ids.size > 1 && onGroupDrag) {
-      node.position({ x: ftToPx(box.x + box.width / 2), y: ftToPx(box.y + box.height / 2) });
+      node.position({ x: ftToPx(box.x + box.width / 2), y: ftToPx(box.y + box.length / 2) });
       onGroupDrag(box.id, rawXFt - box.x, rawYFt - box.y, ids);
       return;
     }
 
     updateElement(box.id, { x: rawXFt, y: rawYFt });
-    node.position({ x: ftToPx(rawXFt + box.width / 2), y: ftToPx(rawYFt + box.height / 2) });
+    node.position({ x: ftToPx(rawXFt + box.width / 2), y: ftToPx(rawYFt + box.length / 2) });
   }
 
   function handleRotatePointerDown(e: Konva.KonvaEventObject<PointerEvent>) {
@@ -96,7 +96,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
       const abs = group!.getAbsolutePosition();
       const s = stage!.scaleX();
       const cx = abs.x + (bw / 2) * s;
-      const cy = abs.y + (bh / 2) * s;
+      const cy = abs.y + (bl / 2) * s;
       const rawAngle = (Math.atan2(pos.y - cy, pos.x - cx) * 180) / Math.PI + 90;
       return Math.round(rawAngle / 5) * 5;
     }
@@ -116,7 +116,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
     stage.on('pointerup.rot', onUp);
   }
 
-  const label = box.label || `${formatFeet(box.width)} × ${formatFeet(box.height)}`;
+  const label = box.label || `${formatFeet(box.width)} × ${formatFeet(box.length)}`;
   const handleOffset = HANDLE_OFFSET_PX / zoom;
 
   return (
@@ -124,9 +124,9 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
       ref={groupRef}
       id={`sd-${box.id}`}
       x={bx + bw / 2}
-      y={by + bh / 2}
+      y={by + bl / 2}
       offsetX={bw / 2}
-      offsetY={bh / 2}
+      offsetY={bl / 2}
       rotation={box.rotation}
       draggable={activeTool === 'select'}
       onDragStart={handleDragStart}
@@ -137,7 +137,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
     >
       <Rect
         width={bw}
-        height={bh}
+        height={bl}
         stroke={selected ? '#0066cc' : '#2d5490'}
         strokeWidth={(selected ? 2 : 1.5) / zoom}
         fill={selected ? 'rgba(0,102,204,0.06)' : 'rgba(74,111,165,0.06)'}

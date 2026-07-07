@@ -364,7 +364,7 @@ function moveOtherSelected(
     if (!other) continue;
     if (el.type === 'box') {
       other.x(ftToPx(el.x + el.width / 2 + dxFt));
-      other.y(ftToPx(el.y + el.height / 2 + dyFt));
+      other.y(ftToPx(el.y + el.length / 2 + dyFt));
     } else if (el.type === 'wall') {
       other.x(ftToPx(dxFt));
       other.y(ftToPx(dyFt));

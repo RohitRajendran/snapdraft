@@ -21,7 +21,7 @@ const box: Element = {
   x: 0,
   y: 0,
   width: 6,
-  height: 4,
+  length: 4,
   rotation: 0,
   label: 'Sofa',
 };
@@ -82,11 +82,11 @@ describe('PropertiesPanel', () => {
   });
 
   describe('Box properties', () => {
-    it('shows the box panel with width, height, rotation and label inputs', () => {
+    it('shows the box panel with width, length, rotation and label inputs', () => {
       selectElement(box);
       render(<PropertiesPanel />);
       expect(screen.getByTestId('box-width-input')).toHaveValue("6'");
-      expect(screen.getByTestId('box-height-input')).toHaveValue("4'");
+      expect(screen.getByTestId('box-length-input')).toHaveValue("4'");
       expect(screen.getByTestId('box-rotation-input')).toHaveValue(0);
       expect(screen.getByTestId('box-label-input')).toHaveValue('Sofa');
     });

@@ -390,7 +390,7 @@ describe('findNearestWallSegment', () => {
 
   it('ignores non-wall elements', () => {
     const els: Element[] = [
-      { id: 'b1', type: 'box', x: 0, y: 0, width: 10, height: 1, rotation: 0 },
+      { id: 'b1', type: 'box', x: 0, y: 0, width: 10, length: 1, rotation: 0 },
     ];
     expect(findNearestWallSegment({ x: 5, y: 0 }, els, 1.0)).toBeNull();
   });
