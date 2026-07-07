@@ -11,18 +11,18 @@
 }
 
 .card {
-  background: #f5f0e8;
-  border: 1px solid #c8c4bc;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 28px;
   width: 560px;
   max-width: 90vw;
-  height: 560px;
+  height: 565px;
   max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-body);
 }
 
 .tabContent {
@@ -30,7 +30,7 @@
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #d0ccc4 transparent;
+  scrollbar-color: var(--border-light) transparent;
 }
 
 .tabContent::-webkit-scrollbar {
@@ -42,7 +42,7 @@
 }
 
 .tabContent::-webkit-scrollbar-thumb {
-  background: #d0ccc4;
+  background: var(--border-light);
   border-radius: 2px;
 }
 
@@ -60,17 +60,18 @@
 }
 
 .title {
-  font-size: 18px;
+  font-family: var(--font);
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #1a1a1a;
+  color: var(--ink-dark);
 }
 
 .tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid #d0ccc4;
+  border-bottom: 1px solid var(--border-light);
   margin-bottom: 20px;
 }
 
@@ -80,29 +81,33 @@
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6a6a6a;
+  color: var(--ink-light);
   cursor: pointer;
   padding: 8px 16px;
   min-height: 40px;
   touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .tab:hover {
-  color: #2c2c2c;
+  color: var(--ink);
 }
 
 .tab:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
 .tabActive {
-  color: #1a1a1a;
-  border-bottom-color: #2c2c2c;
+  color: var(--ink-dark);
+  border-bottom-color: var(--ink);
 }
 
 .preferences {
@@ -121,12 +126,12 @@
 .prefLabel {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--ink-dark);
 }
 
 .unitToggle {
   display: flex;
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
   width: fit-content;
@@ -136,33 +141,37 @@
   padding: 6px 18px;
   min-height: 44px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6a6a6a;
+  color: var(--ink-light);
   background: transparent;
   border: none;
   cursor: pointer;
   touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .unitOption:hover {
-  color: #2c2c2c;
+  color: var(--ink);
 }
 
 .unitOption:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
 .unitOptionActive {
-  background: #2c2c2c;
-  color: #f5f0e8;
+  background: var(--ink);
+  color: var(--bg);
 }
 
 .unitOptionActive:hover {
-  color: #f5f0e8;
+  color: var(--bg);
 }
 
 .about {
@@ -173,9 +182,9 @@
 }
 
 .aboutText {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
-  color: #2c2c2c;
+  color: var(--ink);
   margin: 0;
 }
 
@@ -192,22 +201,22 @@
 }
 
 .aboutLink {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: #2c2c2c;
+  color: var(--ink);
   text-decoration: none;
-  border-bottom: 1px solid #2c2c2c;
+  border-bottom: 1px solid var(--ink);
   padding-bottom: 1px;
 }
 
 .aboutLink:hover {
-  color: #4a6fa5;
-  border-bottom-color: #4a6fa5;
+  color: var(--ink-dark);
+  border-bottom-color: var(--ink-dark);
 }
 
 .subtitle {
-  font-size: 12px;
-  color: #1a1a1a;
+  font-size: 14px;
+  color: var(--ink-dark);
   letter-spacing: 0.03em;
   margin: 0;
 }
@@ -217,11 +226,11 @@
   margin-bottom: 0;
   padding: 12px 14px;
   background: rgba(255, 255, 255, 0.7);
-  border: 1px solid #d8d2c8;
+  border: 1px solid var(--border-light);
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.4;
-  color: #2c2c2c;
+  color: var(--ink);
 }
 
 .close {
@@ -229,7 +238,7 @@
   border: none;
   font-size: 16px;
   cursor: pointer;
-  color: #2c2c2c;
+  color: var(--ink);
   padding: 4px 8px;
   min-height: 44px;
   min-width: 44px;
@@ -241,11 +250,11 @@
 }
 
 .close:hover {
-  background: #ece8e0;
+  background: var(--surface-hover);
 }
 
 .close:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -261,7 +270,7 @@
   grid-template-columns: auto 1fr;
   align-items: baseline;
   gap: 16px;
-  border-bottom: 1px dashed #d0ccc4;
+  border-bottom: 1px dashed var(--border-light);
   padding: 10px 0;
 }
 
@@ -271,7 +280,7 @@
 
 .action {
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--ink-dark);
   text-align: right;
   overflow-wrap: break-word;
   margin: 0;
@@ -279,7 +288,7 @@
 
 .hint {
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--ink-dark);
   font-weight: 600;
   white-space: nowrap;
   margin: 0;
@@ -300,11 +309,11 @@
 
 .advancedSummary {
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #2c2c2c;
+  color: var(--ink);
   list-style: none;
   min-height: 44px;
   display: flex;
@@ -329,34 +338,38 @@
 }
 
 .startBtn {
-  background: #2c2c2c;
-  color: #f5f0e8;
+  background: var(--ink);
+  color: var(--bg);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-btn);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 10px 24px;
+  padding: 12px 24px;
   cursor: pointer;
   min-height: 44px;
   touch-action: manipulation;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .startBtn:hover {
-  background: #1a1a1a;
+  background: var(--ink-dark);
 }
 
 .startBtn:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .dismiss {
-  font-size: 11px;
-  color: #3a3a3a;
+  font-size: 12px;
+  color: var(--ink-mid);
   letter-spacing: 0.05em;
 }
 

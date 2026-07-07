@@ -9,8 +9,8 @@
 }
 
 .panel {
-  background: #f5f0e8;
-  border: 1px solid #c8c4bc;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 24px;
   display: flex;
@@ -18,7 +18,7 @@
   align-items: center;
   gap: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-body);
   position: relative;
   max-width: 90vw;
 }
@@ -31,7 +31,7 @@
   border: none;
   font-size: 20px;
   cursor: pointer;
-  color: #2c2c2c;
+  color: var(--ink);
   min-height: 44px;
   min-width: 44px;
   border-radius: 6px;
@@ -39,11 +39,11 @@
 }
 
 .closeBtn:hover {
-  background: #ece8e0;
+  background: var(--surface-hover);
 }
 
 .closeBtn:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -52,7 +52,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #2c2c2c;
+  color: var(--ink);
   margin: 0;
   text-align: center;
   max-width: 240px;
@@ -62,8 +62,8 @@
 }
 
 .qrNote {
-  font-size: 12px;
-  color: #3a3a3a;
+  font-size: 14px;
+  color: var(--ink-mid);
   text-align: center;
   margin: 0;
   padding: 20px 0;
@@ -81,13 +81,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #2c2c2c;
-  color: #f5f0e8;
+  background: var(--ink);
+  color: var(--bg);
   border: none;
   border-radius: 8px;
   padding: 10px 12px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.05em;
   cursor: pointer;
   min-height: 44px;
@@ -99,6 +99,6 @@
 }
 
 .actionBtn:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }

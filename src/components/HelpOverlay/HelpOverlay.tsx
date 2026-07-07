@@ -273,7 +273,17 @@ export function HelpOverlay({ onClose }: Props) {
               <div className={styles.notice} data-testid="help-save-note">
                 Your work is saved automatically in this browser on this device.
               </div>
-              <details className={styles.advanced}>
+              <details
+                className={styles.advanced}
+                onToggle={(e) => {
+                  const el = e.currentTarget as HTMLDetailsElement;
+                  if (el.open) {
+                    requestAnimationFrame(() => {
+                      el.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+                    });
+                  }
+                }}
+              >
                 <summary className={styles.advancedSummary}>Advanced shortcuts and tips</summary>
                 <dl className={styles.grid}>
                   {advancedShortcuts.map(({ action, hint }) => (

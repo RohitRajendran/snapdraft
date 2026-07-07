@@ -16,8 +16,8 @@ export default defineConfig({
         background_color: '#f5f0e8',
         display: 'standalone',
         orientation: 'any',
-        start_url: '/',
-        scope: '/',
+        start_url: '/app',
+        scope: '/app',
         icons: [
           {
             src: 'icon-192.png',
@@ -40,6 +40,8 @@ export default defineConfig({
       workbox: {
         // Cache the entire app shell
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallback: 'index.html',
+        navigateFallbackAllowlist: [/^\/app/],
         runtimeCaching: [
           {
             // Cache Google Fonts if ever added

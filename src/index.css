@@ -1,3 +1,37 @@
+:root {
+  /* Colors — primitive */
+  --bg: #f5f0e8;
+  --bg-rgb: 245,240,232;
+  --ink: #2c2c2c;
+  --ink-dark: #1a1a1a;
+  --ink-mid: #4a4a4a;
+  --ink-light: #6a6a6a;
+  --border: #c8c4bc;
+  --border-light: #d0ccc4;
+
+  /* Colors — semantic */
+  --color-destructive: #cc4444;
+  --color-destructive-hover: #b83333;
+  --color-success: #2a7a4a;
+  --focus-ring: #4a6fa5;
+
+  /* Surfaces */
+  --surface-float: rgba(255,255,255,0.95);
+  --surface-hover: #ece8e0;
+
+  /* Typography */
+  --font: 'Courier New', monospace;
+  --font-body: 'Josefin Sans', sans-serif;
+
+  /* Elevation */
+  --shadow: 0 2px 16px rgba(0,0,0,0.08);
+  --shadow-card: 0 2px 16px rgba(0,0,0,0.06);
+
+  /* Shape */
+  --radius-btn: 8px;
+  --radius-card: 12px;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -11,7 +45,8 @@ html, body, #root {
 }
 
 body {
-  background: #f5f0e8;
+  background: var(--bg);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   touch-action: none; /* prevent browser pan/zoom interfering with canvas */

@@ -33,7 +33,7 @@ describe('collectEndpoints', () => {
 
   it('ignores box elements', () => {
     const elements: Element[] = [
-      { id: 'b1', type: 'box', x: 0, y: 0, width: 2, height: 2, rotation: 0 },
+      { id: 'b1', type: 'box', x: 0, y: 0, width: 2, length: 2, rotation: 0 },
     ];
     expect(collectEndpoints(elements)).toHaveLength(0);
   });
@@ -78,7 +78,7 @@ describe('findNearestOnSegments', () => {
 
   it('ignores box elements', () => {
     const boxOnly: Element[] = [
-      { id: 'b1', type: 'box', x: 0, y: 0, width: 10, height: 10, rotation: 0 },
+      { id: 'b1', type: 'box', x: 0, y: 0, width: 10, length: 10, rotation: 0 },
     ];
     expect(findNearestOnSegments({ x: 5, y: 0.1 }, boxOnly)).toBeNull();
   });

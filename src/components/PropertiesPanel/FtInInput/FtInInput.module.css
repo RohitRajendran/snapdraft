@@ -5,33 +5,33 @@
 }
 
 .label {
-  font-size: 9px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #4a4a4a;
-  font-family: 'Courier New', monospace;
+  color: var(--ink-mid);
+  font-family: var(--font-body);
 }
 
 .input {
   background: white;
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 6px 8px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: #2c2c2c;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
   width: 100%;
   box-sizing: border-box;
   min-height: 44px;
 }
 
 .input:focus {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
 .invalid {
-  border-color: #cc4444;
+  border-color: var(--color-destructive);
   background: #fff5f5;
 }
 

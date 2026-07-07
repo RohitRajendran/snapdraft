@@ -6,9 +6,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-float);
   backdrop-filter: blur(8px);
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 8px;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
@@ -26,7 +26,7 @@
   border-radius: 10px;
   background: transparent;
   cursor: pointer;
-  color: #262626;
+  color: var(--ink);
   transition: background 0.15s, color 0.15s;
   min-width: 60px;
   min-height: 60px;
@@ -34,12 +34,12 @@
 }
 
 .tool:hover {
-  background: #f0ede8;
+  background: var(--surface-hover);
 }
 
 .tool.active {
-  background: #2c2c2c;
-  color: #f5f0e8;
+  background: var(--ink);
+  color: var(--bg);
 }
 
 .icon {
@@ -57,9 +57,9 @@
 
 .label {
   font-size: 12px;
-  font-family: 'Courier New', monospace;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -73,7 +73,7 @@
 }
 
 .tool:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -95,23 +95,23 @@
   border-radius: 10px 10px 0 0;
   background: transparent;
   cursor: pointer;
-  color: #262626;
+  color: var(--ink);
   transition: background 0.15s, color 0.15s;
   min-width: 60px;
   touch-action: manipulation;
 }
 
 .selectPanMain:hover {
-  background: #f0ede8;
+  background: var(--surface-hover);
 }
 
 .selectPanMain.active {
-  background: #2c2c2c;
-  color: #ffffff;
+  background: var(--ink);
+  color: white;
 }
 
 .selectPanMain:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -131,19 +131,19 @@
   border-radius: 0 0 10px 10px;
   background: transparent;
   cursor: pointer;
-  color: #262626;
+  color: var(--ink);
   transition: background 0.15s, color 0.15s;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   touch-action: manipulation;
 }
 
 .selectPanFooter:hover {
-  background: #f0ede8;
+  background: var(--surface-hover);
 }
 
 .selectPanFooter.active {
-  background: #1a1a1a;
-  color: #f5f0e8;
+  background: var(--ink-dark);
+  color: var(--bg);
   border-top-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -152,15 +152,15 @@
 }
 
 .selectPanFooter:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .selectPanFooterLabel {
-  font-size: 10px;
-  font-family: 'Courier New', monospace;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: 12px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -174,7 +174,7 @@
 .selectPanDropdown {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 4px;
   z-index: 9999;
@@ -219,18 +219,18 @@
   border-radius: 6px;
   background: transparent;
   cursor: pointer;
-  color: #262626;
+  color: var(--ink);
   width: 100%;
   text-align: left;
   transition: background 0.1s;
 }
 
 .selectPanOption:hover {
-  background: #f0ede8;
+  background: var(--surface-hover);
 }
 
 .optionActive {
-  background: #eceae5;
+  background: var(--surface-hover);
 }
 
 .optionIcon {
@@ -244,15 +244,15 @@
 
 .optionLabel {
   flex: 1;
-  font-size: 13px;
-  font-family: 'Courier New', monospace;
-  font-weight: 700;
+  font-size: 14px;
+  font-family: var(--font-body);
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .optionKey {
   font-size: 11px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font);
   font-weight: 800;
   opacity: 0.45;
   background: rgba(0, 0, 0, 0.07);
@@ -264,7 +264,7 @@
 
 .divider {
   height: 1px;
-  background: #d0ccc4;
+  background: var(--border-light);
   margin: 4px 0;
 }
 
@@ -275,6 +275,11 @@
     left: 50%;
     transform: translateX(-50%);
     flex-direction: row;
+    max-width: calc(100vw - 24px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
 }
 
@@ -284,15 +289,8 @@
     right: 12px;
     bottom: 12px;
     transform: none;
-    display: flex;
-    flex-direction: row;
-    gap: 2px;
+    max-width: none;
     width: auto;
-    padding: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
   }
 
   .tool {

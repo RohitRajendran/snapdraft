@@ -87,7 +87,7 @@ function sameElement(a: Element, b: Element): boolean {
       a.x === b.x &&
       a.y === b.y &&
       a.width === b.width &&
-      a.height === b.height &&
+      a.length === b.length &&
       a.rotation === b.rotation &&
       a.label === b.label
     );

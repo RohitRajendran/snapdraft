@@ -8,13 +8,13 @@
 .dimInput {
   position: absolute;
   width: 100px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font);
   font-size: 12px;
   font-weight: 700;
   background: rgba(255, 255, 255, 0.97);
   border-radius: 4px;
   padding: 4px 8px;
-  color: #2c2c2c;
+  color: var(--ink);
   outline: none;
   pointer-events: auto;
   z-index: 200;
@@ -22,23 +22,23 @@
 }
 
 .dimInputOk {
-  border: 1.5px solid #2d5490;
+  border: 1.5px solid var(--focus-ring);
 }
 
 .dimInputError {
-  border: 1.5px solid #cc4444;
+  border: 1.5px solid var(--color-destructive);
 }
 
 .fitButton {
   position: absolute;
   padding: 6px 10px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  font-weight: 700;
-  background: rgba(245, 240, 232, 0.92);
-  border: 1px solid #c8c4bc;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(var(--bg-rgb), 0.92);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: #2c2c2c;
+  color: var(--ink);
   cursor: pointer;
   backdrop-filter: blur(4px);
   z-index: 50;
@@ -54,7 +54,7 @@
   gap: 8px;
   padding: 10px;
   background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(8px);
@@ -64,22 +64,22 @@
 .mobileWallButton {
   flex: 1 1 0;
   min-height: 44px;
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #f5f0e8;
-  color: #2c2c2c;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   touch-action: manipulation;
 }
 
 .mobileWallCancel {
-  background: #2c2c2c;
-  border-color: #2c2c2c;
-  color: #f5f0e8;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
 }
 
 @media (min-width: 731px) {

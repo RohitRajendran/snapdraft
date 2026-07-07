@@ -3,14 +3,14 @@
   right: 20px;
   top: 60px;
   width: 220px;
-  background: rgba(245, 240, 232, 0.95);
+  background: rgba(var(--bg-rgb), 0.95);
   backdrop-filter: blur(8px);
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   z-index: 100;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-body);
 }
 
 .header {
@@ -22,7 +22,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #2c2c2c;
+  color: var(--ink);
   margin: 0;
 }
 
@@ -45,59 +45,63 @@
 }
 
 .fieldLabel {
-  font-size: 9px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #2c2c2c;
+  color: var(--ink);
 }
 
 .value {
   font-size: 12px;
-  color: #2c2c2c;
+  color: var(--ink);
   font-weight: 600;
 }
 
 .input {
   background: white;
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 6px 8px;
   font-family: inherit;
-  font-size: 12px;
-  color: #2c2c2c;
+  font-size: 14px;
+  color: var(--ink);
   width: 100%;
   box-sizing: border-box;
   min-height: 44px;
 }
 
 .input:focus {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
 .deleteBtn {
   margin-top: 4px;
   background: none;
-  border: 1px solid #cc4444;
+  border: 1px solid var(--color-destructive);
   border-radius: 4px;
-  color: #cc4444;
+  color: var(--color-destructive);
   font-family: inherit;
-  font-size: 10px;
+  font-size: 12px;
   padding: 6px 8px;
   cursor: pointer;
   min-height: 44px;
   touch-action: manipulation;
   letter-spacing: 0.05em;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .deleteBtn:hover {
-  background: #cc4444;
+  background: var(--color-destructive);
   color: white;
 }
 
 .deleteBtn:focus-visible {
-  outline: 2px solid #cc4444;
+  outline: 2px solid var(--color-destructive);
   outline-offset: 2px;
 }
 
@@ -110,29 +114,33 @@
 .toggle {
   flex: 1;
   background: white;
-  border: 1px solid #c8c4bc;
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 6px 8px;
   font-family: inherit;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #2c2c2c;
+  color: var(--ink);
   cursor: pointer;
   min-height: 36px;
   touch-action: manipulation;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .toggle:hover {
-  background: #f0ede8;
+  background: var(--surface-hover);
 }
 
 .toggleActive {
-  background: #2c2c2c;
-  color: #f5f0e8;
-  border-color: #2c2c2c;
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
 }
 
 .toggleActive:hover {

@@ -4,6 +4,8 @@ SnapDraft is a client-side floor plan sketching tool for web and iPad. There is 
 
 Use this file as the source of truth for agent work in this repo. Keep it factual, implementation-oriented, and aligned with the current codebase.
 
+Before building new pages, components, or changing visual styles, read `DESIGN_SYSTEM.md` at the repo root. It defines the font pairing, type scale, spacing scale, color tokens, and component rules in force for both the marketing page and the application.
+
 ## Working Rules
 
 - Start by checking the actual code before changing behavior. This guide is a shortcut, not a substitute for reading the implementation.

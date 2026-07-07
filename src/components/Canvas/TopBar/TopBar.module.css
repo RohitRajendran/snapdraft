@@ -4,39 +4,43 @@
   left: 0;
   right: 0;
   height: 52px;
-  background: rgba(245, 240, 232, 0.95);
+  background: rgba(var(--bg-rgb), 0.95);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid #d0ccc4;
+  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   padding: 0 16px;
   gap: 12px;
   z-index: 100;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-body);
 }
 
 .logo {
   background: none;
   border: none;
-  font-family: inherit;
+  font-family: var(--font);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #2c2c2c;
+  color: var(--ink);
   cursor: pointer;
   padding: 4px 8px;
   min-height: 44px;
   border-radius: 6px;
   touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .logo:hover {
-  background: #ece8e0;
+  background: var(--surface-hover);
 }
 
 .logo:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -49,10 +53,10 @@
 .nameBtn {
   background: none;
   border: none;
-  font-family: inherit;
+  font-family: var(--font);
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--ink-dark);
   cursor: pointer;
   padding: 4px 12px;
   min-height: 44px;
@@ -61,39 +65,39 @@
 }
 
 .nameBtn:hover {
-  background: #ece8e0;
+  background: var(--surface-hover);
 }
 
 .nameBtn:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .nameInput {
   background: white;
-  border: 1px solid #b8c9e0;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  font-family: inherit;
+  font-family: var(--font);
   font-size: 13px;
   padding: 4px 12px;
-  color: #2c2c2c;
+  color: var(--ink);
   min-height: 44px;
   width: 200px;
   text-align: center;
 }
 
 .nameInput:focus {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
 .plansBtn {
   background: none;
-  border: 1px solid #b8b4ac;
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-family: inherit;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--ink-dark);
   cursor: pointer;
   padding: 6px 14px;
   min-height: 44px;
@@ -105,11 +109,11 @@
 }
 
 .plansBtn:hover {
-  background: #ece8e0;
+  background: var(--surface-hover);
 }
 
 .plansBtn:focus-visible {
-  outline: 2px solid #4a6fa5;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 

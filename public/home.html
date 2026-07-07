@@ -1,0 +1,1234 @@
+<!doctype html>
+<!-- 👁 you found it. hi. —rohit -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnapDraft: Sketch Floor Plans in Your Browser</title>
+  <meta name="description" content="Free, offline-first floor plan sketching. Draw walls, place doors, arrange furniture, right in your browser. No account needed." />
+  <link rel="canonical" id="canonical-link" href="" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="SnapDraft: Sketch Floor Plans in Your Browser" />
+  <meta property="og:description" content="Free, offline-first floor plan sketching. Draw walls, place doors, arrange furniture, right in your browser. No account needed." />
+  <meta property="og:image" content="/og-image.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="SnapDraft: Sketch Floor Plans in Your Browser" />
+  <meta name="twitter:description" content="Free, offline-first floor plan sketching. Draw walls, place doors, arrange furniture, right in your browser. No account needed." />
+  <meta name="twitter:image" content="/og-image.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="icon" type="image/svg+xml" href="/brand-mark.svg" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#f5f0e8" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SnapDraft",
+    "applicationCategory": "DesignApplication",
+    "operatingSystem": "Web",
+    "description": "Browser-based floor plan sketching tool. No account needed.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Rohit Rajendran" },
+    "_note": "thanks for reading the source. the app is at /"
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f0e8;
+      --ink: #2c2c2c;
+      --ink-dark: #1a1a1a;
+      --ink-mid: #4a4a4a;
+      --ink-light: #6a6a6a;
+      --blue: #2c4a7a;
+      --blueprint: #2d5490;
+      --blueprint-bg:     rgba(74,111,165,0.06);
+      --blueprint-tint:   rgba(74,111,165,0.08);
+      --blueprint-border: rgba(74,111,165,0.18);
+      --bg-rgb:           245,240,232;
+      --surface-header:   rgba(var(--bg-rgb),0.92);
+      --surface-alt:      rgba(255,255,255,0.35);
+      --color-destructive: #cc4444;
+      --border: #c8c4bc;
+      --border-light: #d0ccc4;
+      --grid-minor: #ccd9e8;
+      --grid-major: #a8bcd4;
+      --shadow: 0 2px 16px rgba(0,0,0,0.08);
+      --shadow-card: 0 2px 16px rgba(0,0,0,0.06);
+      --radius-btn: 8px;
+      --radius-card: 12px;
+      --font: 'Courier New', monospace;
+      --font-body: 'Josefin Sans', sans-serif;
+
+      /* Type scale — Minor Third (×1.2) from 16px base */
+      --ts-xs:   11px;
+      --ts-sm:   12px;
+      --ts-base: 16px;
+      --ts-md:   18px;
+      --ts-lg:   clamp(22px, 2.4vw, 34px);
+      --ts-xl:   clamp(26px, 3vw, 40px);
+      --ts-2xl:  clamp(28px, 3.5vw, 48px);
+      --ts-3xl:  clamp(34px, 5vw, 68px);
+
+      /* Spacing scale (4pt grid; prefer 8pt multiples for new work) */
+      --space-1:  4px;
+      --space-2:  8px;
+      --space-3:  12px;
+      --space-4:  16px;
+      --space-5:  20px;
+      --space-6:  24px;
+      --space-8:  32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --space-14: 56px;
+      --space-16: 64px;
+      --space-20: 80px;
+      --space-25: 100px;
+
+      /* Semantic spacing tokens */
+      --space-content-h:    var(--space-10);  /* 40px — section horizontal padding */
+      --space-content-h-sm: var(--space-6);   /* 24px — mobile horizontal padding */
+      --space-section-v:    var(--space-20);  /* 80px — standard section vertical padding */
+      --space-section-v-sm: var(--space-14);  /* 56px — mobile section vertical padding */
+      --space-hero-v:       var(--space-12);  /* 48px — hero + major element vertical rhythm */
+      --space-feature-gap:  var(--space-16);  /* 64px — two-column feature row gap */
+      --space-grid-gap:     var(--space-10);  /* 40px — steps / use-cases grid gap */
+      --space-cta-v:        var(--space-25);  /* 100px — CTA section padding */
+
+      /* Semantic type tokens — role intent mapped to scale steps */
+      --text-display-size:    var(--ts-3xl);
+      --text-cta-size:        var(--ts-2xl);
+      --text-heading-size:    var(--ts-xl);
+      --text-subheading-size: var(--ts-lg);
+      --text-step-size:       var(--ts-md);
+      --text-body-size:       var(--ts-base);
+      --text-label-size:      var(--ts-sm);
+      --text-chip-size:       var(--ts-xs);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 8px;
+      z-index: 200;
+      padding: var(--space-2) var(--space-4);
+      background: var(--ink);
+      color: var(--bg);
+      font-family: var(--font-body);
+      font-size: var(--text-label-size);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      border-radius: var(--radius-btn);
+    }
+    .skip-link:focus { left: 8px; }
+
+    body {
+      font-family: var(--font-body);
+      font-size: var(--text-body-size);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, .step-number, .nav-logo {
+      font-family: var(--font);
+    }
+
+    /* ── HEADER ─────────────────────────────────── */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-content-h);
+      background: var(--surface-header);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+    }
+    .nav-logo svg { flex-shrink: 0; }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius-btn);
+      font-family: var(--font-body);
+      font-size: var(--text-label-size);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 10px 18px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: var(--ink-dark); }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: white;
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-btn);
+      font-family: var(--font-body);
+      font-size: var(--text-label-size);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 10px 18px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-secondary:hover { background: #ece8e0; border-color: #b8b4ac; }
+
+    /* ── HERO ────────────────────────────────────── */
+    #hero {
+      min-height: calc(100vh - 56px);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: var(--space-hero-v);
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: var(--space-hero-v) var(--space-content-h);
+    }
+
+    .hero-text { display: flex; flex-direction: column; gap: 0; }
+
+    .hero-eyebrow {
+      font-size: var(--text-label-size);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: var(--space-5);
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .eyebrow-dot { color: var(--border); }
+
+    .free-badge {
+      position: relative;
+      cursor: help;
+      border-bottom: 1px dashed var(--border);
+    }
+    .free-badge:hover .free-tooltip,
+    .free-badge:focus .free-tooltip { opacity: 1; pointer-events: auto; transform: translateY(0); outline: none; }
+    .free-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0%;
+      transform: translateX(-50%) translateY(4px);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-label-size);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      color: var(--ink-mid);
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      z-index: 10;
+    }
+    .free-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 5%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--border);
+    }
+
+    h1 {
+      font-size: var(--text-display-size);
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: 0.02em;
+      color: var(--ink-dark);
+      margin-bottom: var(--space-5);
+      text-indent: 0;
+    }
+
+    .hero-sub {
+      line-height: 1.75;
+      color: var(--ink-mid);
+      margin-bottom: var(--space-4);
+      max-width: 440px;
+    }
+
+    .hero-sub-small {
+      color: var(--ink-light);
+      letter-spacing: 0.03em;
+      margin-bottom: 28px;
+    }
+
+    .hero-ctas { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+
+    .hero-svg-wrapper {
+      background: rgba(255,255,255,0.5);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      overflow: hidden;
+      position: relative;
+    }
+
+
+    /* furniture animation */
+    .furniture-item {
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .furniture-item.fi-0 { transition-delay: 0ms; }
+    .furniture-item.fi-1 { transition-delay: 80ms; }
+    .furniture-item.fi-2 { transition-delay: 160ms; }
+    .furniture-item.fi-3 { transition-delay: 240ms; }
+    .furniture-item.fi-4 { transition-delay: 320ms; }
+    .furniture-item.visible { opacity: 1; }
+
+    .furniture-item { cursor: default; }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    /* door arc — floor plan only, no interaction */
+    .door-arc {
+      transform-box: fill-box;
+      transform-origin: 0% 100%;
+    }
+
+    /* ── FEATURES ───────────────────────────────── */
+    #features {
+      border-top: 1px solid var(--border-light);
+    }
+    .features-inner {
+      padding: var(--space-section-v) var(--space-content-h);
+      max-width: 1160px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: var(--text-label-size);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: var(--space-3);
+    }
+
+    .section-heading {
+      font-size: var(--text-heading-size);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--ink-dark);
+      margin-bottom: var(--space-hero-v);
+      line-height: 1.12;
+    }
+
+    /* ── FEATURE ROWS ───────────────────────────────── */
+    .features-rows { display: flex; flex-direction: column; }
+
+    .feature-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-feature-gap);
+      align-items: center;
+      padding: var(--space-feature-gap) 0;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .feature-row-eyebrow {
+      font-size: var(--text-chip-size);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: var(--space-3);
+    }
+
+    .feature-row-heading {
+      font-size: var(--text-subheading-size);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--ink-dark);
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+
+    .feature-row-body {
+      line-height: 1.85;
+      color: var(--ink-mid);
+      max-width: 440px;
+    }
+
+    .feature-row-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      margin-top: var(--space-5);
+    }
+
+    .feature-chip {
+      font-size: var(--text-chip-size);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--ink-mid);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+    }
+
+    .feature-row-visual {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .feature-row-visual svg { display: block; width: 100%; }
+
+    .feature-row.flip .feature-row-visual { order: -1; }
+
+    .use-case-icon { width: 40px; height: 40px; margin-bottom: 10px; }
+
+    /* ── HOW IT WORKS ───────────────────────────── */
+    #how {
+      padding: var(--space-section-v) var(--space-content-h);
+      border-top: 1px solid var(--border-light);
+      background: var(--surface-alt);
+    }
+
+    .how-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-grid-gap);
+      margin-top: var(--space-hero-v);
+    }
+
+    .step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .step-number {
+      position: absolute;
+      top: -8px;
+      left: -4px;
+      font-size: 88px;
+      font-weight: 700;
+      color: rgba(44,74,122,0.07);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .step-content { position: relative; z-index: 1; padding-top: var(--space-hero-v); }
+
+    .step-label {
+      font-size: var(--text-label-size);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: var(--space-2);
+    }
+
+    .step-title {
+      font-size: var(--text-step-size);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--ink-dark);
+      margin-bottom: var(--space-2);
+    }
+
+    .step-body {
+      line-height: 1.7;
+      color: var(--ink-mid);
+    }
+
+    /* ── USE CASES ──────────────────────────────── */
+    #uses {
+      padding: var(--space-section-v) var(--space-content-h);
+      border-top: 1px solid var(--border-light);
+    }
+
+    .tools-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+    }
+
+    /* ── WORKS EVERYWHERE ───────────────────────── */
+    #everywhere {
+      padding: var(--space-section-v) var(--space-content-h);
+      border-top: 1px solid var(--border-light);
+      background: var(--surface-alt);
+    }
+
+    .everywhere-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-feature-gap);
+      align-items: center;
+    }
+
+    .everywhere-body {
+      line-height: 1.8;
+      color: var(--ink-mid);
+      margin-top: var(--space-4);
+      max-width: 440px;
+    }
+
+    .badge-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: var(--text-label-size);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--ink-mid);
+    }
+    .badge-check { color: var(--ink-mid); font-size: 13px; }
+
+    /* ── FOOTER CTA ─────────────────────────────── */
+    #cta {
+      padding: var(--space-cta-v) var(--space-content-h);
+      border-top: none;
+      text-align: center;
+      background: var(--ink-dark);
+    }
+    #cta .section-label { color: rgba(255,255,255,0.65); }
+    #cta .cta-heading { color: var(--bg); }
+    #cta .cta-sub { color: rgba(var(--bg-rgb),0.8); }
+    #cta .btn-primary { background: var(--bg); color: var(--ink-dark); }
+    #cta .btn-primary:hover { background: white; }
+    #cta .cta-link { color: rgba(var(--bg-rgb),0.68); border-color: rgba(var(--bg-rgb),0.3); }
+    #cta .cta-link:hover { color: var(--bg); border-color: rgba(var(--bg-rgb),0.6); }
+
+    .cta-inner { max-width: 640px; margin: 0 auto; }
+
+    .cta-heading {
+      font-size: var(--text-cta-size);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--ink-dark);
+      margin-bottom: var(--space-4);
+      line-height: 1.1;
+    }
+
+    .cta-sub {
+      line-height: 1.75;
+      color: var(--ink-mid);
+      margin-bottom: 36px;
+    }
+
+    .cta-links {
+      margin-top: 28px;
+      display: flex;
+      justify-content: center;
+      gap: var(--space-6);
+    }
+
+    .cta-link {
+      font-size: var(--text-label-size);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 2px;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .cta-link:hover { color: var(--ink); border-color: var(--ink); }
+
+    /* ── SITE FOOTER ────────────────────────────── */
+    .site-footer {
+      border-top: 1px solid var(--border-light);
+      padding: var(--space-5) var(--space-content-h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-label-size);
+      letter-spacing: 0.04em;
+      color: var(--ink-light);
+    }
+
+
+    /* ── SCROLL REVEAL ──────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ─────────────────────────────── */
+    @media (max-width: 860px) {
+      #hero { grid-template-columns: 1fr; gap: var(--space-grid-gap); padding: var(--space-hero-v) var(--space-content-h-sm); min-height: auto; }
+      .hero-svg-wrapper { max-width: 480px; margin: 0 auto; }
+      .feature-row { grid-template-columns: 1fr; gap: 28px; padding: var(--space-hero-v) 0; }
+      .feature-row.flip .feature-row-visual { order: 0; }
+      .feature-row-body { max-width: none; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .everywhere-inner { grid-template-columns: 1fr; gap: var(--space-grid-gap); }
+      .site-header { padding: 0 var(--space-content-h-sm); }
+      .features-inner { padding: var(--space-section-v-sm) var(--space-content-h-sm); }
+      #how, #uses, #everywhere, #cta { padding: var(--space-section-v-sm) var(--space-content-h-sm); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal, .furniture-item { transition: none !important; opacity: 1 !important; transform: none !important; }
+      .dim-line-anim, .dim-tick-anim { animation: none !important; opacity: 1 !important; stroke-dashoffset: 0 !important; }
+      .playing * { animation-duration: 0.001s !important; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-ctas { flex-direction: column; }
+      .hero-ctas .btn-primary, .hero-ctas .btn-secondary { text-align: center; justify-content: center; }
+      .badge-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#hero-heading" class="skip-link">Skip to main content</a>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <a href="/home.html" class="nav-logo" id="sd-logo" aria-label="SnapDraft home">
+      SnapDraft
+    </a>
+    <a href="/app" class="btn-primary">Open App →</a>
+  </header>
+
+  <main>
+
+    <!-- HERO -->
+    <section id="hero" aria-labelledby="hero-heading">
+      <div class="hero-text">
+        <div class="hero-eyebrow">
+          <span class="free-badge" tabindex="0" role="note" aria-label="Free — Yes, actually free. No credit card, no trial, no catch.">FREE<span class="free-tooltip" aria-hidden="true">Yes, actually free. No credit card, no trial, no catch.</span></span>
+          <span class="eyebrow-dot">·</span>
+          OFFLINE-FIRST
+          <span class="eyebrow-dot">·</span>
+          NO ACCOUNT NEEDED
+        </div>
+        <h1 id="hero-heading">Sketch floor<br>plans in your<br>browser.</h1>
+        <p class="hero-sub">Professional CAD has a learning curve measured in days. Graph paper doesn't snap to a grid. SnapDraft is the middle: precise enough to trust, fast enough to actually use.</p>
+        <p class="hero-sub-small">From idea to floor plan in minutes. No tutorial required.</p>
+        <div class="hero-ctas">
+          <a href="/app" class="btn-primary">Start Drawing →</a>
+          <a href="#how" class="btn-secondary">See How It Works</a>
+        </div>
+      </div>
+
+      <div class="hero-svg-wrapper" id="hero-svg-wrapper">
+        <svg id="hero-svg" viewBox="0 0 560 460" xmlns="http://www.w3.org/2000/svg"
+          style="width:100%;display:block;" aria-label="Floor plan sketch of a bedroom with furniture">
+          <defs>
+            <pattern id="hp-minor" width="28" height="28" patternUnits="userSpaceOnUse">
+              <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#ccd9e8" stroke-width="0.5"/>
+            </pattern>
+            <pattern id="hp-major" width="140" height="140" patternUnits="userSpaceOnUse">
+              <rect width="140" height="140" fill="url(#hp-minor)"/>
+              <path d="M 140 0 L 0 0 0 140" fill="none" stroke="#a8bcd4" stroke-width="0.75"/>
+            </pattern>
+          </defs>
+
+          <!-- grid -->
+          <rect width="560" height="460" fill="#f5f0e8"/>
+          <rect width="560" height="460" fill="url(#hp-major)"/>
+
+          <!-- WALLS: 15ft×11ft room at 28px/ft. Origin (76,66). Width=420, Height=308 -->
+          <!-- Bottom wall has door gap at x=216..300 (3ft door, center-left) -->
+          <!-- Left wall has window gap at y=150..234 (3ft window) -->
+          <polyline
+            points="76,374 76,234"
+            fill="none" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
+          <!-- window gap in left wall -->
+          <polyline
+            points="76,150 76,66 496,66 496,374 300,374"
+            fill="none" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
+          <!-- door gap in bottom wall -->
+          <polyline
+            points="76,374 216,374"
+            fill="none" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
+
+          <!-- Window symbol: two thin parallel pane lines spanning the wall gap -->
+          <line x1="71" y1="150" x2="71" y2="234" stroke="#2c2c2c" stroke-width="1.5"/>
+          <line x1="81" y1="150" x2="81" y2="234" stroke="#2c2c2c" stroke-width="1.5"/>
+
+          <!-- Door (bottom wall) — hinge at (216,374), swings into room -->
+          <g id="hero-door">
+            <!-- door leaf -->
+            <line id="door-leaf" x1="216" y1="374" x2="216" y2="290" stroke="#2c2c2c" stroke-width="2"/>
+            <!-- door arc: quarter circle from (216,290) around hinge (216,374) to (300,374) -->
+            <path id="door-arc-path" class="door-arc"
+              d="M 216,290 A 84,84 0 0,1 300,374"
+              fill="none" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+          </g>
+
+          <!-- FURNITURE (each has a tooltip title and wiggle on hover) -->
+          <!-- Bed -->
+          <g class="furniture-item fi-0" id="fi-bed" data-label="Bed" data-dims="5' × 6'8&quot;">
+            <rect x="185" y="68" width="196" height="192"
+              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
+              stroke-dasharray="4 3" rx="1"/>
+            <text x="190" y="82" font-family="Courier New" font-size="11" fill="#2d5490">Bed</text>
+          </g>
+
+          <!-- Left nightstand — directly beside left edge of bed (x=129..185) -->
+          <g class="furniture-item fi-1" id="fi-ns-l" data-label="Nightstand" data-dims="2' × 2'">
+            <rect x="129" y="68" width="56" height="56"
+              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
+              stroke-dasharray="4 3" rx="1"/>
+            <text x="133" y="82" font-family="Courier New" font-size="10" fill="#2d5490">NS</text>
+          </g>
+
+          <!-- Right nightstand -->
+          <g class="furniture-item fi-2" id="fi-ns-r" data-label="Nightstand" data-dims="2' × 2'">
+            <rect x="381" y="68" width="56" height="56"
+              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
+              stroke-dasharray="4 3" rx="1"/>
+            <text x="385" y="82" font-family="Courier New" font-size="10" fill="#2d5490">NS</text>
+          </g>
+
+          <!-- Dresser — flush with right wall (x=356..496 = 5ft, y=318..374 = 2ft) -->
+          <g class="furniture-item fi-3" id="fi-dresser" data-label="Dresser" data-dims="5' × 2'">
+            <rect x="356" y="318" width="140" height="56"
+              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
+              stroke-dasharray="4 3" rx="1"/>
+            <text x="360" y="332" font-family="Courier New" font-size="10" fill="#2d5490">Dresser</text>
+          </g>
+
+          <!-- Armchair (rotated) -->
+          <g class="furniture-item fi-4" id="fi-chair"
+            data-label="Armchair" data-dims="2'8&quot; × 2'8&quot;"
+            style="transform:translate(136px,326px) rotate(-22deg); transform-box:fill-box; transform-origin:center;">
+            <rect x="-38" y="-38" width="76" height="76"
+              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
+              stroke-dasharray="4 3" rx="1"/>
+            <text x="-34" y="-24" font-family="Courier New" font-size="9" fill="#2d5490">Chair</text>
+          </g>
+
+        </svg>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" aria-labelledby="features-heading">
+      <div class="features-inner">
+      <div class="reveal">
+        <p class="section-label">WHAT IT DOES</p>
+        <h2 class="section-heading" id="features-heading">Everything you need.<br>Nothing you don't.</h2>
+      </div>
+      <div class="features-rows">
+
+        <!-- Row 1: Draw walls -->
+        <div class="feature-row reveal">
+          <div class="feature-row-text">
+            <p class="feature-row-eyebrow">Draw anything</p>
+            <h3 class="feature-row-heading">Sketch a room<br>in minutes.</h3>
+            <p class="feature-row-body">Click or drag to draw connected wall chains. Type <code>5'6"</code>, <code>3.5 m</code>, or <code>168 cm</code> for exact lengths. Snaps to endpoints, wall centerlines, and grid automatically — corners always close clean.</p>
+            <div class="feature-row-chips">
+              <span class="feature-chip">Wall tool</span>
+              <span class="feature-chip">Endpoint snap</span>
+              <span class="feature-chip">Doors &amp; windows</span>
+            </div>
+          </div>
+          <div class="feature-row-visual">
+            <svg viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <pattern id="fr1-minor" width="18" height="18" patternUnits="userSpaceOnUse">
+                  <path d="M 18 0 L 0 0 0 18" fill="none" stroke="#ccd9e8" stroke-width="0.4"/>
+                </pattern>
+                <pattern id="fr1-major" width="90" height="90" patternUnits="userSpaceOnUse">
+                  <rect width="90" height="90" fill="url(#fr1-minor)"/>
+                  <path d="M 90 0 L 0 0 0 90" fill="none" stroke="#a8bcd4" stroke-width="0.6"/>
+                </pattern>
+              </defs>
+              <rect width="560" height="360" fill="#f5f0e8"/>
+              <rect width="560" height="360" fill="url(#fr1-major)"/>
+              <!-- Top bar -->
+              <rect width="560" height="30" fill="rgba(245,240,232,0.97)"/>
+              <line x1="0" y1="30" x2="560" y2="30" stroke="#d0ccc4" stroke-width="0.75"/>
+              <text x="14" y="20" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.1em" fill="#2c2c2c">SNAPDRAFT</text>
+              <text x="280" y="20" text-anchor="middle" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.05em" fill="#2c2c2c">Bedroom</text>
+              <rect x="490" y="9" width="58" height="16" rx="3" fill="white" stroke="#c8c4bc" stroke-width="0.75"/>
+              <text x="519" y="20" text-anchor="middle" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.04em" fill="#2c2c2c">PLANS ⊞</text>
+              <!-- Toolbar -->
+              <rect x="10" y="38" width="58" height="286" rx="8" fill="white" stroke="#d0ccc4" stroke-width="0.75"/>
+              <!-- SELECT active -->
+              <rect x="13" y="41" width="52" height="52" rx="6" fill="#2c2c2c"/>
+              <path d="M 38 52 L 30 67 L 34 64 L 35.5 70 L 38.5 69 L 37 62.5 L 42 65 Z" fill="white"/>
+              <text x="39" y="85" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.07em" fill="rgba(255,255,255,0.9)">SELECT</text>
+              <!-- WALL -->
+              <rect x="27" y="103" width="9" height="9" rx="1" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
+              <rect x="38" y="103" width="9" height="9" rx="1" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
+              <rect x="27" y="114" width="9" height="9" rx="1" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
+              <rect x="38" y="114" width="9" height="9" rx="1" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
+              <text x="39" y="135" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.07em" fill="#4a4a4a">WALL</text>
+              <!-- BOX -->
+              <rect x="25" y="147" width="28" height="20" rx="2" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
+              <text x="39" y="181" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.07em" fill="#4a4a4a">BOX</text>
+              <!-- MEASURE -->
+              <rect x="23" y="192" width="32" height="14" rx="1.5" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
+              <line x1="27" y1="192" x2="27" y2="206" stroke="#2c2c2c" stroke-width="1"/>
+              <line x1="32" y1="196" x2="32" y2="206" stroke="#2c2c2c" stroke-width="0.75"/>
+              <line x1="39" y1="196" x2="39" y2="206" stroke="#2c2c2c" stroke-width="0.75"/>
+              <line x1="51" y1="192" x2="51" y2="206" stroke="#2c2c2c" stroke-width="1"/>
+              <text x="39" y="222" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.04em" fill="#4a4a4a">MEASURE</text>
+              <!-- Divider -->
+              <line x1="16" y1="230" x2="62" y2="230" stroke="#e8e4dc" stroke-width="0.75"/>
+              <text x="39" y="248" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.06em" fill="#c0bbb4">UNDO</text>
+              <text x="39" y="268" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.06em" fill="#c0bbb4">REDO</text>
+              <text x="39" y="306" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.06em" fill="#c0bbb4">HELP</text>
+              <!-- Room walls: rect with window gap left, door gap bottom -->
+              <line x1="90" y1="52" x2="90" y2="175" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
+              <line x1="90" y1="230" x2="90" y2="334" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
+              <line x1="90" y1="52" x2="482" y2="52" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
+              <line x1="482" y1="52" x2="482" y2="334" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
+              <line x1="220" y1="334" x2="482" y2="334" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
+              <!-- Window symbol on left wall -->
+              <line x1="86" y1="175" x2="86" y2="230" stroke="#2c2c2c" stroke-width="1.5"/>
+              <line x1="94" y1="175" x2="94" y2="230" stroke="#2c2c2c" stroke-width="1.5"/>
+              <!-- Door arc bottom left -->
+              <line x1="90" y1="334" x2="90" y2="214" stroke="#2c2c2c" stroke-width="1.5"/>
+              <path d="M 90,214 A 120,120 0 0,1 210,334" fill="none" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <!-- Bed -->
+              <rect x="168" y="56" width="224" height="194" fill="rgba(74,111,165,0.08)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="5 3" rx="1"/>
+              <text x="174" y="72" font-family="Courier New" font-size="11" fill="#2d5490">Bed</text>
+              <!-- Nightstands -->
+              <rect x="94" y="56" width="72" height="72" fill="rgba(74,111,165,0.08)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="5 3" rx="1"/>
+              <text x="98" y="71" font-family="Courier New" font-size="8" fill="#2d5490">NS</text>
+              <rect x="394" y="56" width="86" height="72" fill="rgba(74,111,165,0.08)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="5 3" rx="1"/>
+              <text x="398" y="71" font-family="Courier New" font-size="8" fill="#2d5490">NS</text>
+              <!-- Snap indicator -->
+              <circle cx="482" cy="52" r="10" fill="none" stroke="#2d5490" stroke-width="2"/>
+              <circle cx="482" cy="52" r="3.5" fill="#2d5490"/>
+              <!-- Fit + scale bar -->
+              <rect x="78" y="347" width="36" height="11" rx="2.5" fill="white" stroke="#c8c4bc" stroke-width="0.75"/>
+              <text x="96" y="356" text-anchor="middle" font-family="Courier New" font-size="7" fill="#2c2c2c">↙ Fit</text>
+              <rect x="444" y="347" width="66" height="11" rx="2.5" fill="white" stroke="#c8c4bc" stroke-width="0.75"/>
+              <text x="477" y="356" text-anchor="middle" font-family="Courier New" font-size="7" fill="#6a6a6a">1 □ = 1 ft</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 2: Dimensions / Properties panel -->
+        <div class="feature-row flip reveal">
+          <div class="feature-row-text">
+            <p class="feature-row-eyebrow">Precise dimensions</p>
+            <h3 class="feature-row-heading">Real measurements,<br>not guesses.</h3>
+            <p class="feature-row-body">Click any wall or box to see and edit exact dimensions. The properties panel speaks feet-and-inches, meters, or centimeters — whichever you type. Label everything so you can think in rooms, not coordinates.</p>
+            <div class="feature-row-chips">
+              <span class="feature-chip">ft &amp; in input</span>
+              <span class="feature-chip">Metric support</span>
+              <span class="feature-chip">Rotate &amp; label</span>
+            </div>
+          </div>
+          <div class="feature-row-visual">
+            <svg viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <pattern id="fr2-minor" width="18" height="18" patternUnits="userSpaceOnUse">
+                  <path d="M 18 0 L 0 0 0 18" fill="none" stroke="#ccd9e8" stroke-width="0.4"/>
+                </pattern>
+                <pattern id="fr2-major" width="90" height="90" patternUnits="userSpaceOnUse">
+                  <rect width="90" height="90" fill="url(#fr2-minor)"/>
+                  <path d="M 90 0 L 0 0 0 90" fill="none" stroke="#a8bcd4" stroke-width="0.6"/>
+                </pattern>
+              </defs>
+              <!-- Canvas (left 2/3) -->
+              <rect width="560" height="360" fill="#f5f0e8"/>
+              <rect width="370" height="360" fill="url(#fr2-major)"/>
+              <!-- Top bar -->
+              <rect width="560" height="30" fill="rgba(245,240,232,0.97)"/>
+              <line x1="0" y1="30" x2="560" y2="30" stroke="#d0ccc4" stroke-width="0.75"/>
+              <text x="14" y="20" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.1em" fill="#2c2c2c">SNAPDRAFT</text>
+              <text x="185" y="20" text-anchor="middle" font-family="Courier New" font-size="10" font-weight="700" fill="#2c2c2c">Bedroom</text>
+              <!-- Room outline on canvas -->
+              <rect x="60" y="52" width="288" height="270" fill="none" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
+              <!-- SELECTED Bed box — blue highlight -->
+              <rect x="70" y="62" width="200" height="166" fill="rgba(74,111,165,0.1)" stroke="#2d5490" stroke-width="2.5" rx="1"/>
+              <!-- Corner handles -->
+              <circle cx="70" cy="62" r="4.5" fill="#2d5490"/>
+              <circle cx="270" cy="62" r="4.5" fill="#2d5490"/>
+              <circle cx="70" cy="228" r="4.5" fill="#2d5490"/>
+              <circle cx="270" cy="228" r="4.5" fill="#2d5490"/>
+              <!-- Rotation handle -->
+              <line x1="170" y1="62" x2="170" y2="48" stroke="#2d5490" stroke-width="1.5"/>
+              <circle cx="170" cy="46" r="4.5" fill="#2d5490"/>
+              <text x="76" y="82" font-family="Courier New" font-size="12" fill="#2d5490" font-weight="700">Bed</text>
+              <!-- Faded other furniture -->
+              <rect x="272" y="62" width="70" height="66" fill="rgba(74,111,165,0.04)" stroke="#2d5490" stroke-width="1" stroke-dasharray="4 3" rx="1" opacity="0.5"/>
+              <text x="276" y="77" font-family="Courier New" font-size="8" fill="#2d5490" opacity="0.5">NS</text>
+              <!-- Properties panel (right ~37%) -->
+              <rect x="370" y="30" width="190" height="330" fill="white" stroke="#d0ccc4" stroke-width="0.75"/>
+              <!-- Panel header -->
+              <text x="390" y="58" font-family="Courier New" font-size="12" font-weight="700" letter-spacing="0.08em" fill="#2c2c2c">BOX</text>
+              <line x1="386" y1="66" x2="550" y2="66" stroke="#e8e4dc" stroke-width="1"/>
+              <!-- WIDTH -->
+              <text x="390" y="86" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.1em" fill="#6a6a6a">WIDTH</text>
+              <rect x="390" y="92" width="148" height="28" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="1"/>
+              <text x="402" y="110" font-family="Courier New" font-size="14" fill="#2c2c2c">5'</text>
+              <!-- HEIGHT -->
+              <text x="390" y="138" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.1em" fill="#6a6a6a">HEIGHT</text>
+              <rect x="390" y="144" width="148" height="28" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="1"/>
+              <text x="402" y="162" font-family="Courier New" font-size="14" fill="#2c2c2c">6' 8"</text>
+              <!-- ROTATION -->
+              <text x="390" y="190" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.1em" fill="#6a6a6a">ROTATION (°)</text>
+              <rect x="390" y="196" width="148" height="28" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="1"/>
+              <text x="402" y="214" font-family="Courier New" font-size="14" fill="#2c2c2c">0</text>
+              <!-- LABEL -->
+              <text x="390" y="242" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.1em" fill="#6a6a6a">LABEL</text>
+              <rect x="390" y="248" width="148" height="28" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="1"/>
+              <text x="402" y="266" font-family="Courier New" font-size="14" fill="#2c2c2c">Bed</text>
+              <!-- Delete -->
+              <rect x="390" y="296" width="148" height="28" rx="4" fill="white" stroke="#e0a0a0" stroke-width="1"/>
+              <text x="464" y="314" text-anchor="middle" font-family="Courier New" font-size="11" fill="#cc4444">Delete</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 3: Saves locally / Plans manager -->
+        <div class="feature-row reveal">
+          <div class="feature-row-text">
+            <p class="feature-row-eyebrow">Always available</p>
+            <h3 class="feature-row-heading">Saves in your browser.<br>Nothing to install.</h3>
+            <p class="feature-row-body">SnapDraft runs entirely in your browser tab — no download, no account, no server. Your plans save automatically to local storage. Works offline after the first visit. Switch between rooms, floors, or projects with one click.</p>
+            <div class="feature-row-chips">
+              <span class="feature-chip">Offline-first</span>
+              <span class="feature-chip">No account</span>
+              <span class="feature-chip">Multiple plans</span>
+            </div>
+          </div>
+          <div class="feature-row-visual">
+            <svg viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <pattern id="fr3-minor" width="18" height="18" patternUnits="userSpaceOnUse">
+                  <path d="M 18 0 L 0 0 0 18" fill="none" stroke="#ccd9e8" stroke-width="0.4"/>
+                </pattern>
+                <pattern id="fr3-major" width="90" height="90" patternUnits="userSpaceOnUse">
+                  <rect width="90" height="90" fill="url(#fr3-minor)"/>
+                  <path d="M 90 0 L 0 0 0 90" fill="none" stroke="#a8bcd4" stroke-width="0.6"/>
+                </pattern>
+              </defs>
+              <rect width="560" height="360" fill="#f5f0e8"/>
+              <rect width="560" height="360" fill="url(#fr3-major)"/>
+              <!-- Top bar -->
+              <rect width="560" height="30" fill="rgba(245,240,232,0.97)"/>
+              <line x1="0" y1="30" x2="560" y2="30" stroke="#d0ccc4" stroke-width="0.75"/>
+              <text x="14" y="20" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.1em" fill="#2c2c2c">SNAPDRAFT</text>
+              <text x="280" y="20" text-anchor="middle" font-family="Courier New" font-size="10" font-weight="700" fill="#2c2c2c">Bedroom</text>
+              <rect x="490" y="9" width="58" height="16" rx="3" fill="#2c2c2c"/>
+              <text x="519" y="20" text-anchor="middle" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.04em" fill="white">PLANS ⊞</text>
+              <!-- Background canvas elements (dimmed) -->
+              <rect x="90" y="52" width="382" height="282" fill="none" stroke="#2c2c2c" stroke-width="4" stroke-linecap="square" opacity="0.25"/>
+              <!-- Plans modal overlay -->
+              <rect x="80" y="46" width="400" height="292" rx="10" fill="white" stroke="#c8c4bc" stroke-width="1"
+                    style="filter: drop-shadow(0 8px 32px rgba(0,0,0,0.14))"/>
+              <!-- Modal header -->
+              <text x="106" y="76" font-family="Courier New" font-size="13" font-weight="700" letter-spacing="0.1em" fill="#2c2c2c">PLANS</text>
+              <text x="458" y="76" text-anchor="end" font-family="Courier New" font-size="16" fill="#9a9a9a">×</text>
+              <line x1="96" y1="84" x2="464" y2="84" stroke="#e8e4dc" stroke-width="1"/>
+              <!-- Plan 1: Bedroom (active/selected) -->
+              <rect x="96" y="90" width="368" height="60" rx="6" fill="rgba(44,74,122,0.07)" stroke="rgba(44,74,122,0.22)" stroke-width="1"/>
+              <!-- Thumbnail -->
+              <rect x="106" y="98" width="52" height="42" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="0.75"/>
+              <rect x="112" y="104" width="40" height="30" fill="none" stroke="#2c2c2c" stroke-width="1.5" stroke-linecap="square"/>
+              <rect x="116" y="108" width="18" height="14" fill="rgba(45,84,144,0.1)" stroke="#2d5490" stroke-width="1" stroke-dasharray="2 1.5"/>
+              <text x="168" y="116" font-family="Courier New" font-size="13" font-weight="700" fill="#2c2c2c">Bedroom</text>
+              <text x="168" y="136" font-family="Courier New" font-size="9" fill="#6a6a6a">Last edited just now</text>
+              <path d="M 450 116 L 457 120 L 450 124" fill="none" stroke="#c8c4bc" stroke-width="1.5" stroke-linecap="round"/>
+              <!-- Plan 2: Living Room -->
+              <rect x="96" y="156" width="368" height="60" rx="6" fill="transparent"/>
+              <rect x="106" y="164" width="52" height="42" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="0.75"/>
+              <polyline points="112,202 112,168 156,168 156,202 138,202" fill="none" stroke="#2c2c2c" stroke-width="1.5" stroke-linecap="square"/>
+              <rect x="116" y="172" width="30" height="18" fill="rgba(45,84,144,0.08)" stroke="#2d5490" stroke-width="1" stroke-dasharray="2 1.5"/>
+              <text x="168" y="182" font-family="Courier New" font-size="13" font-weight="700" fill="#2c2c2c">Living Room</text>
+              <text x="168" y="202" font-family="Courier New" font-size="9" fill="#9a9a9a">Yesterday</text>
+              <path d="M 450 182 L 457 186 L 450 190" fill="none" stroke="#c8c4bc" stroke-width="1.5" stroke-linecap="round"/>
+              <!-- Plan 3: Kitchen -->
+              <rect x="96" y="222" width="368" height="60" rx="6" fill="transparent"/>
+              <rect x="106" y="230" width="52" height="42" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="0.75"/>
+              <rect x="112" y="236" width="40" height="30" fill="none" stroke="#2c2c2c" stroke-width="1.5" stroke-linecap="square"/>
+              <line x1="132" y1="236" x2="132" y2="252" stroke="#2c2c2c" stroke-width="1.5" stroke-linecap="square"/>
+              <text x="168" y="248" font-family="Courier New" font-size="13" font-weight="700" fill="#2c2c2c">Kitchen</text>
+              <text x="168" y="268" font-family="Courier New" font-size="9" fill="#9a9a9a">3 days ago</text>
+              <path d="M 450 248 L 457 252 L 450 256" fill="none" stroke="#c8c4bc" stroke-width="1.5" stroke-linecap="round"/>
+              <!-- New plan button -->
+              <line x1="96" y1="290" x2="464" y2="290" stroke="#e8e4dc" stroke-width="1"/>
+              <text x="280" y="314" text-anchor="middle" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.07em" fill="#2d5490">+ NEW PLAN</text>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+      </div><!-- /.features-inner -->
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how" aria-labelledby="how-heading">
+      <div class="how-inner">
+        <div class="reveal">
+          <p class="section-label">HOW IT WORKS</p>
+          <h2 class="section-heading" id="how-heading">Open the app.<br>Start drawing.</h2>
+        </div>
+        <div class="steps-grid">
+          <div class="step reveal">
+            <div class="step-number" aria-hidden="true" data-target="01">00</div>
+            <div class="step-content">
+              <div class="step-label">Step 01</div>
+              <h3 class="step-title">Pick your tool</h3>
+              <div class="step-body">Seven tools, each with a keyboard shortcut. Press <strong>W</strong> for walls, <strong>B</strong> for furniture boxes, <strong>D</strong> for doors. No menus to dig through.</div>
+            </div>
+          </div>
+          <div class="step reveal">
+            <div class="step-number" aria-hidden="true" data-target="02">00</div>
+            <div class="step-content">
+              <div class="step-label">Step 02</div>
+              <h3 class="step-title">Draw</h3>
+              <div class="step-body">Click to place wall endpoints. Drag to create furniture boxes. Click any wall to drop a door or window. Type an exact dimension at any point.</div>
+            </div>
+          </div>
+          <div class="step reveal">
+            <div class="step-number" aria-hidden="true" data-target="03">00</div>
+            <div class="step-content">
+              <div class="step-label">Step 03</div>
+              <h3 class="step-title">Save or share</h3>
+              <div class="step-body">Your plan saves automatically to this browser. Share a link for small plans, or export and send the file.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- USE CASES -->
+    <section id="uses" aria-labelledby="uses-heading">
+      <div class="tools-inner">
+        <div class="reveal">
+          <p class="section-label">WHO IT'S FOR</p>
+          <h2 class="section-heading" id="uses-heading">For anyone with<br>a room to think about.</h2>
+        </div>
+        <div class="steps-grid">
+          <div class="step reveal">
+            <svg class="use-case-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="6" y="14" width="28" height="16" rx="3" stroke="#2d5490" stroke-width="1.5"/>
+              <rect x="4" y="19" width="4" height="11" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+              <rect x="32" y="19" width="4" height="11" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+              <line x1="12" y1="30" x2="12" y2="35" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="28" y1="30" x2="28" y2="35" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
+              <rect x="8" y="10" width="24" height="6" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+            </svg>
+            <div class="step-label">Furniture shopping</div>
+            <h3 class="step-title">Know before you buy</h3>
+            <div class="step-body">Open your floor plan in the store. Check the dimensions, drop the piece in, and see if it fits before you commit.</div>
+          </div>
+          <div class="step reveal">
+            <svg class="use-case-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="4" y="10" width="14" height="12" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+              <rect x="22" y="18" width="14" height="12" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+              <path d="M 19 12 L 24 12" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M 22 9 L 25 12 L 22 15" fill="none" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M 16 28 L 20 28" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M 18 25 L 15 28 L 18 31" fill="none" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="step-label">Rearranging a room</div>
+            <h3 class="step-title">Try every layout first</h3>
+            <div class="step-body">Sketch the room, drag the furniture around, and settle on a layout before you move anything heavy.</div>
+          </div>
+          <div class="step reveal">
+            <svg class="use-case-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="6" y="6" width="28" height="28" rx="1" stroke="#2d5490" stroke-width="1.5" stroke-linecap="square"/>
+              <line x1="6" y1="24" x2="6" y2="34" stroke="#f5f0e8" stroke-width="3"/>
+              <path d="M 6,24 A 10,10 0 0,1 16,34" fill="none" stroke="#2d5490" stroke-width="1.5"/>
+              <line x1="18" y1="6" x2="18" y2="18" stroke="#2d5490" stroke-width="1.5" stroke-linecap="square" stroke-dasharray="3 2"/>
+            </svg>
+            <div class="step-label">Reno planning</div>
+            <h3 class="step-title">Move walls on screen first</h3>
+            <div class="step-body">Rough out the new layout before talking to a contractor. Share it as a starting point.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORKS EVERYWHERE -->
+    <section id="everywhere" aria-labelledby="everywhere-heading">
+      <div class="everywhere-inner">
+        <div class="reveal">
+          <p class="section-label">WORKS EVERYWHERE</p>
+          <h2 class="section-heading" id="everywhere-heading">Your browser<br>is the app.</h2>
+          <p class="everywhere-body">No installation. No account. No catch. SnapDraft works offline after the first load. Your plans stay in your browser until you decide otherwise.</p>
+        </div>
+        <div class="badge-grid reveal">
+          <div class="badge"><span class="badge-check">✓</span> Works offline</div>
+          <div class="badge"><span class="badge-check">✓</span> No account required</div>
+          <div class="badge"><span class="badge-check">✓</span> Saves automatically</div>
+          <div class="badge"><span class="badge-check">✓</span> Touch &amp; Apple Pencil</div>
+          <div class="badge"><span class="badge-check">✓</span> Keyboard shortcuts</div>
+          <div class="badge"><span class="badge-check">✓</span> Undo / redo</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER CTA -->
+    <section id="cta" aria-labelledby="cta-heading">
+      <div class="cta-inner">
+        <p class="section-label" style="text-align:center;">READY TO SKETCH?</p>
+        <h2 class="cta-heading" id="cta-heading">Start drawing<br>in 30 seconds.</h2>
+        <p class="cta-sub">No signup. No tutorial required. Just open the app and start clicking.</p>
+        <a href="/app" class="btn-primary" style="font-size:14px; padding:14px 32px;">Start Drawing →</a>
+        <div class="cta-links">
+          <a href="https://github.com/RohitRajendran/snapdraft" target="_blank" rel="noopener noreferrer" class="cta-link">★ Star on GitHub</a>
+          <a href="mailto:rohit@hummingbirdtech.xyz?subject=SnapDraft" class="cta-link">✉ Send Feedback</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 SnapDraft · Built with ♥ in Arlington, VA</span>
+  </footer>
+
+  <!-- Tape measure overlay -->
+
+
+  <noscript><style>
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .furniture-item { opacity: 1 !important; }
+    .dim-line-anim { stroke-dashoffset: 0 !important; }
+    .dim-tick-anim { opacity: 1 !important; }
+  </style></noscript>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Canonical URL ────────────────────────────────────────
+    var canonical = document.getElementById('canonical-link');
+    if (canonical) canonical.href = window.location.origin + '/home.html';
+
+    // ── IntersectionObserver: section reveal ─────────────────
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in-view');
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+    // Fallback: reveal all if observer never fires (instant-scroll, prefers-reduced-motion, etc.)
+    setTimeout(function () {
+      document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in-view'); });
+    }, 1500);
+
+    // ── Furniture scroll-in ───────────────────────────────────
+    var heroSvg = document.getElementById('hero-svg-wrapper');
+    var furnitureItems = document.querySelectorAll('.furniture-item');
+    var heroObserver = new IntersectionObserver(function (entries) {
+      if (entries[0].isIntersecting) {
+        furnitureItems.forEach(function (fi, i) {
+          setTimeout(function () { fi.classList.add('visible'); }, i * 90);
+        });
+      }
+    }, { threshold: 0.2 });
+    if (heroSvg) heroObserver.observe(heroSvg);
+
+
+    // ── Step numbers count up ─────────────────────────────────
+    var stepNumbers = document.querySelectorAll('.step-number');
+    var stepObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var el = e.target;
+        var target = parseInt(el.getAttribute('data-target'), 10);
+        var start = performance.now();
+        var duration = 500;
+        (function tick(now) {
+          var t = Math.min((now - start) / duration, 1);
+          var val = Math.floor(t * target);
+          el.textContent = val < 10 ? '0' + val : '' + val;
+          if (t < 1) requestAnimationFrame(tick);
+          else el.textContent = el.getAttribute('data-target');
+        })(start);
+        stepObserver.unobserve(el);
+      });
+    }, { threshold: 0.3 });
+    stepNumbers.forEach(function (el) { stepObserver.observe(el); });
+
+  })();
+  </script>
+</body>
+</html>
