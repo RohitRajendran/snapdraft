@@ -132,6 +132,7 @@ export function parseImportedPlan(raw: unknown): FloorPlan | null {
       if (typeof boxLength !== 'number' || !isFinite(boxLength as number)) return null;
       if (typeof elem.rotation !== 'number' || !isFinite(elem.rotation as number)) return null;
       if (elem.label !== undefined && typeof elem.label !== 'string') return null;
+      if (elem.color !== undefined && typeof elem.color !== 'string') return null;
     } else if (elem.type === 'door' || elem.type === 'window') {
       if (typeof elem.wallId !== 'string') return null;
       if (typeof elem.segmentIndex !== 'number' || !isFinite(elem.segmentIndex as number))
