@@ -5,8 +5,11 @@ import { useToolStore } from '../../../store/useToolStore/useToolStore';
 import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplanStore';
 import type { Box } from '../../../types';
 import { ftToPx, pxToFt, formatFeet } from '../../../utils/geometry/geometry';
+import { DEFAULT_BOX_COLOR, hexToRgba } from '../../../utils/colors/colors';
 
 const HANDLE_OFFSET_PX = 22;
+const SELECTION_ACCENT = '#0066cc';
+const SELECTION_HALO_INSET_PX = 3;
 
 type Props = {
   box: Box;
@@ -118,6 +121,8 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
 
   const label = box.label || `${formatFeet(box.width)} × ${formatFeet(box.height)}`;
   const handleOffset = HANDLE_OFFSET_PX / zoom;
+  const boxColor = box.color ?? DEFAULT_BOX_COLOR;
+  const haloInset = SELECTION_HALO_INSET_PX / zoom;
 
   return (
     <Group
@@ -138,25 +143,38 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
       <Rect
         width={bw}
         height={bh}
-        stroke={selected ? '#0066cc' : '#2d5490'}
+        stroke={boxColor}
         strokeWidth={(selected ? 2 : 1.5) / zoom}
-        fill={selected ? 'rgba(0,102,204,0.06)' : 'rgba(74,111,165,0.06)'}
+        fill={hexToRgba(boxColor, selected ? 0.1 : 0.06)}
         dash={selected ? undefined : [4 / zoom, 3 / zoom]}
         cornerRadius={1}
       />
+      {selected && (
+        <Rect
+          x={-haloInset}
+          y={-haloInset}
+          width={bw + haloInset * 2}
+          height={bh + haloInset * 2}
+          stroke={SELECTION_ACCENT}
+          strokeWidth={1 / zoom}
+          dash={[3 / zoom, 3 / zoom]}
+          cornerRadius={2}
+          listening={false}
+        />
+      )}
       <Text
         x={4 / zoom}
         y={4 / zoom}
         text={label}
         fontSize={11 / zoom}
         fontFamily="Courier New"
-        fill={selected ? '#0066cc' : '#2d5490'}
+        fill={boxColor}
       />
       {selected && activeTool === 'select' && (
         <>
           <Line
             points={[bw / 2, 0, bw / 2, -handleOffset]}
-            stroke="#0066cc"
+            stroke={SELECTION_ACCENT}
             strokeWidth={1.5 / zoom}
             listening={false}
           />
@@ -164,7 +182,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
             x={bw / 2}
             y={-handleOffset}
             radius={6 / zoom}
-            fill="#0066cc"
+            fill={SELECTION_ACCENT}
             stroke="white"
             strokeWidth={2 / zoom}
             hitStrokeWidth={12 / zoom}

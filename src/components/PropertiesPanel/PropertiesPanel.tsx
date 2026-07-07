@@ -5,6 +5,8 @@ import type { Box, Element, Opening, Wall } from '../../types';
 import { collectConnectedWallIds } from '../../utils/geometry/geometry';
 import { shouldUseMobileOverlayLayout } from '../Canvas/layout';
 import { FtInInput } from './FtInInput/FtInInput';
+import { ColorPicker } from './ColorPicker/ColorPicker';
+import { DEFAULT_BOX_COLOR } from '../../utils/colors/colors';
 import styles from './PropertiesPanel.module.css';
 
 function WallProperties({
@@ -132,6 +134,13 @@ function BoxProperties({
         min={0.1}
         testId="box-height-input"
       />
+      <div className={styles.field}>
+        <span className={styles.fieldLabel}>Color</span>
+        <ColorPicker
+          value={box.color ?? DEFAULT_BOX_COLOR}
+          onChange={(color) => updateElement(box.id, { color })}
+        />
+      </div>
       <label className={styles.field}>
         <span className={styles.fieldLabel}>Rotation (°)</span>
         <input

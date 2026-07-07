@@ -105,6 +105,7 @@ type Box = {
   height: number;
   rotation: number; // degrees
   label?: string;
+  color?: string; // hex; undefined = legacy default (Blueprint Blue)
 };
 
 type ToolType = 'select' | 'wall' | 'box' | 'measure';
