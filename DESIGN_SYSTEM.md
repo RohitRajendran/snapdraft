@@ -402,14 +402,14 @@ box-shadow: 0 8px 40px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06);
 
 ### Badges
 
-Two types — use `.badge` for feature lists, `.feature-chip` for tagging capabilities.
+Two types — use `.badge` for feature lists, `.feature-chip` for tagging capabilities. Both are neutral (ink-toned), consistent with the rule that blueprint blue is reserved for SVG illustrations, not UI chrome.
 
 | Component | Background | Border | Padding | Radius | Font size |
 |---|---|---|---|---|---|
-| `.badge` | `rgba(74,111,165,0.07)` | `1px solid rgba(74,111,165,0.2)` | `10px 14px` | `8px` | `12px` |
-| `.feature-chip` | `rgba(74,111,165,0.08)` | `1px solid rgba(74,111,165,0.18)` | `4px 10px` | `4px` | `11px` |
+| `.badge` | `transparent` | `1px solid var(--border)` | `10px 14px` | `8px` | `12px` |
+| `.feature-chip` | `transparent` | `1px solid var(--border)` | `4px 10px` | `4px` | `11px` |
 
-Both use `color: var(--blue)`, `font-weight: 700`, uppercase, `letter-spacing: 0.04–0.06em`.
+Both use `color: var(--ink-mid)`, `font-weight: 700`, uppercase, `letter-spacing: 0.04–0.06em`.
 
 ### Inputs (Properties Panel)
 
