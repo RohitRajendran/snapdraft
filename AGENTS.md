@@ -107,7 +107,7 @@ type Box = {
   label?: string;
 };
 
-type ToolType = 'select' | 'wall' | 'box' | 'measure';
+type ToolType = 'select' | 'pan' | 'wall' | 'box' | 'measure' | 'door' | 'window';
 ```
 
 `FloorPlan` stores `id`, `version`, `name`, timestamps, and `elements`.
@@ -162,9 +162,14 @@ This logic lives in `src/hooks/useSnap/useSnap.ts`. Preserve that ordering unles
 | Tool | Behavior |
 |---|---|
 | `wall` | Default on a fresh empty session; click or drag to draw chained wall segments |
+| `door` | Click a wall to place a door opening; swing and hinge are editable |
+| `window` | Click a wall to place a window opening |
 | `box` | Drag to create a snapped box |
 | `select` | Select, marquee-select, drag, edit, and delete elements |
+| `pan` | Drag to pan the canvas without touching the plan |
 | `measure` | Place temporary measurement points without mutating the plan |
+
+`select`/`pan` and `wall`/`door`/`window` are grouped behind two dropdown buttons in the toolbar; the other tools are plain buttons. Shortcuts: `V`/`S` select, `H` hand, `W` wall, `D` door, `N` window, `B` box, `M` measure.
 
 ### App behaviors worth preserving
 

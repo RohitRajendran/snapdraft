@@ -406,8 +406,8 @@ const CANVASES = {
   row1: renderCanvas({
     width: 1080,
     height: 640,
-    zoom: 0.85,
-    originFt: { x: -10.088, y: -3.912 },
+    zoom: 1,
+    originFt: { x: -7.625, y: -2.5 },
     omitWalls: [1], // bottom wall (and therefore its door)
     omitLabels: ['Dresser', 'Armchair'],
     drawingState: {
@@ -420,9 +420,9 @@ const CANVASES = {
   // Row 2: the finished plan with the bed selected, next to the properties panel.
   row2: renderCanvas({
     width: 720,
-    height: 500,
-    zoom: 0.62,
-    originFt: { x: -2.177, y: -4.621 },
+    height: 560,
+    zoom: 0.75,
+    originFt: { x: -0.5, y: -3.867 },
     selectedLabel: 'Bed',
   }),
 

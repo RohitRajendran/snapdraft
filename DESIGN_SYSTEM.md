@@ -110,7 +110,7 @@ Minor Third ratio (×1.2) from a 16px base. All sizes are derived from this sequ
 | `--ts-lg` | `clamp(22px, 2.4vw, 34px)` | +2 fluid |
 | `--ts-xl` | `clamp(26px, 3vw, 40px)` | +3 fluid |
 | `--ts-2xl` | `clamp(28px, 3.5vw, 48px)` | +4 fluid |
-| `--ts-3xl` | `clamp(34px, 5vw, 68px)` | +5 fluid |
+| `--ts-3xl` | `clamp(32px, 3.5vw, 42px)` | +5 fluid |
 
 Test: if you change a scale value, does every style that references it update automatically?
 
@@ -417,10 +417,15 @@ Both use `color: var(--ink-mid)`, `font-weight: 700`, uppercase, `letter-spacing
 padding: 6px 8px;
 border-radius: 4px;
 border: 1px solid var(--border);
-background: var(--bg);
-font-family: var(--font);   /* Courier New — intentional, matches app UI */
-font-size: 12–14px;
+background: white;
+font-family: var(--font-body);  /* Josefin Sans — the panel is body text, not display */
+font-size: 14px;
+min-height: 44px;
 ```
+
+Courier New (`--font`) is reserved inside the app for the logo wordmark, the plan
+name, on-canvas box labels, keyboard key badges, and the inline dimension input.
+Panel labels, field labels, buttons and inputs are all Josefin Sans.
 
 Focus: `outline: 2px solid #4a6fa5; outline-offset: 1px`.
 

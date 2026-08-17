@@ -2,8 +2,14 @@
   "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/packages/cspell-types/cspell.schema.json",
   "version": "0.2",
   "language": "en",
-  "files": ["src/**/*.{ts,tsx}"],
-  "ignorePaths": ["node_modules", "dist", "*.min.js"],
+  "files": [
+    "src/**/*.{ts,tsx}"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    "*.min.js"
+  ],
   "words": [
     "floorplan",
     "floorplans",
@@ -25,8 +31,16 @@
     "qrcode",
     "qr",
     "Revit",
-    "Rohit"
+    "Rohit",
+    "Josefin",
+    "topbar",
+    "toollabel",
+    "fieldlabel",
+    "diminput"
   ],
   "ignoreWords": [],
-  "import": ["@cspell/dict-typescript", "@cspell/dict-node"]
+  "import": [
+    "@cspell/dict-typescript",
+    "@cspell/dict-node"
+  ]
 }
