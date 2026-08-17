@@ -240,7 +240,7 @@ function renderDoor(view, opening, wall) {
   ];
 }
 
-function renderBox(view, box, selected, cls) {
+function renderBox(view, box, selected, cls, hideLabel) {
   const w = view.len(box.width);
   const h = view.len(box.length);
   const cx = view.x(box.x + box.width / 2);
@@ -258,7 +258,7 @@ function renderBox(view, box, selected, cls) {
     `  <rect width="${w}" height="${h}" rx="${R.box.radius}" fill="${style.fill}" ` +
       `stroke="${style.stroke}" stroke-width="${style.width}"${dash}/>`,
   );
-  if (box.label) {
+  if (box.label && !hideLabel) {
     parts.push(
       `  <text x="${R.box.labelInset}" y="${R.box.labelInset + R.box.labelSize * 0.8}" ` +
         `font-family="Courier New, monospace" font-size="${R.box.labelSize}" fill="${style.stroke}">${esc(box.label)}</text>`,
@@ -320,7 +320,8 @@ function renderDrawingState(view, state) {
  * @param {{x:number,y:number}} opts.originFt  world point at the SVG's top-left
  * @param {number[]} [opts.omitWalls]  wall indexes to leave undrawn (mid-draw shots);
  *                                     openings on an omitted wall are dropped too
- * @param {string[]} [opts.omitLabels] box labels to leave undrawn
+ * @param {string[]} [opts.omitBoxes]  boxes (by label) to leave out entirely
+ * @param {string[]} [opts.hideLabels] boxes (by label) to draw without their name
  * @param {string} [opts.selectedLabel] box label to render in the selected state
  * @param {object} [opts.drawingState] in-progress wall chain decorations
  * @param {number} [opts.dim]         opacity applied to the whole plan (modal shots)
@@ -334,7 +335,8 @@ function renderCanvas(opts) {
     zoom,
     originFt,
     omitWalls = [],
-    omitLabels = [],
+    omitBoxes = [],
+    hideLabels = [],
     selectedLabel,
     drawingState,
     dim,
@@ -350,7 +352,7 @@ function renderCanvas(opts) {
   const openings = elements
     .filter((el) => el.type === 'door' || el.type === 'window')
     .filter((op) => walls.some((w) => w.id === op.wallId));
-  const boxes = elements.filter((el) => el.type === 'box' && !omitLabels.includes(el.label));
+  const boxes = elements.filter((el) => el.type === 'box' && !omitBoxes.includes(el.label));
 
   const plan = [];
   for (const wall of walls) plan.push(...renderWall(view, wall, openings, null));
@@ -369,6 +371,7 @@ function renderCanvas(opts) {
         box,
         box.label === selectedLabel,
         animateBoxes ? `furniture-item fi-${i}` : '',
+        hideLabels.includes(box.label),
       ),
     );
   });
@@ -389,6 +392,20 @@ function renderCanvas(opts) {
 // ── The four canvases embedded in home.html ─────────────────────────────────
 // Frame sizes are the `.shot` dimensions declared in home.html's CSS.
 
+// A DELIBERATE DEVIATION FROM THE APP.
+// The app draws box labels at a constant 11px Courier and does not clip them to
+// the box (BoxElement.tsx), so a name wider than its box overruns its
+// neighbours. The sample plan's nightstands are the only case: "Nightstand" is
+// 10 characters -> ~66px of Courier against a 60px-wide box, and it collides
+// with the bed's label. Removing the name in samplePlan.ts does not help,
+// because BoxElement falls back to the dimensions ("1' 6\" x 2'", also 10
+// characters). So the marketing shots suppress that one label.
+//
+// This is the only place these mockups knowingly differ from the app. If
+// BoxElement ever clips labels (width + wrap="none" + ellipsis), delete this
+// and let the shots show what the app shows.
+const HIDE_LABELS = ['Nightstand'];
+
 const CANVASES = {
   // Hero: the finished plan, centred, no chrome. Boxes carry the fade-in classes.
   hero: renderCanvas({
@@ -396,6 +413,7 @@ const CANVASES = {
     height: 460,
     zoom: 0.72,
     originFt: { x: -2.222, y: -2.486 },
+    hideLabels: HIDE_LABELS,
     animateBoxes: true,
     ariaLabel: 'Floor plan sketch of a bedroom with furniture',
   }),
@@ -408,8 +426,9 @@ const CANVASES = {
     height: 640,
     zoom: 1,
     originFt: { x: -7.625, y: -2.5 },
+    hideLabels: HIDE_LABELS,
     omitWalls: [1], // bottom wall (and therefore its door)
-    omitLabels: ['Dresser', 'Armchair'],
+    omitBoxes: ['Dresser', 'Armchair'],
     drawingState: {
       chainFrom: { x: 15, y: 11 },
       ghostTo: { x: 0, y: 11 },
@@ -423,6 +442,7 @@ const CANVASES = {
     height: 560,
     zoom: 0.75,
     originFt: { x: -0.5, y: -3.867 },
+    hideLabels: HIDE_LABELS,
     selectedLabel: 'Bed',
   }),
 
@@ -433,6 +453,7 @@ const CANVASES = {
     height: 460,
     zoom: 0.62,
     originFt: { x: -6.21, y: -4.823 },
+    hideLabels: HIDE_LABELS,
   }),
 };
 

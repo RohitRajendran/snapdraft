@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, expect, it } from 'vitest';
 import { PIXELS_PER_FOOT } from '../utils/geometry/geometry';
+import { createSampleElements } from '../utils/samplePlan';
 
 /**
  * The marketing page (public/home.html) recreates the app's UI in hand-written
@@ -236,8 +237,43 @@ describe('marketing mockups mirror the app', () => {
 
     it("labels boxes with the plan's real labels", () => {
       const row = canvases.find((c) => c[1] === 'row2')![2];
-      for (const label of ['Bed', 'Nightstand', 'Dresser', 'Armchair']) {
+      for (const label of ['Bed', 'Dresser', 'Armchair']) {
         expect(row).toContain(`>${label}<`);
+      }
+    });
+
+    it('suppresses only the one label the app cannot fit', () => {
+      // The single deliberate deviation from the app, asserted here so it stays
+      // visible. The app draws "Nightstand" (10 chars of 11px Courier, ~66px)
+      // inside a 1.5ft box (60px) and it overruns onto the bed's label. See the
+      // HIDE_LABELS note in scripts/marketing/render-canvas-svg.js.
+      const CHAR_PX = 11 * 0.6; // Courier advance is 0.6em
+      const INSET_PX = 4;
+      const hidden = ['Nightstand'];
+
+      for (const [, , body] of canvases) {
+        for (const label of hidden) expect(body).not.toContain(`>${label}<`);
+      }
+
+      const boxes = createSampleElements().filter((el) => el.type === 'box');
+      const usablePx = (widthFt: number) => widthFt * PIXELS_PER_FOOT - INSET_PX * 2;
+
+      // Every label we do draw must actually fit its box...
+      for (const box of boxes) {
+        if (box.type !== 'box' || !box.label || hidden.includes(box.label)) continue;
+        expect(
+          box.label.length * CHAR_PX,
+          `"${box.label}" overruns its ${box.width}ft box — hide it or shorten it`,
+        ).toBeLessThanOrEqual(usablePx(box.width));
+      }
+
+      // ...and everything we hide must genuinely not fit, so the list cannot
+      // quietly grow into "make the mockups prettier than the app".
+      for (const label of hidden) {
+        const box = boxes.find((b) => b.type === 'box' && b.label === label);
+        expect(box, `nothing in the sample plan is labelled "${label}"`).toBeDefined();
+        if (box?.type !== 'box') continue;
+        expect(label.length * CHAR_PX).toBeGreaterThan(usablePx(box.width));
       }
     });
   });

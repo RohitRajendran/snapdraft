@@ -843,10 +843,23 @@
       margin: 0 auto;
     }
     .feature-row-featured .feature-row-heading { margin-bottom: 0; }
-    .feature-row-featured .feature-row-visual { width: 100%; max-width: 680px; }
-    /* The full-app shot needs the whole content column */
-    .feature-row-featured.feature-row-wide .feature-row-visual { max-width: 1080px; }
+    .feature-row-featured .feature-row-visual { width: 100%; max-width: 560px; }
     .feature-row-featured .feature-row-chips { justify-content: center; }
+
+    /* The full-app shot needs the whole content column. It sits directly under
+       the section header, so it stays left-aligned — a centred heading stacked
+       under the left-aligned section heading reads as two competing titles. */
+    .feature-row-featured.feature-row-wide {
+      align-items: stretch;
+      text-align: left;
+    }
+    .feature-row-featured.feature-row-wide .feature-row-visual { max-width: 820px; }
+    .feature-row-featured.feature-row-wide .feature-row-text:first-of-type,
+    .feature-row-featured.feature-row-wide .feature-row-text:last-of-type {
+      max-width: 560px;
+      margin: 0;
+    }
+    .feature-row-featured.feature-row-wide .feature-row-chips { justify-content: flex-start; }
 
     .uses-row {
       display: grid;
@@ -1178,13 +1191,11 @@
           <g class="furniture-item fi-1">
           <g transform="translate(177.93 101.84) rotate(0) translate(-21.6 -28.8)">
             <rect width="43.2" height="57.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Nightstand</text>
           </g>
           </g>
           <g class="furniture-item fi-2">
           <g transform="translate(370.92 101.84) rotate(0) translate(-21.6 -28.8)">
             <rect width="43.2" height="57.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Nightstand</text>
           </g>
           </g>
           <g class="furniture-item fi-3">
@@ -1282,11 +1293,9 @@
                   </g>
                   <g transform="translate(463.25 142.01) rotate(0) translate(-30 -40)">
                     <rect width="60" height="80" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Nightstand</text>
                   </g>
                   <g transform="translate(731.29 142.01) rotate(0) translate(-30 -40)">
                     <rect width="60" height="80" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Nightstand</text>
                   </g>
                   <line x1="905" y1="540" x2="305" y2="540" stroke="#b8c9e0" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="square"/>
                   <circle cx="905" cy="540" r="5" fill="#2c2c2c"/>
@@ -1411,11 +1420,9 @@
                   </g>
                   <g transform="translate(133.68 147.52) rotate(0) translate(-22.5 -30)">
                     <rect width="45" height="60" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Nightstand</text>
                   </g>
                   <g transform="translate(334.71 147.52) rotate(0) translate(-22.5 -30)">
                     <rect width="45" height="60" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Nightstand</text>
                   </g>
                   <g transform="translate(441.07 370.32) rotate(-90) translate(-75 -22.5)">
                     <rect width="150" height="45" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
@@ -1524,11 +1531,9 @@
                   </g>
                   <g transform="translate(252.12 145.66) rotate(0) translate(-18.6 -24.8)">
                     <rect width="37.2" height="49.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Nightstand</text>
                   </g>
                   <g transform="translate(418.31 145.66) rotate(0) translate(-18.6 -24.8)">
                     <rect width="37.2" height="49.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Nightstand</text>
                   </g>
                   <g transform="translate(506.22 329.84) rotate(-90) translate(-62 -18.6)">
                     <rect width="124" height="37.2" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
