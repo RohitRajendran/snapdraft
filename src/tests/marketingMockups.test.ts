@@ -291,4 +291,34 @@ describe('marketing mockups mirror the app', () => {
       expect(home).not.toContain('PLANS ⊞');
     });
   });
+
+  describe('page-level design rules', () => {
+    const sectionCount = (home.match(/<section id="/g) ?? []).length;
+
+    it('caps eyebrows at one per three sections', () => {
+      // Small uppercase wide-tracked labels above a heading. Repeating one above
+      // every section is the templated rhythm DESIGN_SYSTEM.md warns about.
+      const eyebrows = (home.match(/class="(hero-eyebrow|section-label)"/g) ?? []).length;
+      expect(sectionCount).toBeGreaterThan(0);
+      expect(eyebrows).toBeLessThanOrEqual(Math.ceil(sectionCount / 3));
+    });
+
+    it('uses one label for the one call-to-action intent', () => {
+      const labels = new Set(
+        [...home.matchAll(/class="btn-primary"[^>]*>([^<]+)</g)].map((m) => m[1].trim()),
+      );
+      expect(labels.size).toBe(1);
+    });
+
+    it('sizes the hero with dvh so the iOS address bar cannot shift it', () => {
+      const hero = rule(home, '#hero');
+      expect(hero).toContain('100dvh');
+      expect(hero).toContain('100vh'); // fallback retained for older browsers
+    });
+
+    it('does not repeat the three-equal-column layout family', () => {
+      const threeCol = (home.match(/grid-template-columns:\s*repeat\(3, 1fr\)/g) ?? []).length;
+      expect(threeCol).toBeLessThanOrEqual(1);
+    });
+  });
 });

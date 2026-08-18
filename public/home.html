@@ -148,7 +148,7 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    h1, h2, h3, .step-number, .nav-logo {
+    h1, h2, h3, .nav-logo {
       font-family: var(--font);
     }
 
@@ -235,7 +235,8 @@
 
     /* ── HERO ────────────────────────────────────── */
     #hero {
-      min-height: calc(100vh - 56px);
+      min-height: calc(100vh - 56px);   /* fallback for browsers without dvh */
+      min-height: calc(100dvh - 56px);
       display: grid;
       grid-template-columns: 1fr 1fr;
       align-items: center;
@@ -255,11 +256,10 @@
       color: var(--ink-mid);
       margin-bottom: var(--space-5);
       display: flex;
-      gap: var(--space-2);
+      gap: var(--space-5);
       flex-wrap: wrap;
       align-items: center;
     }
-    .eyebrow-dot { color: var(--border); }
 
     .free-badge {
       position: relative;
@@ -403,15 +403,6 @@
       align-items: center;
       padding: var(--space-feature-gap) 0;
       border-top: 1px solid var(--border-light);
-    }
-
-    .feature-row-eyebrow {
-      font-size: var(--text-chip-size);
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      margin-bottom: var(--space-3);
     }
 
     .feature-row-heading {
@@ -860,34 +851,23 @@
       margin: 0 auto;
     }
 
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-grid-gap);
+    /* Sequential, not columnar: the steps read in order and stay a different
+       layout family from the three-column use-cases section below. */
+    .steps-list {
       margin-top: var(--space-hero-v);
+      border-top: 1px solid var(--border-light);
     }
 
     .step {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-3);
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: var(--space-10);
+      align-items: baseline;
+      padding: var(--space-6) 0;
+      border-bottom: 1px solid var(--border-light);
     }
 
-    .step-number {
-      position: absolute;
-      top: -8px;
-      left: -4px;
-      font-size: 88px;
-      font-weight: 700;
-      color: rgba(44,74,122,0.07);
-      line-height: 1;
-      letter-spacing: -0.04em;
-      pointer-events: none;
-      user-select: none;
-    }
-
-    .step-content { position: relative; z-index: 1; padding-top: var(--space-hero-v); }
+    .steps-list .step-title { margin-bottom: 0; }
 
     .step-title {
       font-size: var(--text-step-size);
@@ -1036,7 +1016,7 @@
       .feature-row { grid-template-columns: 1fr; gap: 28px; padding: var(--space-hero-v) 0; }
       .feature-row.flip .feature-row-visual { order: 0; }
       .feature-row-body { max-width: none; }
-      .steps-grid { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 1fr; gap: var(--space-2); }
       .uses-row { grid-template-columns: 1fr; gap: var(--space-grid-gap); }
       .use-case {
         padding: var(--space-8) 0 0;
@@ -1072,7 +1052,7 @@
     <a href="/home.html" class="nav-logo" id="sd-logo" aria-label="SnapDraft home">
       SnapDraft
     </a>
-    <a href="/app" class="btn-primary">Open App →</a>
+    <a href="/app" class="btn-primary">Start Drawing →</a>
   </header>
 
   <main>
@@ -1082,10 +1062,8 @@
       <div class="hero-text">
         <div class="hero-eyebrow">
           <span class="free-badge" tabindex="0" role="note" aria-label="Free. Yes, actually free, no credit card, no trial, no catch.">FREE<span class="free-tooltip" aria-hidden="true">Yes, actually free. No credit card, no trial, no catch.</span></span>
-          <span class="eyebrow-dot">·</span>
-          OFFLINE-FIRST
-          <span class="eyebrow-dot">·</span>
-          NO ACCOUNT NEEDED
+          <span>OFFLINE-FIRST</span>
+          <span>NO ACCOUNT NEEDED</span>
         </div>
         <h1 id="hero-heading">Sketch floor plans<br>in your browser.</h1>
         <p class="hero-sub">More precise than graph paper. Faster than CAD. No tutorial required.</p>
@@ -1192,7 +1170,6 @@
         <!-- Row 1: Draw walls — the app mid-draw -->
         <div class="feature-row reveal">
           <div class="feature-row-text">
-            <p class="feature-row-eyebrow">Draw anything</p>
             <h3 class="feature-row-heading">Sketch a room<br>in minutes.</h3>
             <p class="feature-row-body">Click or drag to draw connected wall chains. Type <code>5'6"</code>, <code>3.5 m</code>, or <code>168 cm</code> for exact lengths. Snaps to endpoints, wall centerlines, and grid automatically. Corners always close clean.</p>
             <div class="feature-row-chips">
@@ -1302,7 +1279,6 @@
         <!-- Row 2: Dimensions / properties panel -->
         <div class="feature-row flip reveal">
           <div class="feature-row-text">
-            <p class="feature-row-eyebrow">Precise dimensions</p>
             <h3 class="feature-row-heading">Real measurements,<br>not guesses.</h3>
             <p class="feature-row-body">Click any wall or box to see and edit exact dimensions. The properties panel speaks feet-and-inches, meters, or centimeters, whichever you type. Label everything so you can think in rooms, not coordinates.</p>
             <div class="feature-row-chips">
@@ -1417,7 +1393,6 @@
         <!-- Row 3: Saves locally / plans manager -->
         <div class="feature-row reveal">
           <div class="feature-row-text">
-            <p class="feature-row-eyebrow">Always available</p>
             <h3 class="feature-row-heading">Saves in your browser.<br>Nothing to install.</h3>
             <p class="feature-row-body">SnapDraft runs entirely in your browser tab. No download, no account, no server. Your plans save automatically to local storage. Works offline after the first visit. Keep a separate plan for every room or project and switch between them in one click.</p>
             <div class="feature-row-chips">
@@ -1568,27 +1543,18 @@
         <div class="reveal">
           <h2 class="section-heading" id="how-heading">Open the app.<br>Start drawing.</h2>
         </div>
-        <div class="steps-grid">
+        <div class="steps-list">
           <div class="step reveal">
-            <div class="step-number" aria-hidden="true" data-target="01">00</div>
-            <div class="step-content">
-              <h3 class="step-title">Pick your tool</h3>
-              <div class="step-body">Seven tools, each with a keyboard shortcut. Press <strong>W</strong> for walls, <strong>B</strong> for furniture boxes, <strong>D</strong> for doors. No menus to dig through.</div>
-            </div>
+            <h3 class="step-title">Pick your tool</h3>
+            <div class="step-body">Seven tools, each with a keyboard shortcut. Press <strong>W</strong> for walls, <strong>B</strong> for furniture boxes, <strong>D</strong> for doors. No menus to dig through.</div>
           </div>
           <div class="step reveal">
-            <div class="step-number" aria-hidden="true" data-target="02">00</div>
-            <div class="step-content">
-              <h3 class="step-title">Draw</h3>
-              <div class="step-body">Click to place wall endpoints. Drag to create furniture boxes. Click any wall to drop a door or window. Type an exact dimension at any point.</div>
-            </div>
+            <h3 class="step-title">Draw</h3>
+            <div class="step-body">Click to place wall endpoints. Drag to create furniture boxes. Click any wall to drop a door or window. Type an exact dimension at any point.</div>
           </div>
           <div class="step reveal">
-            <div class="step-number" aria-hidden="true" data-target="03">00</div>
-            <div class="step-content">
-              <h3 class="step-title">Save or share</h3>
-              <div class="step-body">Your plan saves automatically to this browser. Share a link for small plans, or export and send the file.</div>
-            </div>
+            <h3 class="step-title">Save or share</h3>
+            <div class="step-body">Your plan saves automatically to this browser. Share a link for small plans, or export and send the file.</div>
           </div>
         </div>
       </div>
@@ -1602,7 +1568,6 @@
         </div>
         <div class="uses-row">
           <div class="use-case reveal">
-            <p class="feature-row-eyebrow">Furniture shopping</p>
             <div class="use-case-head">
               <svg class="use-case-icon-inline" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <rect x="6" y="14" width="28" height="16" rx="3" stroke="#2d5490" stroke-width="1.5"/>
@@ -1617,7 +1582,6 @@
             <p class="step-body">Open your floor plan in the store. Check the dimensions, drop the piece in, and see if it fits before you commit.</p>
           </div>
           <div class="use-case reveal">
-            <p class="feature-row-eyebrow">Rearranging a room</p>
             <div class="use-case-head">
               <svg class="use-case-icon-inline" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <rect x="4" y="10" width="14" height="12" rx="2" stroke="#2d5490" stroke-width="1.5"/>
@@ -1632,7 +1596,6 @@
             <p class="step-body">Sketch the room, drag the furniture around, and settle on a layout before you move anything heavy.</p>
           </div>
           <div class="use-case reveal">
-            <p class="feature-row-eyebrow">Reno planning</p>
             <div class="use-case-head">
               <svg class="use-case-icon-inline" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <rect x="6" y="6" width="28" height="28" rx="1" stroke="#2d5490" stroke-width="1.5" stroke-linecap="square"/>
@@ -1730,27 +1693,6 @@
     }, { threshold: 0.2 });
     if (heroSvg) heroObserver.observe(heroSvg);
 
-
-    // ── Step numbers count up ─────────────────────────────────
-    var stepNumbers = document.querySelectorAll('.step-number');
-    var stepObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        var el = e.target;
-        var target = parseInt(el.getAttribute('data-target'), 10);
-        var start = performance.now();
-        var duration = 500;
-        (function tick(now) {
-          var t = Math.min((now - start) / duration, 1);
-          var val = Math.floor(t * target);
-          el.textContent = val < 10 ? '0' + val : '' + val;
-          if (t < 1) requestAnimationFrame(tick);
-          else el.textContent = el.getAttribute('data-target');
-        })(start);
-        stepObserver.unobserve(el);
-      });
-    }, { threshold: 0.3 });
-    stepNumbers.forEach(function (el) { stepObserver.observe(el); });
 
   })();
   </script>

@@ -143,7 +143,7 @@ Roles describe intent — not sizes, weights, or pixels. A role is the same acro
 | **Step Title** | Small in-context heading | `h3.step-title` |
 | **Body** | Primary reading flow; 16px minimum | All `p` text, `.hero-sub`, `.feature-row-body`, `.step-body`, `.everywhere-body`, `.cta-sub` |
 | **Label** | UI chrome: buttons, section markers, badges | `.section-label`, `.step-label`, `.badge`, `.btn-*`, `.cta-link`, `.site-footer` |
-| **Chip** | Compact capability tags and eyebrows | `.feature-chip`, `.feature-row-eyebrow`, `.hero-eyebrow` |
+| **Chip** | Compact capability tags and eyebrows | `.feature-chip`, `.hero-eyebrow` |
 
 Test: can you explain each role without mentioning font sizes, weights, or pixels?
 
@@ -173,11 +173,11 @@ Text styles are the usable surface — they reference semantic tokens only, cont
 | **Step Title** | `--text-step-size` | Courier New | 700 | 1.5 | 0.04em | `.step-title` |
 | **Body** | `--text-body-size` (on `body`) | Josefin Sans | 400 | 1.75–1.85 | — | `.hero-sub`, `.feature-row-body`, `.everywhere-body`, `.step-body`, `.cta-sub` — inherit, no override |
 | **Label** | `--text-label-size` | Josefin Sans | 700 | default | 0.04–0.14em | `.section-label`, `.step-label`, `.badge`, `.btn-*`, `.cta-link`, `.site-footer` |
-| **Chip** | `--text-chip-size` | Josefin Sans | 700 | default | 0.06–0.14em | `.feature-chip`, `.feature-row-eyebrow`, `.hero-eyebrow` |
+| **Chip** | `--text-chip-size` | Josefin Sans | 700 | default | 0.06–0.14em | `.feature-chip`, `.hero-eyebrow` |
 
 ### All-Caps Rules
 
-Labels (`.section-label`, `.hero-eyebrow`, `.feature-row-eyebrow`, `.step-label`, `.cta-link`, `.btn-primary`, `.btn-secondary`) are `text-transform: uppercase`. **Always pair uppercase with generous letter-spacing (≥ 0.06em).** Cramped all-caps is a common failure mode — the letters blur together without tracking room.
+Labels (`.section-label`, `.hero-eyebrow`, `.step-label`, `.cta-link`, `.btn-primary`, `.btn-secondary`) are `text-transform: uppercase`. **Always pair uppercase with generous letter-spacing (≥ 0.06em).** Cramped all-caps is a common failure mode — the letters blur together without tracking room.
 
 | Usage | Letter-spacing |
 |---|---|
@@ -189,9 +189,9 @@ Labels (`.section-label`, `.hero-eyebrow`, `.feature-row-eyebrow`, `.step-label`
 
 `clamp()` is used for all heading sizes. The pattern is `clamp(min, fluid, max)` where the fluid value is a viewport unit. Roles remain semantically the same at all sizes — a Title is still a Title on mobile, just smaller.
 
-### Decorative Number (`step-number`)
+### Eyebrow Restraint
 
-The large faded step counters (`.step-number`) use Courier New at 88px, weight 700, color `rgba(44,74,122,0.07)`, letter-spacing `-0.04em`. These are purely decorative — `aria-hidden="true"` on every instance.
+An eyebrow is the small uppercase, wide-tracked label above a heading (`.hero-eyebrow`, `.section-label`). Cap them at **one per three sections** — the hero counts as one. Repeating an eyebrow above every section produces a templated rhythm and is the most common tell in generated marketing pages. A section's position on the page already categorises it; the heading alone is usually enough.
 
 ---
 
