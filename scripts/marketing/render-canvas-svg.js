@@ -418,14 +418,14 @@ const CANVASES = {
     ariaLabel: 'Floor plan sketch of a bedroom with furniture',
   }),
 
-  // Row 1: the whole app mid-draw. Three walls are down, the bottom wall is
-  // being drawn right-to-left and is snapping to the left wall's endpoint, and
-  // the dresser and armchair have not been placed yet.
+  // Row 1: the app mid-draw. Three walls are down, the bottom wall is being
+  // drawn right-to-left and is snapping to the left wall's endpoint, and the
+  // dresser and armchair have not been placed yet.
   row1: renderCanvas({
-    width: 1080,
+    width: 720,
     height: 640,
-    zoom: 1,
-    originFt: { x: -7.625, y: -2.5 },
+    zoom: 0.85,
+    originFt: { x: -4.794, y: -3.912 },
     hideLabels: HIDE_LABELS,
     omitWalls: [1], // bottom wall (and therefore its door)
     omitBoxes: ['Dresser', 'Armchair'],

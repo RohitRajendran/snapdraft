@@ -827,40 +827,6 @@
     }
 
 
-    .feature-row-featured {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-8);
-      text-align: center;
-    }
-    .feature-row-featured .feature-row-text:first-of-type {
-      max-width: 560px;
-      margin: 0 auto;
-    }
-    .feature-row-featured .feature-row-text:last-of-type {
-      max-width: 440px;
-      margin: 0 auto;
-    }
-    .feature-row-featured .feature-row-heading { margin-bottom: 0; }
-    .feature-row-featured .feature-row-visual { width: 100%; max-width: 560px; }
-    .feature-row-featured .feature-row-chips { justify-content: center; }
-
-    /* The full-app shot needs the whole content column. It sits directly under
-       the section header, so it stays left-aligned — a centred heading stacked
-       under the left-aligned section heading reads as two competing titles. */
-    .feature-row-featured.feature-row-wide {
-      align-items: stretch;
-      text-align: left;
-    }
-    .feature-row-featured.feature-row-wide .feature-row-visual { max-width: 820px; }
-    .feature-row-featured.feature-row-wide .feature-row-text:first-of-type,
-    .feature-row-featured.feature-row-wide .feature-row-text:last-of-type {
-      max-width: 560px;
-      margin: 0;
-    }
-    .feature-row-featured.feature-row-wide .feature-row-chips { justify-content: flex-start; }
-
     .uses-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1069,7 +1035,6 @@
       .hero-svg-wrapper { max-width: 480px; margin: 0 auto; }
       .feature-row { grid-template-columns: 1fr; gap: 28px; padding: var(--space-hero-v) 0; }
       .feature-row.flip .feature-row-visual { order: 0; }
-      .feature-row-featured { gap: var(--space-6); }
       .feature-row-body { max-width: none; }
       .steps-grid { grid-template-columns: 1fr; }
       .uses-row { grid-template-columns: 1fr; gap: var(--space-grid-gap); }
@@ -1224,82 +1189,84 @@
       </div>
       <div class="features-rows">
 
-        <!-- Row 1: Draw walls — the whole app, mid-draw -->
-        <div class="feature-row feature-row-featured feature-row-wide reveal">
+        <!-- Row 1: Draw walls — the app mid-draw -->
+        <div class="feature-row reveal">
           <div class="feature-row-text">
             <p class="feature-row-eyebrow">Draw anything</p>
-            <h3 class="feature-row-heading">Sketch a room in minutes.</h3>
+            <h3 class="feature-row-heading">Sketch a room<br>in minutes.</h3>
+            <p class="feature-row-body">Click or drag to draw connected wall chains. Type <code>5'6"</code>, <code>3.5 m</code>, or <code>168 cm</code> for exact lengths. Snaps to endpoints, wall centerlines, and grid automatically. Corners always close clean.</p>
+            <div class="feature-row-chips">
+              <span class="feature-chip">Wall tool</span>
+              <span class="feature-chip">Endpoint snap</span>
+              <span class="feature-chip">Doors &amp; windows</span>
+            </div>
           </div>
           <div class="feature-row-visual">
-            <div class="shot-fit" style="--shot-w: 1080; --shot-h: 640;" data-testid="shot-draw">
+            <div class="shot-fit" style="--shot-w: 720; --shot-h: 640;" data-testid="shot-draw">
               <div class="shot">
                 <!-- BEGIN:canvas-row1 -->
-                <svg class="shot-canvas" viewBox="0 0 1080 640" width="1080" height="640" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <rect width="1080" height="640" fill="#f5f0e8"/>
-                  <line x1="25" y1="0" x2="25" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="65" y1="0" x2="65" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="105" y1="0" x2="105" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
-                  <line x1="145" y1="0" x2="145" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="185" y1="0" x2="185" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="225" y1="0" x2="225" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                <svg class="shot-canvas" viewBox="0 0 720 640" width="720" height="640" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect width="720" height="640" fill="#f5f0e8"/>
+                  <line x1="27" y1="0" x2="27" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="61" y1="0" x2="61" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="95" y1="0" x2="95" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="129" y1="0" x2="129" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="163" y1="0" x2="163" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="197" y1="0" x2="197" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="231" y1="0" x2="231" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
                   <line x1="265" y1="0" x2="265" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="305" y1="0" x2="305" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
-                  <line x1="345" y1="0" x2="345" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="385" y1="0" x2="385" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="425" y1="0" x2="425" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="465" y1="0" x2="465" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="505" y1="0" x2="505" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
-                  <line x1="545" y1="0" x2="545" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="585" y1="0" x2="585" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="625" y1="0" x2="625" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="665" y1="0" x2="665" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="705" y1="0" x2="705" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
-                  <line x1="745" y1="0" x2="745" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="785" y1="0" x2="785" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="825" y1="0" x2="825" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="865" y1="0" x2="865" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="905" y1="0" x2="905" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
-                  <line x1="945" y1="0" x2="945" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="985" y1="0" x2="985" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="1025" y1="0" x2="1025" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="1065" y1="0" x2="1065" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="20" x2="1080" y2="20" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="60" x2="1080" y2="60" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="100" x2="1080" y2="100" stroke="#a8bcd4" stroke-width="0.75"/>
-                  <line x1="0" y1="140" x2="1080" y2="140" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="180" x2="1080" y2="180" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="220" x2="1080" y2="220" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="260" x2="1080" y2="260" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="300" x2="1080" y2="300" stroke="#a8bcd4" stroke-width="0.75"/>
-                  <line x1="0" y1="340" x2="1080" y2="340" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="380" x2="1080" y2="380" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="420" x2="1080" y2="420" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="460" x2="1080" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="500" x2="1080" y2="500" stroke="#a8bcd4" stroke-width="0.75"/>
-                  <line x1="0" y1="540" x2="1080" y2="540" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="580" x2="1080" y2="580" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="0" y1="620" x2="1080" y2="620" stroke="#ccd9e8" stroke-width="0.5"/>
-                  <line x1="305" y1="100" x2="305" y2="248.74" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
-                  <line x1="305" y1="368.74" x2="305" y2="540" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
-                  <line x1="905" y1="540" x2="905" y2="100" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
-                  <line x1="905" y1="100" x2="305" y2="100" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
-                  <line x1="295" y1="248.74" x2="315" y2="248.74" stroke="#2c2c2c" stroke-width="2"/>
-                  <line x1="295" y1="368.74" x2="315" y2="368.74" stroke="#2c2c2c" stroke-width="2"/>
-                  <line x1="301.67" y1="248.74" x2="301.67" y2="368.74" stroke="#2c2c2c" stroke-width="1"/>
-                  <line x1="308.33" y1="248.74" x2="308.33" y2="368.74" stroke="#2c2c2c" stroke-width="1"/>
-                  <g transform="translate(596.89 235.34) rotate(0) translate(-100 -133.33)">
-                    <rect width="200" height="266.67" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  <line x1="299" y1="0" x2="299" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="333" y1="0" x2="333" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="367" y1="0" x2="367" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="401" y1="0" x2="401" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="435" y1="0" x2="435" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="469" y1="0" x2="469" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="503" y1="0" x2="503" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="537" y1="0" x2="537" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="571" y1="0" x2="571" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="605" y1="0" x2="605" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="639" y1="0" x2="639" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="673" y1="0" x2="673" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="707" y1="0" x2="707" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="31.01" x2="720" y2="31.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="65.01" x2="720" y2="65.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="99.01" x2="720" y2="99.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="133.01" x2="720" y2="133.01" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="167.01" x2="720" y2="167.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="201.01" x2="720" y2="201.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="235.01" x2="720" y2="235.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="269.01" x2="720" y2="269.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="303.01" x2="720" y2="303.01" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="337.01" x2="720" y2="337.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="371.01" x2="720" y2="371.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="405.01" x2="720" y2="405.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="439.01" x2="720" y2="439.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="473.01" x2="720" y2="473.01" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="507.01" x2="720" y2="507.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="541.01" x2="720" y2="541.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="575.01" x2="720" y2="575.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="609.01" x2="720" y2="609.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="163" y1="133.01" x2="163" y2="259.43" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="163" y1="361.43" x2="163" y2="507.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="673" y1="507.01" x2="673" y2="133.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="673" y1="133.01" x2="163" y2="133.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="154.5" y1="259.43" x2="171.5" y2="259.43" stroke="#2c2c2c" stroke-width="2"/>
+                  <line x1="154.5" y1="361.43" x2="171.5" y2="361.43" stroke="#2c2c2c" stroke-width="2"/>
+                  <line x1="160.17" y1="259.43" x2="160.17" y2="361.43" stroke="#2c2c2c" stroke-width="1"/>
+                  <line x1="165.83" y1="259.43" x2="165.83" y2="361.43" stroke="#2c2c2c" stroke-width="1"/>
+                  <g transform="translate(411.1 248.05) rotate(0) translate(-85 -113.33)">
+                    <rect width="170" height="226.67" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
                     <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Bed</text>
                   </g>
-                  <g transform="translate(463.25 142.01) rotate(0) translate(-30 -40)">
-                    <rect width="60" height="80" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  <g transform="translate(297.5 168.72) rotate(0) translate(-25.5 -34)">
+                    <rect width="51" height="68" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
                   </g>
-                  <g transform="translate(731.29 142.01) rotate(0) translate(-30 -40)">
-                    <rect width="60" height="80" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  <g transform="translate(525.34 168.72) rotate(0) translate(-25.5 -34)">
+                    <rect width="51" height="68" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
                   </g>
-                  <line x1="905" y1="540" x2="305" y2="540" stroke="#b8c9e0" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="square"/>
-                  <circle cx="905" cy="540" r="5" fill="#2c2c2c"/>
-                  <circle cx="305" cy="540" r="8" fill="rgba(0,102,204,0.12)" stroke="#0066cc" stroke-width="2"/>
+                  <line x1="673" y1="507.01" x2="163" y2="507.01" stroke="#b8c9e0" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="square"/>
+                  <circle cx="673" cy="507.01" r="5" fill="#2c2c2c"/>
+                  <circle cx="163" cy="507.01" r="8" fill="rgba(0,102,204,0.12)" stroke="#0066cc" stroke-width="2"/>
                 </svg>
                 <!-- END:canvas-row1 -->
                 <div class="sd-topbar">
@@ -1324,18 +1291,10 @@
                   <div class="sd-divider"></div>
                   <div class="sd-tool"><span class="sd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span><span class="sd-toollabel">Help</span></div>
                 </div>
-                <div class="sd-diminput" style="left: 315px; top: 550px;">15&#39;</div>
+                <div class="sd-diminput" style="left: 175px; top: 508px;">15&#39;</div>
                 <div class="sd-fit">&#10530; Fit</div>
                 <div class="sd-scale">1 &#9633; = 1 ft</div>
                 </div>
-            </div>
-          </div>
-          <div class="feature-row-text">
-            <p class="feature-row-body">Click or drag to draw connected wall chains. Type <code>5'6"</code>, <code>3.5 m</code>, or <code>168 cm</code> for exact lengths. Snaps to endpoints, wall centerlines, and grid automatically. Corners always close clean.</p>
-            <div class="feature-row-chips">
-              <span class="feature-chip">Wall tool</span>
-              <span class="feature-chip">Endpoint snap</span>
-              <span class="feature-chip">Doors &amp; windows</span>
             </div>
           </div>
         </div>
@@ -1456,10 +1415,16 @@
         </div>
 
         <!-- Row 3: Saves locally / plans manager -->
-        <div class="feature-row feature-row-featured reveal">
+        <div class="feature-row reveal">
           <div class="feature-row-text">
             <p class="feature-row-eyebrow">Always available</p>
             <h3 class="feature-row-heading">Saves in your browser.<br>Nothing to install.</h3>
+            <p class="feature-row-body">SnapDraft runs entirely in your browser tab. No download, no account, no server. Your plans save automatically to local storage. Works offline after the first visit. Keep a separate plan for every room or project and switch between them in one click.</p>
+            <div class="feature-row-chips">
+              <span class="feature-chip">Offline-first</span>
+              <span class="feature-chip">No account</span>
+              <span class="feature-chip">Multiple plans</span>
+            </div>
           </div>
           <div class="feature-row-visual">
             <div class="shot-fit" style="--shot-w: 680; --shot-h: 460;" data-testid="shot-plans">
@@ -1589,14 +1554,6 @@
                   </div>
                 </div>
                 </div>
-            </div>
-          </div>
-          <div class="feature-row-text">
-            <p class="feature-row-body">SnapDraft runs entirely in your browser tab. No download, no account, no server. Your plans save automatically to local storage. Works offline after the first visit. Keep a separate plan for every room or project and switch between them in one click.</p>
-            <div class="feature-row-chips">
-              <span class="feature-chip">Offline-first</span>
-              <span class="feature-chip">No account</span>
-              <span class="feature-chip">Multiple plans</span>
             </div>
           </div>
         </div>
