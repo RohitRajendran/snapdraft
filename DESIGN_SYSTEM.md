@@ -110,7 +110,7 @@ Minor Third ratio (×1.2) from a 16px base. All sizes are derived from this sequ
 | `--ts-lg` | `clamp(22px, 2.4vw, 34px)` | +2 fluid |
 | `--ts-xl` | `clamp(26px, 3vw, 40px)` | +3 fluid |
 | `--ts-2xl` | `clamp(28px, 3.5vw, 48px)` | +4 fluid |
-| `--ts-3xl` | `clamp(34px, 5vw, 68px)` | +5 fluid |
+| `--ts-3xl` | `clamp(32px, 3.5vw, 42px)` | +5 fluid |
 
 Test: if you change a scale value, does every style that references it update automatically?
 
@@ -143,7 +143,7 @@ Roles describe intent — not sizes, weights, or pixels. A role is the same acro
 | **Step Title** | Small in-context heading | `h3.step-title` |
 | **Body** | Primary reading flow; 16px minimum | All `p` text, `.hero-sub`, `.feature-row-body`, `.step-body`, `.everywhere-body`, `.cta-sub` |
 | **Label** | UI chrome: buttons, section markers, badges | `.section-label`, `.step-label`, `.badge`, `.btn-*`, `.cta-link`, `.site-footer` |
-| **Chip** | Compact capability tags and eyebrows | `.feature-chip`, `.feature-row-eyebrow`, `.hero-eyebrow` |
+| **Chip** | Compact capability tags and eyebrows | `.feature-chip`, `.hero-eyebrow` |
 
 Test: can you explain each role without mentioning font sizes, weights, or pixels?
 
@@ -173,11 +173,11 @@ Text styles are the usable surface — they reference semantic tokens only, cont
 | **Step Title** | `--text-step-size` | Courier New | 700 | 1.5 | 0.04em | `.step-title` |
 | **Body** | `--text-body-size` (on `body`) | Josefin Sans | 400 | 1.75–1.85 | — | `.hero-sub`, `.feature-row-body`, `.everywhere-body`, `.step-body`, `.cta-sub` — inherit, no override |
 | **Label** | `--text-label-size` | Josefin Sans | 700 | default | 0.04–0.14em | `.section-label`, `.step-label`, `.badge`, `.btn-*`, `.cta-link`, `.site-footer` |
-| **Chip** | `--text-chip-size` | Josefin Sans | 700 | default | 0.06–0.14em | `.feature-chip`, `.feature-row-eyebrow`, `.hero-eyebrow` |
+| **Chip** | `--text-chip-size` | Josefin Sans | 700 | default | 0.06–0.14em | `.feature-chip`, `.hero-eyebrow` |
 
 ### All-Caps Rules
 
-Labels (`.section-label`, `.hero-eyebrow`, `.feature-row-eyebrow`, `.step-label`, `.cta-link`, `.btn-primary`, `.btn-secondary`) are `text-transform: uppercase`. **Always pair uppercase with generous letter-spacing (≥ 0.06em).** Cramped all-caps is a common failure mode — the letters blur together without tracking room.
+Labels (`.section-label`, `.hero-eyebrow`, `.step-label`, `.cta-link`, `.btn-primary`, `.btn-secondary`) are `text-transform: uppercase`. **Always pair uppercase with generous letter-spacing (≥ 0.06em).** Cramped all-caps is a common failure mode — the letters blur together without tracking room.
 
 | Usage | Letter-spacing |
 |---|---|
@@ -189,9 +189,9 @@ Labels (`.section-label`, `.hero-eyebrow`, `.feature-row-eyebrow`, `.step-label`
 
 `clamp()` is used for all heading sizes. The pattern is `clamp(min, fluid, max)` where the fluid value is a viewport unit. Roles remain semantically the same at all sizes — a Title is still a Title on mobile, just smaller.
 
-### Decorative Number (`step-number`)
+### Eyebrow Restraint
 
-The large faded step counters (`.step-number`) use Courier New at 88px, weight 700, color `rgba(44,74,122,0.07)`, letter-spacing `-0.04em`. These are purely decorative — `aria-hidden="true"` on every instance.
+An eyebrow is the small uppercase, wide-tracked label above a heading (`.hero-eyebrow`, `.section-label`). Cap them at **one per three sections** — the hero counts as one. Repeating an eyebrow above every section produces a templated rhythm and is the most common tell in generated marketing pages. A section's position on the page already categorises it; the heading alone is usually enough.
 
 ---
 
@@ -402,14 +402,14 @@ box-shadow: 0 8px 40px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06);
 
 ### Badges
 
-Two types — use `.badge` for feature lists, `.feature-chip` for tagging capabilities.
+Two types — use `.badge` for feature lists, `.feature-chip` for tagging capabilities. Both are neutral (ink-toned), consistent with the rule that blueprint blue is reserved for SVG illustrations, not UI chrome.
 
 | Component | Background | Border | Padding | Radius | Font size |
 |---|---|---|---|---|---|
-| `.badge` | `rgba(74,111,165,0.07)` | `1px solid rgba(74,111,165,0.2)` | `10px 14px` | `8px` | `12px` |
-| `.feature-chip` | `rgba(74,111,165,0.08)` | `1px solid rgba(74,111,165,0.18)` | `4px 10px` | `4px` | `11px` |
+| `.badge` | `transparent` | `1px solid var(--border)` | `10px 14px` | `8px` | `12px` |
+| `.feature-chip` | `transparent` | `1px solid var(--border)` | `4px 10px` | `4px` | `11px` |
 
-Both use `color: var(--blue)`, `font-weight: 700`, uppercase, `letter-spacing: 0.04–0.06em`.
+Both use `color: var(--ink-mid)`, `font-weight: 700`, uppercase, `letter-spacing: 0.04–0.06em`.
 
 ### Inputs (Properties Panel)
 
@@ -417,10 +417,15 @@ Both use `color: var(--blue)`, `font-weight: 700`, uppercase, `letter-spacing: 0
 padding: 6px 8px;
 border-radius: 4px;
 border: 1px solid var(--border);
-background: var(--bg);
-font-family: var(--font);   /* Courier New — intentional, matches app UI */
-font-size: 12–14px;
+background: white;
+font-family: var(--font-body);  /* Josefin Sans — the panel is body text, not display */
+font-size: 14px;
+min-height: 44px;
 ```
+
+Courier New (`--font`) is reserved inside the app for the logo wordmark, the plan
+name, on-canvas box labels, keyboard key badges, and the inline dimension input.
+Panel labels, field labels, buttons and inputs are all Josefin Sans.
 
 Focus: `outline: 2px solid #4a6fa5; outline-offset: 1px`.
 

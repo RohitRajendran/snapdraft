@@ -19,7 +19,8 @@
     "spell:check": "cspell \"src/**/*.{ts,tsx}\" --no-progress",
     "prepare": "husky",
     "generate:og-image": "bash scripts/og-image/generate-og-image.sh",
-    "generate:promo-graphics": "node scripts/promo-graphics/capture-gallery.js && node scripts/promo-graphics/capture-promo-graphics.js"
+    "generate:promo-graphics": "node scripts/promo-graphics/capture-gallery.js && node scripts/promo-graphics/capture-promo-graphics.js",
+    "generate:marketing-canvas": "node scripts/marketing/render-canvas-svg.js"
   },
   "dependencies": {
     "konva": "^10.2.3",
