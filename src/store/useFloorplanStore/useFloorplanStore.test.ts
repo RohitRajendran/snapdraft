@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useFloorplanStore } from './useFloorplanStore';
 import { FLOORPLAN_VERSION } from '../../utils/storage/storage';
+import { BOX_COLOR_PRESETS } from '../../utils/colors/colors';
 import type { Element, Opening } from '../../types';
 
 const wall = (id = 'w1'): Element => ({
@@ -154,6 +155,40 @@ describe('addElement', () => {
     useFloorplanStore.getState().addElement(box('b1'));
     expect(getElements()).toHaveLength(3);
   });
+
+  it('assigns the first preset color to the first box added', () => {
+    useFloorplanStore.getState().addElement(box('b1'));
+    const el = getElements()[0] as Extract<Element, { type: 'box' }>;
+    expect(el.color).toBe(BOX_COLOR_PRESETS[0]);
+  });
+
+  it('rotates through the preset colors for successive boxes', () => {
+    for (let i = 0; i < 6; i++) {
+      useFloorplanStore.getState().addElement(box(`b${i}`));
+    }
+    const colors = getElements().map((el) => (el as Extract<Element, { type: 'box' }>).color);
+    expect(colors).toEqual([
+      BOX_COLOR_PRESETS[0],
+      BOX_COLOR_PRESETS[1],
+      BOX_COLOR_PRESETS[2],
+      BOX_COLOR_PRESETS[3],
+      BOX_COLOR_PRESETS[4],
+      BOX_COLOR_PRESETS[0],
+    ]);
+  });
+
+  it('preserves an explicitly provided color instead of assigning one', () => {
+    const seeded = box('b1') as Extract<Element, { type: 'box' }>;
+    useFloorplanStore.getState().addElement({ ...seeded, color: '#123456' });
+    const el = getElements()[0] as Extract<Element, { type: 'box' }>;
+    expect(el.color).toBe('#123456');
+  });
+
+  it('does not assign a color to non-box elements', () => {
+    useFloorplanStore.getState().addElement(wall('w1'));
+    const el = getElements()[0] as Extract<Element, { type: 'wall' }>;
+    expect('color' in el).toBe(false);
+  });
 });
 
 describe('updateElement', () => {
@@ -189,6 +224,15 @@ describe('updateElement', () => {
     useFloorplanStore.getState().addElement(wall());
     useFloorplanStore.getState().updateElement('nonexistent', { points: [] });
     expect(getElements()).toHaveLength(1);
+  });
+
+  it('updates only the color field on a box and pushes undo history', () => {
+    useFloorplanStore.getState().addElement(box());
+    const pastBefore = useFloorplanStore.getState().past.length;
+    useFloorplanStore.getState().updateElement('b1', { color: '#abcdef' });
+    const el = getElements()[0] as Extract<Element, { type: 'box' }>;
+    expect(el.color).toBe('#abcdef');
+    expect(useFloorplanStore.getState().past.length).toBe(pastBefore + 1);
   });
 });
 

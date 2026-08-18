@@ -295,6 +295,36 @@ describe('parseImportedPlan', () => {
     expect(parseImportedPlan(plan)).not.toBeNull();
   });
 
+  it('returns null when box color is not a string', () => {
+    const plan = {
+      ...mockPlan,
+      elements: [
+        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0, color: 42 },
+      ],
+    };
+    expect(parseImportedPlan(plan)).toBeNull();
+  });
+
+  it('accepts box with valid optional color', () => {
+    const plan = {
+      ...mockPlan,
+      elements: [
+        { id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0, color: '#2d5490' },
+      ],
+    };
+    expect(parseImportedPlan(plan)).not.toBeNull();
+  });
+
+  it('accepts a box without color field (backward compat)', () => {
+    const plan = {
+      ...mockPlan,
+      elements: [{ id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0 }],
+    };
+    const result = parseImportedPlan(plan);
+    expect(result).not.toBeNull();
+    expect((result!.elements[0] as { color?: string }).color).toBeUndefined();
+  });
+
   it('accepts a legacy (v1) box using `height` and migrates it to `length`', () => {
     const plan = {
       ...mockPlan,

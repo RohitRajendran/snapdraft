@@ -18,6 +18,7 @@ export type Box = {
   length: number; // in feet
   rotation: number; // in degrees
   label?: string;
+  color?: string; // hex string; undefined = legacy default (Blueprint Blue)
 };
 
 export type Opening = {

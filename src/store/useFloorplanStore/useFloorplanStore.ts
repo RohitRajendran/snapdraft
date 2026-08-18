@@ -8,6 +8,7 @@ import {
   loadActiveId,
   saveActiveId,
 } from '../../utils/storage/storage';
+import { nextBoxColor } from '../../utils/colors/colors';
 
 const MAX_HISTORY = 50;
 
@@ -89,7 +90,8 @@ function sameElement(a: Element, b: Element): boolean {
       a.width === b.width &&
       a.length === b.length &&
       a.rotation === b.rotation &&
-      a.label === b.label
+      a.label === b.label &&
+      a.color === b.color
     );
   }
 
@@ -209,7 +211,11 @@ export const useFloorplanStore = create<FloorplanStore>((set, get) => ({
   addElement: (element) => {
     set((state) => {
       const current = state.plans.find((p) => p.id === state.activeId)?.elements ?? [];
-      return applyElements(state, [...current, element]);
+      const toAdd: Element =
+        element.type === 'box' && element.color === undefined
+          ? { ...element, color: nextBoxColor(current.filter((el) => el.type === 'box').length) }
+          : element;
+      return applyElements(state, [...current, toAdd]);
     });
   },
 

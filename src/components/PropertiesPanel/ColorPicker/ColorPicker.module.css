@@ -1,0 +1,65 @@
+.row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.swatch {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.swatch:hover {
+  border-color: var(--ink-light);
+}
+
+.swatch:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.swatchSelected {
+  border-color: var(--ink);
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3px var(--ink);
+}
+
+.customSwatch {
+  background: var(--surface-hover);
+}
+
+.glyph {
+  color: var(--ink-light);
+}
+
+.pencilBadge {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  padding: 1px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--ink-mid);
+}
+
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}

@@ -5,6 +5,7 @@ import { PropertiesPanel } from './PropertiesPanel';
 import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanStore';
 import { useToolStore } from '../../store/useToolStore/useToolStore';
 import type { Element } from '../../types';
+import { BOX_COLOR_PRESETS } from '../../utils/colors/colors';
 
 const wall: Element = {
   id: 'w1',
@@ -145,6 +146,30 @@ describe('PropertiesPanel', () => {
       render(<PropertiesPanel />);
       await userEvent.click(screen.getByTestId('delete-element'));
       expect(useFloorplanStore.getState().activePlan()?.elements).toHaveLength(0);
+    });
+
+    it('shows the color picker with 5 presets and a custom swatch', () => {
+      selectElement(box);
+      render(<PropertiesPanel />);
+      for (let i = 0; i < 5; i++) {
+        expect(screen.getByTestId(`box-color-swatch-${i}`)).toBeInTheDocument();
+      }
+      expect(screen.getByTestId('box-color-custom')).toBeInTheDocument();
+    });
+
+    it('clicking a preset swatch calls updateElement with the new color', async () => {
+      selectElement(box);
+      render(<PropertiesPanel />);
+      await userEvent.click(screen.getByTestId('box-color-swatch-2'));
+      expect(useFloorplanStore.getState().activePlan()?.elements[0]).toMatchObject({
+        color: BOX_COLOR_PRESETS[2],
+      });
+    });
+
+    it('defaults to the legacy blueprint color when box.color is undefined', () => {
+      selectElement(box);
+      render(<PropertiesPanel />);
+      expect(screen.getByTestId('box-color-swatch-0')).toHaveAttribute('aria-pressed', 'true');
     });
   });
 });
