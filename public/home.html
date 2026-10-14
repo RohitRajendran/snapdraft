@@ -67,6 +67,10 @@
       --shadow-card: 0 2px 16px rgba(0,0,0,0.06);
       --radius-btn: 8px;
       --radius-card: 12px;
+      --focus-ring: #4a6fa5;
+      /* app surface tokens — mirrored from src/index.css for the .shot mockups */
+      --surface-float: rgba(255,255,255,0.95);
+      --surface-hover: #ece8e0;
       --font: 'Courier New', monospace;
       --font-body: 'Josefin Sans', sans-serif;
 
@@ -78,7 +82,7 @@
       --ts-lg:   clamp(22px, 2.4vw, 34px);
       --ts-xl:   clamp(26px, 3vw, 40px);
       --ts-2xl:  clamp(28px, 3.5vw, 48px);
-      --ts-3xl:  clamp(34px, 5vw, 68px);
+      --ts-3xl:  clamp(32px, 3.5vw, 42px);
 
       /* Spacing scale (4pt grid; prefer 8pt multiples for new work) */
       --space-1:  4px;
@@ -144,7 +148,7 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    h1, h2, h3, .step-number, .nav-logo {
+    h1, h2, h3, .nav-logo {
       font-family: var(--font);
     }
 
@@ -177,12 +181,11 @@
       cursor: pointer;
       user-select: none;
     }
-    .nav-logo svg { flex-shrink: 0; }
-
     .btn-primary {
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      min-height: 44px;
       background: var(--ink);
       color: var(--bg);
       border: none;
@@ -204,6 +207,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      min-height: 44px;
       background: white;
       color: var(--ink);
       border: 1px solid var(--border);
@@ -221,9 +225,18 @@
     }
     .btn-secondary:hover { background: #ece8e0; border-color: #b8b4ac; }
 
+    .btn-primary:focus-visible,
+    .btn-secondary:focus-visible,
+    .nav-logo:focus-visible,
+    .cta-link:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
     /* ── HERO ────────────────────────────────────── */
     #hero {
-      min-height: calc(100vh - 56px);
+      min-height: calc(100vh - 56px);   /* fallback for browsers without dvh */
+      min-height: calc(100dvh - 56px);
       display: grid;
       grid-template-columns: 1fr 1fr;
       align-items: center;
@@ -243,11 +256,10 @@
       color: var(--ink-mid);
       margin-bottom: var(--space-5);
       display: flex;
-      gap: var(--space-2);
+      gap: var(--space-5);
       flex-wrap: wrap;
       align-items: center;
     }
-    .eyebrow-dot { color: var(--border); }
 
     .free-badge {
       position: relative;
@@ -322,6 +334,12 @@
       position: relative;
     }
 
+    /* The hero reuses the generated canvas artwork, but flows rather than fills */
+    .hero-svg-wrapper .shot-canvas {
+      position: static;
+      width: 100%;
+      height: auto;
+    }
 
     /* furniture animation */
     .furniture-item {
@@ -387,15 +405,6 @@
       border-top: 1px solid var(--border-light);
     }
 
-    .feature-row-eyebrow {
-      font-size: var(--text-chip-size);
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      margin-bottom: var(--space-3);
-    }
-
     .feature-row-heading {
       font-size: var(--text-subheading-size);
       font-weight: 700;
@@ -436,11 +445,399 @@
       box-shadow: 0 8px 40px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06);
     }
 
-    .feature-row-visual svg { display: block; width: 100%; }
-
     .feature-row.flip .feature-row-visual { order: -1; }
 
-    .use-case-icon { width: 40px; height: 40px; margin-bottom: 10px; }
+    /* ── APP SHOT ───────────────────────────────────────────────
+       Recreations of the real SnapDraft UI. Every value below is copied from
+       the component that owns it, so these can be diffed against the app
+       instead of eyeballed — src/tests/marketingMockups.test.ts enforces the
+       ones most likely to drift:
+
+         .sd-topbar   ← src/components/Canvas/TopBar/TopBar.module.css
+         .sd-toolbar  ← src/components/Toolbar/Toolbar.module.css
+         .sd-panel    ← src/components/PropertiesPanel/PropertiesPanel.module.css
+                        + PropertiesPanel/FtInInput/FtInInput.module.css
+         .sd-modal    ← src/components/FloorplanManager/FloorplanManager.module.css
+         .sd-fit,
+         .sd-diminput ← src/components/Canvas/DrawingCanvas/DrawingCanvas.module.css
+         .sd-scale    ← src/components/Canvas/ScaleBar/ScaleBar.module.css
+
+       Icons are the real lucide-react glyphs (node_modules/lucide-react).
+       The frame is laid out at the app's true pixel sizes and then scaled to
+       fit its column, so no size in here is re-derived by hand.
+       Canvas artwork is generated: npm run generate:marketing-canvas */
+
+    .shot-fit {
+      container-type: inline-size;
+      width: 100%;
+      aspect-ratio: var(--shot-w) / var(--shot-h);
+      overflow: hidden;
+    }
+
+    .shot {
+      position: relative;
+      width: calc(var(--shot-w) * 1px);
+      height: calc(var(--shot-h) * 1px);
+      transform: scale(calc(100cqw / (var(--shot-w) * 1px)));
+      transform-origin: top left;
+      background: var(--bg);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--ink);
+      user-select: none;
+    }
+
+    .shot-canvas { position: absolute; inset: 0; display: block; }
+
+    /* TopBar */
+    .sd-topbar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 52px;
+      background: rgba(var(--bg-rgb), 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      z-index: 100;
+    }
+    .sd-logo {
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink);
+      padding: 4px 8px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      line-height: 1;
+    }
+    .sd-planname { flex: 1; display: flex; justify-content: center; }
+    .sd-planname > span {
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ink-dark);
+      padding: 4px 12px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    .sd-plansbtn {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--ink-dark);
+      padding: 6px 14px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Toolbar */
+    .sd-toolbar {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      background: var(--surface-float);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+      z-index: 100;
+    }
+    .sd-tool {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--ink);
+      min-width: 60px;
+      min-height: 60px;
+    }
+    .sd-tool.is-active { background: var(--ink); color: var(--bg); }
+    .sd-tool.is-disabled { opacity: 0.35; }
+    .sd-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+    }
+    .sd-icon svg { width: 100%; height: 100%; }
+    .sd-toollabel {
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .sd-group {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      border-radius: 10px;
+    }
+    .sd-group-main {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px 6px;
+      border-radius: 10px 10px 0 0;
+      background: transparent;
+      color: var(--ink);
+      min-width: 60px;
+    }
+    .sd-group-main .sd-icon { width: 26px; height: 26px; }
+    .sd-group.is-active .sd-group-main { background: var(--ink); color: white; }
+    .sd-group-foot {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 3px 8px 6px;
+      border-radius: 0 0 10px 10px;
+      background: transparent;
+      color: var(--ink);
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+    .sd-group.is-active .sd-group-foot {
+      background: var(--ink-dark);
+      color: var(--bg);
+      border-top-color: rgba(255,255,255,0.12);
+    }
+    .sd-chevron { font-size: 10px; line-height: 1; opacity: 0.6; }
+    .sd-divider { height: 1px; background: var(--border-light); margin: 4px 0; }
+
+    /* PropertiesPanel */
+    .sd-panel {
+      position: absolute;
+      right: 20px;
+      top: 60px;
+      width: 220px;
+      background: rgba(var(--bg-rgb), 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      font-family: var(--font-body);
+      z-index: 100;
+    }
+    .sd-panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+    .sd-fields { display: flex; flex-direction: column; gap: 10px; }
+    .sd-field { display: flex; flex-direction: column; gap: 4px; }
+    /* FtInInput labels are --ink-mid; the panel's own labels are --ink */
+    .sd-fieldlabel {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-mid);
+    }
+    .sd-fieldlabel.sd-own { color: var(--ink); }
+    .sd-input {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--ink);
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    .sd-delete {
+      margin-top: 4px;
+      border: 1px solid var(--color-destructive);
+      border-radius: 4px;
+      color: var(--color-destructive);
+      font-size: 12px;
+      padding: 6px 8px;
+      min-height: 44px;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    /* FloorplanManager */
+    .sd-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .sd-modal {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      font-family: var(--font-body);
+    }
+    .sd-modal-head { display: flex; justify-content: space-between; align-items: center; }
+    .sd-modal-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .sd-close {
+      min-height: 44px;
+      min-width: 44px;
+      border-radius: 6px;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sd-list { display: flex; flex-direction: column; gap: 6px; list-style: none; }
+    .sd-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+    }
+    .sd-item.is-active { background: var(--surface-hover); border-color: var(--border); }
+    .sd-item-name {
+      flex: 1;
+      font-size: 14px;
+      color: var(--ink);
+      padding: 4px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    .sd-item-actions { display: flex; gap: 4px; }
+    .sd-actionbtn {
+      color: var(--ink);
+      padding: 4px 8px;
+      min-height: 44px;
+      min-width: 44px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sd-modal-foot { display: flex; flex-direction: column; gap: 8px; }
+    .sd-importbtn, .sd-createbtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      min-height: 44px;
+    }
+    .sd-importbtn { border: 1px solid var(--border); color: var(--ink); }
+    .sd-createbtn { background: var(--ink); color: var(--bg); }
+
+    /* Canvas chrome */
+    .sd-fit {
+      position: absolute;
+      left: 20px;
+      bottom: 20px;
+      padding: 6px 10px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      background: rgba(var(--bg-rgb), 0.92);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--ink);
+      backdrop-filter: blur(4px);
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      z-index: 50;
+    }
+    .sd-scale {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      background: rgba(var(--bg-rgb), 0.85);
+      backdrop-filter: blur(4px);
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      color: var(--ink);
+      z-index: 50;
+    }
+    .sd-diminput {
+      position: absolute;
+      width: 100px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255,255,255,0.97);
+      border: 1.5px solid var(--focus-ring);
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: var(--ink);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 200;
+    }
+
+
+    .uses-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: var(--space-hero-v);
+    }
+    .use-case {
+      padding: 0 var(--space-8);
+      border-left: 1px solid var(--border-light);
+    }
+    .use-case:first-child { padding-left: 0; border-left: none; }
+    .use-case:last-child { padding-right: 0; }
+
+    .use-case-head {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-2);
+    }
+    .use-case-head .step-title { margin-bottom: 0; }
+    .use-case-icon-inline { width: 32px; height: 32px; flex-shrink: 0; }
 
     /* ── HOW IT WORKS ───────────────────────────── */
     #how {
@@ -454,43 +851,23 @@
       margin: 0 auto;
     }
 
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-grid-gap);
+    /* Sequential, not columnar: the steps read in order and stay a different
+       layout family from the three-column use-cases section below. */
+    .steps-list {
       margin-top: var(--space-hero-v);
+      border-top: 1px solid var(--border-light);
     }
 
     .step {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-3);
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: var(--space-10);
+      align-items: baseline;
+      padding: var(--space-6) 0;
+      border-bottom: 1px solid var(--border-light);
     }
 
-    .step-number {
-      position: absolute;
-      top: -8px;
-      left: -4px;
-      font-size: 88px;
-      font-weight: 700;
-      color: rgba(44,74,122,0.07);
-      line-height: 1;
-      letter-spacing: -0.04em;
-      pointer-events: none;
-      user-select: none;
-    }
-
-    .step-content { position: relative; z-index: 1; padding-top: var(--space-hero-v); }
-
-    .step-label {
-      font-size: var(--text-label-size);
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      margin-bottom: var(--space-2);
-    }
+    .steps-list .step-title { margin-bottom: 0; }
 
     .step-title {
       font-size: var(--text-step-size);
@@ -567,7 +944,6 @@
       text-align: center;
       background: var(--ink-dark);
     }
-    #cta .section-label { color: rgba(255,255,255,0.65); }
     #cta .cta-heading { color: var(--bg); }
     #cta .cta-sub { color: rgba(var(--bg-rgb),0.8); }
     #cta .btn-primary { background: var(--bg); color: var(--ink-dark); }
@@ -640,7 +1016,15 @@
       .feature-row { grid-template-columns: 1fr; gap: 28px; padding: var(--space-hero-v) 0; }
       .feature-row.flip .feature-row-visual { order: 0; }
       .feature-row-body { max-width: none; }
-      .steps-grid { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 1fr; gap: var(--space-2); }
+      .uses-row { grid-template-columns: 1fr; gap: var(--space-grid-gap); }
+      .use-case {
+        padding: var(--space-8) 0 0;
+        border-left: none;
+        border-top: 1px solid var(--border-light);
+      }
+      .use-case:first-child { padding-top: 0; border-top: none; }
+      .use-case:last-child { padding-bottom: 0; }
       .everywhere-inner { grid-template-columns: 1fr; gap: var(--space-grid-gap); }
       .site-header { padding: 0 var(--space-content-h-sm); }
       .features-inner { padding: var(--space-section-v-sm) var(--space-content-h-sm); }
@@ -668,7 +1052,7 @@
     <a href="/home.html" class="nav-logo" id="sd-logo" aria-label="SnapDraft home">
       SnapDraft
     </a>
-    <a href="/app" class="btn-primary">Open App →</a>
+    <a href="/app" class="btn-primary">Start Drawing →</a>
   </header>
 
   <main>
@@ -677,15 +1061,12 @@
     <section id="hero" aria-labelledby="hero-heading">
       <div class="hero-text">
         <div class="hero-eyebrow">
-          <span class="free-badge" tabindex="0" role="note" aria-label="Free — Yes, actually free. No credit card, no trial, no catch.">FREE<span class="free-tooltip" aria-hidden="true">Yes, actually free. No credit card, no trial, no catch.</span></span>
-          <span class="eyebrow-dot">·</span>
-          OFFLINE-FIRST
-          <span class="eyebrow-dot">·</span>
-          NO ACCOUNT NEEDED
+          <span class="free-badge" tabindex="0" role="note" aria-label="Free. Yes, actually free, no credit card, no trial, no catch.">FREE<span class="free-tooltip" aria-hidden="true">Yes, actually free. No credit card, no trial, no catch.</span></span>
+          <span>OFFLINE-FIRST</span>
+          <span>NO ACCOUNT NEEDED</span>
         </div>
-        <h1 id="hero-heading">Sketch floor<br>plans in your<br>browser.</h1>
-        <p class="hero-sub">Professional CAD has a learning curve measured in days. Graph paper doesn't snap to a grid. SnapDraft is the middle: precise enough to trust, fast enough to actually use.</p>
-        <p class="hero-sub-small">From idea to floor plan in minutes. No tutorial required.</p>
+        <h1 id="hero-heading">Sketch floor plans<br>in your browser.</h1>
+        <p class="hero-sub">More precise than graph paper. Faster than CAD. No tutorial required.</p>
         <div class="hero-ctas">
           <a href="/app" class="btn-primary">Start Drawing →</a>
           <a href="#how" class="btn-secondary">See How It Works</a>
@@ -693,95 +1074,87 @@
       </div>
 
       <div class="hero-svg-wrapper" id="hero-svg-wrapper">
-        <svg id="hero-svg" viewBox="0 0 560 460" xmlns="http://www.w3.org/2000/svg"
-          style="width:100%;display:block;" aria-label="Floor plan sketch of a bedroom with furniture">
-          <defs>
-            <pattern id="hp-minor" width="28" height="28" patternUnits="userSpaceOnUse">
-              <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#ccd9e8" stroke-width="0.5"/>
-            </pattern>
-            <pattern id="hp-major" width="140" height="140" patternUnits="userSpaceOnUse">
-              <rect width="140" height="140" fill="url(#hp-minor)"/>
-              <path d="M 140 0 L 0 0 0 140" fill="none" stroke="#a8bcd4" stroke-width="0.75"/>
-            </pattern>
-          </defs>
-
-          <!-- grid -->
+        <!-- BEGIN:canvas-hero -->
+        <svg class="shot-canvas" viewBox="0 0 560 460" width="560" height="460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Floor plan sketch of a bedroom with furniture">
           <rect width="560" height="460" fill="#f5f0e8"/>
-          <rect width="560" height="460" fill="url(#hp-major)"/>
-
-          <!-- WALLS: 15ft×11ft room at 28px/ft. Origin (76,66). Width=420, Height=308 -->
-          <!-- Bottom wall has door gap at x=216..300 (3ft door, center-left) -->
-          <!-- Left wall has window gap at y=150..234 (3ft window) -->
-          <polyline
-            points="76,374 76,234"
-            fill="none" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
-          <!-- window gap in left wall -->
-          <polyline
-            points="76,150 76,66 496,66 496,374 300,374"
-            fill="none" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
-          <!-- door gap in bottom wall -->
-          <polyline
-            points="76,374 216,374"
-            fill="none" stroke="#2c2c2c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
-
-          <!-- Window symbol: two thin parallel pane lines spanning the wall gap -->
-          <line x1="71" y1="150" x2="71" y2="234" stroke="#2c2c2c" stroke-width="1.5"/>
-          <line x1="81" y1="150" x2="81" y2="234" stroke="#2c2c2c" stroke-width="1.5"/>
-
-          <!-- Door (bottom wall) — hinge at (216,374), swings into room -->
-          <g id="hero-door">
-            <!-- door leaf -->
-            <line id="door-leaf" x1="216" y1="374" x2="216" y2="290" stroke="#2c2c2c" stroke-width="2"/>
-            <!-- door arc: quarter circle from (216,290) around hinge (216,374) to (300,374) -->
-            <path id="door-arc-path" class="door-arc"
-              d="M 216,290 A 84,84 0 0,1 300,374"
-              fill="none" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <line x1="6.39" y1="0" x2="6.39" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="35.19" y1="0" x2="35.19" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="63.99" y1="0" x2="63.99" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+          <line x1="92.79" y1="0" x2="92.79" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="121.59" y1="0" x2="121.59" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="150.39" y1="0" x2="150.39" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="179.19" y1="0" x2="179.19" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="207.99" y1="0" x2="207.99" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+          <line x1="236.79" y1="0" x2="236.79" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="265.59" y1="0" x2="265.59" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="294.39" y1="0" x2="294.39" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="323.19" y1="0" x2="323.19" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="351.99" y1="0" x2="351.99" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+          <line x1="380.79" y1="0" x2="380.79" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="409.59" y1="0" x2="409.59" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="438.39" y1="0" x2="438.39" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="467.19" y1="0" x2="467.19" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="495.99" y1="0" x2="495.99" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+          <line x1="524.79" y1="0" x2="524.79" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="553.59" y1="0" x2="553.59" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="14" x2="560" y2="14" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="42.8" x2="560" y2="42.8" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="71.6" x2="560" y2="71.6" stroke="#a8bcd4" stroke-width="0.75"/>
+          <line x1="0" y1="100.4" x2="560" y2="100.4" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="129.2" x2="560" y2="129.2" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="158" x2="560" y2="158" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="186.8" x2="560" y2="186.8" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="215.6" x2="560" y2="215.6" stroke="#a8bcd4" stroke-width="0.75"/>
+          <line x1="0" y1="244.4" x2="560" y2="244.4" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="273.2" x2="560" y2="273.2" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="302" x2="560" y2="302" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="330.8" x2="560" y2="330.8" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="359.6" x2="560" y2="359.6" stroke="#a8bcd4" stroke-width="0.75"/>
+          <line x1="0" y1="388.4" x2="560" y2="388.4" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="417.2" x2="560" y2="417.2" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="0" y1="446" x2="560" y2="446" stroke="#ccd9e8" stroke-width="0.5"/>
+          <line x1="63.99" y1="71.6" x2="63.99" y2="178.69" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+          <line x1="63.99" y1="265.09" x2="63.99" y2="388.4" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+          <line x1="63.99" y1="388.4" x2="237.58" y2="388.4" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+          <line x1="323.98" y1="388.4" x2="495.99" y2="388.4" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+          <line x1="495.99" y1="388.4" x2="495.99" y2="71.6" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+          <line x1="495.99" y1="71.6" x2="63.99" y2="71.6" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+          <line x1="56.79" y1="178.69" x2="71.19" y2="178.69" stroke="#2c2c2c" stroke-width="2"/>
+          <line x1="56.79" y1="265.09" x2="71.19" y2="265.09" stroke="#2c2c2c" stroke-width="2"/>
+          <line x1="61.59" y1="178.69" x2="61.59" y2="265.09" stroke="#2c2c2c" stroke-width="1"/>
+          <line x1="66.39" y1="178.69" x2="66.39" y2="265.09" stroke="#2c2c2c" stroke-width="1"/>
+          <path d="M 323.98 388.4 L 237.58 388.4 A 86.4 86.4 0 0 1 323.98 302 Z" fill="rgba(255,255,255,0.3)" stroke="#2c2c2c" stroke-width="1.5"/>
+          <line x1="323.98" y1="388.4" x2="323.98" y2="302" stroke="#2c2c2c" stroke-width="1.5"/>
+          <g class="furniture-item fi-0">
+          <g transform="translate(274.16 169.04) rotate(0) translate(-72 -96)">
+            <rect width="144" height="192" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Bed</text>
           </g>
-
-          <!-- FURNITURE (each has a tooltip title and wiggle on hover) -->
-          <!-- Bed -->
-          <g class="furniture-item fi-0" id="fi-bed" data-label="Bed" data-dims="5' × 6'8&quot;">
-            <rect x="185" y="68" width="196" height="192"
-              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
-              stroke-dasharray="4 3" rx="1"/>
-            <text x="190" y="82" font-family="Courier New" font-size="11" fill="#2d5490">Bed</text>
           </g>
-
-          <!-- Left nightstand — directly beside left edge of bed (x=129..185) -->
-          <g class="furniture-item fi-1" id="fi-ns-l" data-label="Nightstand" data-dims="2' × 2'">
-            <rect x="129" y="68" width="56" height="56"
-              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
-              stroke-dasharray="4 3" rx="1"/>
-            <text x="133" y="82" font-family="Courier New" font-size="10" fill="#2d5490">NS</text>
+          <g class="furniture-item fi-1">
+          <g transform="translate(177.93 101.84) rotate(0) translate(-21.6 -28.8)">
+            <rect width="43.2" height="57.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
           </g>
-
-          <!-- Right nightstand -->
-          <g class="furniture-item fi-2" id="fi-ns-r" data-label="Nightstand" data-dims="2' × 2'">
-            <rect x="381" y="68" width="56" height="56"
-              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
-              stroke-dasharray="4 3" rx="1"/>
-            <text x="385" y="82" font-family="Courier New" font-size="10" fill="#2d5490">NS</text>
           </g>
-
-          <!-- Dresser — flush with right wall (x=356..496 = 5ft, y=318..374 = 2ft) -->
-          <g class="furniture-item fi-3" id="fi-dresser" data-label="Dresser" data-dims="5' × 2'">
-            <rect x="356" y="318" width="140" height="56"
-              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
-              stroke-dasharray="4 3" rx="1"/>
-            <text x="360" y="332" font-family="Courier New" font-size="10" fill="#2d5490">Dresser</text>
+          <g class="furniture-item fi-2">
+          <g transform="translate(370.92 101.84) rotate(0) translate(-21.6 -28.8)">
+            <rect width="43.2" height="57.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
           </g>
-
-          <!-- Armchair (rotated) -->
-          <g class="furniture-item fi-4" id="fi-chair"
-            data-label="Armchair" data-dims="2'8&quot; × 2'8&quot;"
-            style="transform:translate(136px,326px) rotate(-22deg); transform-box:fill-box; transform-origin:center;">
-            <rect x="-38" y="-38" width="76" height="76"
-              fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5"
-              stroke-dasharray="4 3" rx="1"/>
-            <text x="-34" y="-24" font-family="Courier New" font-size="9" fill="#2d5490">Chair</text>
           </g>
-
+          <g class="furniture-item fi-3">
+          <g transform="translate(473.02 315.74) rotate(-90) translate(-72 -21.6)">
+            <rect width="144" height="43.2" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Dresser</text>
+          </g>
+          </g>
+          <g class="furniture-item fi-4">
+          <g transform="translate(113.88 338.59) rotate(-25) translate(-36 -36)">
+            <rect width="72" height="72" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Armchair</text>
+          </g>
+          </g>
         </svg>
+        <!-- END:canvas-hero -->
       </div>
     </section>
 
@@ -794,12 +1167,11 @@
       </div>
       <div class="features-rows">
 
-        <!-- Row 1: Draw walls -->
+        <!-- Row 1: Draw walls — the app mid-draw -->
         <div class="feature-row reveal">
           <div class="feature-row-text">
-            <p class="feature-row-eyebrow">Draw anything</p>
             <h3 class="feature-row-heading">Sketch a room<br>in minutes.</h3>
-            <p class="feature-row-body">Click or drag to draw connected wall chains. Type <code>5'6"</code>, <code>3.5 m</code>, or <code>168 cm</code> for exact lengths. Snaps to endpoints, wall centerlines, and grid automatically — corners always close clean.</p>
+            <p class="feature-row-body">Click or drag to draw connected wall chains. Type <code>5'6"</code>, <code>3.5 m</code>, or <code>168 cm</code> for exact lengths. Snaps to endpoints, wall centerlines, and grid automatically. Corners always close clean.</p>
             <div class="feature-row-chips">
               <span class="feature-chip">Wall tool</span>
               <span class="feature-chip">Endpoint snap</span>
@@ -807,90 +1179,108 @@
             </div>
           </div>
           <div class="feature-row-visual">
-            <svg viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <defs>
-                <pattern id="fr1-minor" width="18" height="18" patternUnits="userSpaceOnUse">
-                  <path d="M 18 0 L 0 0 0 18" fill="none" stroke="#ccd9e8" stroke-width="0.4"/>
-                </pattern>
-                <pattern id="fr1-major" width="90" height="90" patternUnits="userSpaceOnUse">
-                  <rect width="90" height="90" fill="url(#fr1-minor)"/>
-                  <path d="M 90 0 L 0 0 0 90" fill="none" stroke="#a8bcd4" stroke-width="0.6"/>
-                </pattern>
-              </defs>
-              <rect width="560" height="360" fill="#f5f0e8"/>
-              <rect width="560" height="360" fill="url(#fr1-major)"/>
-              <!-- Top bar -->
-              <rect width="560" height="30" fill="rgba(245,240,232,0.97)"/>
-              <line x1="0" y1="30" x2="560" y2="30" stroke="#d0ccc4" stroke-width="0.75"/>
-              <text x="14" y="20" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.1em" fill="#2c2c2c">SNAPDRAFT</text>
-              <text x="280" y="20" text-anchor="middle" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.05em" fill="#2c2c2c">Bedroom</text>
-              <rect x="490" y="9" width="58" height="16" rx="3" fill="white" stroke="#c8c4bc" stroke-width="0.75"/>
-              <text x="519" y="20" text-anchor="middle" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.04em" fill="#2c2c2c">PLANS ⊞</text>
-              <!-- Toolbar -->
-              <rect x="10" y="38" width="58" height="286" rx="8" fill="white" stroke="#d0ccc4" stroke-width="0.75"/>
-              <!-- SELECT active -->
-              <rect x="13" y="41" width="52" height="52" rx="6" fill="#2c2c2c"/>
-              <path d="M 38 52 L 30 67 L 34 64 L 35.5 70 L 38.5 69 L 37 62.5 L 42 65 Z" fill="white"/>
-              <text x="39" y="85" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.07em" fill="rgba(255,255,255,0.9)">SELECT</text>
-              <!-- WALL -->
-              <rect x="27" y="103" width="9" height="9" rx="1" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
-              <rect x="38" y="103" width="9" height="9" rx="1" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
-              <rect x="27" y="114" width="9" height="9" rx="1" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
-              <rect x="38" y="114" width="9" height="9" rx="1" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
-              <text x="39" y="135" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.07em" fill="#4a4a4a">WALL</text>
-              <!-- BOX -->
-              <rect x="25" y="147" width="28" height="20" rx="2" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
-              <text x="39" y="181" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.07em" fill="#4a4a4a">BOX</text>
-              <!-- MEASURE -->
-              <rect x="23" y="192" width="32" height="14" rx="1.5" fill="none" stroke="#2c2c2c" stroke-width="1.2"/>
-              <line x1="27" y1="192" x2="27" y2="206" stroke="#2c2c2c" stroke-width="1"/>
-              <line x1="32" y1="196" x2="32" y2="206" stroke="#2c2c2c" stroke-width="0.75"/>
-              <line x1="39" y1="196" x2="39" y2="206" stroke="#2c2c2c" stroke-width="0.75"/>
-              <line x1="51" y1="192" x2="51" y2="206" stroke="#2c2c2c" stroke-width="1"/>
-              <text x="39" y="222" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.04em" fill="#4a4a4a">MEASURE</text>
-              <!-- Divider -->
-              <line x1="16" y1="230" x2="62" y2="230" stroke="#e8e4dc" stroke-width="0.75"/>
-              <text x="39" y="248" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.06em" fill="#c0bbb4">UNDO</text>
-              <text x="39" y="268" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.06em" fill="#c0bbb4">REDO</text>
-              <text x="39" y="306" text-anchor="middle" font-family="Courier New" font-size="7" font-weight="700" letter-spacing="0.06em" fill="#c0bbb4">HELP</text>
-              <!-- Room walls: rect with window gap left, door gap bottom -->
-              <line x1="90" y1="52" x2="90" y2="175" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
-              <line x1="90" y1="230" x2="90" y2="334" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
-              <line x1="90" y1="52" x2="482" y2="52" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
-              <line x1="482" y1="52" x2="482" y2="334" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
-              <line x1="220" y1="334" x2="482" y2="334" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
-              <!-- Window symbol on left wall -->
-              <line x1="86" y1="175" x2="86" y2="230" stroke="#2c2c2c" stroke-width="1.5"/>
-              <line x1="94" y1="175" x2="94" y2="230" stroke="#2c2c2c" stroke-width="1.5"/>
-              <!-- Door arc bottom left -->
-              <line x1="90" y1="334" x2="90" y2="214" stroke="#2c2c2c" stroke-width="1.5"/>
-              <path d="M 90,214 A 120,120 0 0,1 210,334" fill="none" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-              <!-- Bed -->
-              <rect x="168" y="56" width="224" height="194" fill="rgba(74,111,165,0.08)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="5 3" rx="1"/>
-              <text x="174" y="72" font-family="Courier New" font-size="11" fill="#2d5490">Bed</text>
-              <!-- Nightstands -->
-              <rect x="94" y="56" width="72" height="72" fill="rgba(74,111,165,0.08)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="5 3" rx="1"/>
-              <text x="98" y="71" font-family="Courier New" font-size="8" fill="#2d5490">NS</text>
-              <rect x="394" y="56" width="86" height="72" fill="rgba(74,111,165,0.08)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="5 3" rx="1"/>
-              <text x="398" y="71" font-family="Courier New" font-size="8" fill="#2d5490">NS</text>
-              <!-- Snap indicator -->
-              <circle cx="482" cy="52" r="10" fill="none" stroke="#2d5490" stroke-width="2"/>
-              <circle cx="482" cy="52" r="3.5" fill="#2d5490"/>
-              <!-- Fit + scale bar -->
-              <rect x="78" y="347" width="36" height="11" rx="2.5" fill="white" stroke="#c8c4bc" stroke-width="0.75"/>
-              <text x="96" y="356" text-anchor="middle" font-family="Courier New" font-size="7" fill="#2c2c2c">↙ Fit</text>
-              <rect x="444" y="347" width="66" height="11" rx="2.5" fill="white" stroke="#c8c4bc" stroke-width="0.75"/>
-              <text x="477" y="356" text-anchor="middle" font-family="Courier New" font-size="7" fill="#6a6a6a">1 □ = 1 ft</text>
-            </svg>
+            <div class="shot-fit" style="--shot-w: 720; --shot-h: 640;" data-testid="shot-draw">
+              <div class="shot">
+                <!-- BEGIN:canvas-row1 -->
+                <svg class="shot-canvas" viewBox="0 0 720 640" width="720" height="640" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect width="720" height="640" fill="#f5f0e8"/>
+                  <line x1="27" y1="0" x2="27" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="61" y1="0" x2="61" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="95" y1="0" x2="95" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="129" y1="0" x2="129" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="163" y1="0" x2="163" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="197" y1="0" x2="197" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="231" y1="0" x2="231" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="265" y1="0" x2="265" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="299" y1="0" x2="299" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="333" y1="0" x2="333" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="367" y1="0" x2="367" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="401" y1="0" x2="401" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="435" y1="0" x2="435" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="469" y1="0" x2="469" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="503" y1="0" x2="503" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="537" y1="0" x2="537" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="571" y1="0" x2="571" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="605" y1="0" x2="605" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="639" y1="0" x2="639" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="673" y1="0" x2="673" y2="640" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="707" y1="0" x2="707" y2="640" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="31.01" x2="720" y2="31.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="65.01" x2="720" y2="65.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="99.01" x2="720" y2="99.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="133.01" x2="720" y2="133.01" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="167.01" x2="720" y2="167.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="201.01" x2="720" y2="201.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="235.01" x2="720" y2="235.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="269.01" x2="720" y2="269.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="303.01" x2="720" y2="303.01" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="337.01" x2="720" y2="337.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="371.01" x2="720" y2="371.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="405.01" x2="720" y2="405.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="439.01" x2="720" y2="439.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="473.01" x2="720" y2="473.01" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="507.01" x2="720" y2="507.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="541.01" x2="720" y2="541.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="575.01" x2="720" y2="575.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="609.01" x2="720" y2="609.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="163" y1="133.01" x2="163" y2="259.43" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="163" y1="361.43" x2="163" y2="507.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="673" y1="507.01" x2="673" y2="133.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="673" y1="133.01" x2="163" y2="133.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="154.5" y1="259.43" x2="171.5" y2="259.43" stroke="#2c2c2c" stroke-width="2"/>
+                  <line x1="154.5" y1="361.43" x2="171.5" y2="361.43" stroke="#2c2c2c" stroke-width="2"/>
+                  <line x1="160.17" y1="259.43" x2="160.17" y2="361.43" stroke="#2c2c2c" stroke-width="1"/>
+                  <line x1="165.83" y1="259.43" x2="165.83" y2="361.43" stroke="#2c2c2c" stroke-width="1"/>
+                  <g transform="translate(411.1 248.05) rotate(0) translate(-85 -113.33)">
+                    <rect width="170" height="226.67" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Bed</text>
+                  </g>
+                  <g transform="translate(297.5 168.72) rotate(0) translate(-25.5 -34)">
+                    <rect width="51" height="68" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  </g>
+                  <g transform="translate(525.34 168.72) rotate(0) translate(-25.5 -34)">
+                    <rect width="51" height="68" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  </g>
+                  <line x1="673" y1="507.01" x2="163" y2="507.01" stroke="#b8c9e0" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="square"/>
+                  <circle cx="673" cy="507.01" r="5" fill="#2c2c2c"/>
+                  <circle cx="163" cy="507.01" r="8" fill="rgba(0,102,204,0.12)" stroke="#0066cc" stroke-width="2"/>
+                </svg>
+                <!-- END:canvas-row1 -->
+                <div class="sd-topbar">
+                  <span class="sd-logo">SnapDraft</span>
+                  <span class="sd-planname"><span>Bedroom</span></span>
+                  <span class="sd-plansbtn">Plans <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M14 4h7"/><path d="M14 9h7"/><path d="M14 15h7"/><path d="M14 20h7"/></svg></span>
+                </div>
+                <div class="sd-toolbar">
+                  <div class="sd-group">
+                    <div class="sd-group-main"><span class="sd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg></span></div>
+                    <div class="sd-group-foot"><span class="sd-toollabel">Select</span><span class="sd-chevron">&#9662;</span></div>
+                  </div>
+                  <div class="sd-group is-active">
+                    <div class="sd-group-main"><span class="sd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 9v6"/><path d="M16 15v6"/><path d="M16 3v6"/><path d="M3 15h18"/><path d="M3 9h18"/><path d="M8 15v6"/><path d="M8 3v6"/></svg></span></div>
+                    <div class="sd-group-foot"><span class="sd-toollabel">Wall</span><span class="sd-chevron">&#9662;</span></div>
+                  </div>
+                  <div class="sd-tool"><span class="sd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/></svg></span><span class="sd-toollabel">Box</span></div>
+                  <div class="sd-tool"><span class="sd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 15v-3"/><path d="M14 15v-3"/><path d="M18 15v-3"/><path d="M2 8V4"/><path d="M22 6H2"/><path d="M22 8V4"/><path d="M6 15v-3"/><rect x="2" y="12" width="20" height="8" rx="2"/></svg></span><span class="sd-toollabel">Measure</span></div>
+                  <div class="sd-divider"></div>
+                  <div class="sd-tool"><span class="sd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></span><span class="sd-toollabel">Undo</span></div>
+                  <div class="sd-tool is-disabled"><span class="sd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></svg></span><span class="sd-toollabel">Redo</span></div>
+                  <div class="sd-divider"></div>
+                  <div class="sd-tool"><span class="sd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span><span class="sd-toollabel">Help</span></div>
+                </div>
+                <div class="sd-diminput" style="left: 175px; top: 508px;">15&#39;</div>
+                <div class="sd-fit">&#10530; Fit</div>
+                <div class="sd-scale">1 &#9633; = 1 ft</div>
+                </div>
+            </div>
           </div>
         </div>
 
-        <!-- Row 2: Dimensions / Properties panel -->
+        <!-- Row 2: Dimensions / properties panel -->
         <div class="feature-row flip reveal">
           <div class="feature-row-text">
-            <p class="feature-row-eyebrow">Precise dimensions</p>
             <h3 class="feature-row-heading">Real measurements,<br>not guesses.</h3>
-            <p class="feature-row-body">Click any wall or box to see and edit exact dimensions. The properties panel speaks feet-and-inches, meters, or centimeters — whichever you type. Label everything so you can think in rooms, not coordinates.</p>
+            <p class="feature-row-body">Click any wall or box to see and edit exact dimensions. The properties panel speaks feet-and-inches, meters, or centimeters, whichever you type. Label everything so you can think in rooms, not coordinates.</p>
             <div class="feature-row-chips">
               <span class="feature-chip">ft &amp; in input</span>
               <span class="feature-chip">Metric support</span>
@@ -898,74 +1288,113 @@
             </div>
           </div>
           <div class="feature-row-visual">
-            <svg viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <defs>
-                <pattern id="fr2-minor" width="18" height="18" patternUnits="userSpaceOnUse">
-                  <path d="M 18 0 L 0 0 0 18" fill="none" stroke="#ccd9e8" stroke-width="0.4"/>
-                </pattern>
-                <pattern id="fr2-major" width="90" height="90" patternUnits="userSpaceOnUse">
-                  <rect width="90" height="90" fill="url(#fr2-minor)"/>
-                  <path d="M 90 0 L 0 0 0 90" fill="none" stroke="#a8bcd4" stroke-width="0.6"/>
-                </pattern>
-              </defs>
-              <!-- Canvas (left 2/3) -->
-              <rect width="560" height="360" fill="#f5f0e8"/>
-              <rect width="370" height="360" fill="url(#fr2-major)"/>
-              <!-- Top bar -->
-              <rect width="560" height="30" fill="rgba(245,240,232,0.97)"/>
-              <line x1="0" y1="30" x2="560" y2="30" stroke="#d0ccc4" stroke-width="0.75"/>
-              <text x="14" y="20" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.1em" fill="#2c2c2c">SNAPDRAFT</text>
-              <text x="185" y="20" text-anchor="middle" font-family="Courier New" font-size="10" font-weight="700" fill="#2c2c2c">Bedroom</text>
-              <!-- Room outline on canvas -->
-              <rect x="60" y="52" width="288" height="270" fill="none" stroke="#2c2c2c" stroke-width="5" stroke-linecap="square"/>
-              <!-- SELECTED Bed box — blue highlight -->
-              <rect x="70" y="62" width="200" height="166" fill="rgba(74,111,165,0.1)" stroke="#2d5490" stroke-width="2.5" rx="1"/>
-              <!-- Corner handles -->
-              <circle cx="70" cy="62" r="4.5" fill="#2d5490"/>
-              <circle cx="270" cy="62" r="4.5" fill="#2d5490"/>
-              <circle cx="70" cy="228" r="4.5" fill="#2d5490"/>
-              <circle cx="270" cy="228" r="4.5" fill="#2d5490"/>
-              <!-- Rotation handle -->
-              <line x1="170" y1="62" x2="170" y2="48" stroke="#2d5490" stroke-width="1.5"/>
-              <circle cx="170" cy="46" r="4.5" fill="#2d5490"/>
-              <text x="76" y="82" font-family="Courier New" font-size="12" fill="#2d5490" font-weight="700">Bed</text>
-              <!-- Faded other furniture -->
-              <rect x="272" y="62" width="70" height="66" fill="rgba(74,111,165,0.04)" stroke="#2d5490" stroke-width="1" stroke-dasharray="4 3" rx="1" opacity="0.5"/>
-              <text x="276" y="77" font-family="Courier New" font-size="8" fill="#2d5490" opacity="0.5">NS</text>
-              <!-- Properties panel (right ~37%) -->
-              <rect x="370" y="30" width="190" height="330" fill="white" stroke="#d0ccc4" stroke-width="0.75"/>
-              <!-- Panel header -->
-              <text x="390" y="58" font-family="Courier New" font-size="12" font-weight="700" letter-spacing="0.08em" fill="#2c2c2c">BOX</text>
-              <line x1="386" y1="66" x2="550" y2="66" stroke="#e8e4dc" stroke-width="1"/>
-              <!-- WIDTH -->
-              <text x="390" y="86" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.1em" fill="#6a6a6a">WIDTH</text>
-              <rect x="390" y="92" width="148" height="28" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="1"/>
-              <text x="402" y="110" font-family="Courier New" font-size="14" fill="#2c2c2c">5'</text>
-              <!-- HEIGHT -->
-              <text x="390" y="138" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.1em" fill="#6a6a6a">HEIGHT</text>
-              <rect x="390" y="144" width="148" height="28" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="1"/>
-              <text x="402" y="162" font-family="Courier New" font-size="14" fill="#2c2c2c">6' 8"</text>
-              <!-- ROTATION -->
-              <text x="390" y="190" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.1em" fill="#6a6a6a">ROTATION (°)</text>
-              <rect x="390" y="196" width="148" height="28" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="1"/>
-              <text x="402" y="214" font-family="Courier New" font-size="14" fill="#2c2c2c">0</text>
-              <!-- LABEL -->
-              <text x="390" y="242" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.1em" fill="#6a6a6a">LABEL</text>
-              <rect x="390" y="248" width="148" height="28" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="1"/>
-              <text x="402" y="266" font-family="Courier New" font-size="14" fill="#2c2c2c">Bed</text>
-              <!-- Delete -->
-              <rect x="390" y="296" width="148" height="28" rx="4" fill="white" stroke="#e0a0a0" stroke-width="1"/>
-              <text x="464" y="314" text-anchor="middle" font-family="Courier New" font-size="11" fill="#cc4444">Delete</text>
-            </svg>
+            <div class="shot-fit" style="--shot-w: 720; --shot-h: 560;" data-testid="shot-properties">
+              <div class="shot">
+                <!-- BEGIN:canvas-row2 -->
+                <svg class="shot-canvas" viewBox="0 0 720 560" width="720" height="560" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect width="720" height="560" fill="#f5f0e8"/>
+                  <line x1="15" y1="0" x2="15" y2="560" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="45" y1="0" x2="45" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="75" y1="0" x2="75" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="105" y1="0" x2="105" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="135" y1="0" x2="135" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="165" y1="0" x2="165" y2="560" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="195" y1="0" x2="195" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="225" y1="0" x2="225" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="255" y1="0" x2="255" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="285" y1="0" x2="285" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="315" y1="0" x2="315" y2="560" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="345" y1="0" x2="345" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="375" y1="0" x2="375" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="405" y1="0" x2="405" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="435" y1="0" x2="435" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="465" y1="0" x2="465" y2="560" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="495" y1="0" x2="495" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="525" y1="0" x2="525" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="555" y1="0" x2="555" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="585" y1="0" x2="585" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="615" y1="0" x2="615" y2="560" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="645" y1="0" x2="645" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="675" y1="0" x2="675" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="705" y1="0" x2="705" y2="560" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="26.01" x2="720" y2="26.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="56.01" x2="720" y2="56.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="86.01" x2="720" y2="86.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="116.01" x2="720" y2="116.01" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="146.01" x2="720" y2="146.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="176.01" x2="720" y2="176.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="206.01" x2="720" y2="206.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="236.01" x2="720" y2="236.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="266.01" x2="720" y2="266.01" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="296.01" x2="720" y2="296.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="326.01" x2="720" y2="326.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="356.01" x2="720" y2="356.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="386.01" x2="720" y2="386.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="416.01" x2="720" y2="416.01" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="446.01" x2="720" y2="446.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="476.01" x2="720" y2="476.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="506.01" x2="720" y2="506.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="536.01" x2="720" y2="536.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="15" y1="116.01" x2="15" y2="227.56" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="15" y1="317.56" x2="15" y2="446.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="15" y1="446.01" x2="195.82" y2="446.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="285.82" y1="446.01" x2="465" y2="446.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="465" y1="446.01" x2="465" y2="116.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="465" y1="116.01" x2="15" y2="116.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="7.5" y1="227.56" x2="22.5" y2="227.56" stroke="#2c2c2c" stroke-width="2"/>
+                  <line x1="7.5" y1="317.56" x2="22.5" y2="317.56" stroke="#2c2c2c" stroke-width="2"/>
+                  <line x1="12.5" y1="227.56" x2="12.5" y2="317.56" stroke="#2c2c2c" stroke-width="1"/>
+                  <line x1="17.5" y1="227.56" x2="17.5" y2="317.56" stroke="#2c2c2c" stroke-width="1"/>
+                  <path d="M 285.82 446.01 L 195.82 446.01 A 90 90 0 0 1 285.82 356.01 Z" fill="rgba(255,255,255,0.3)" stroke="#2c2c2c" stroke-width="1.5"/>
+                  <line x1="285.82" y1="446.01" x2="285.82" y2="356.01" stroke="#2c2c2c" stroke-width="1.5"/>
+                  <g transform="translate(233.92 217.52) rotate(0) translate(-75 -100)">
+                    <rect width="150" height="200" rx="1" fill="rgba(0,102,204,0.06)" stroke="#0066cc" stroke-width="2"/>
+                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#0066cc">Bed</text>
+                    <line x1="75" y1="0" x2="75" y2="-22" stroke="#0066cc" stroke-width="1.5"/>
+                    <circle cx="75" cy="-22" r="6" fill="#0066cc" stroke="white" stroke-width="2"/>
+                  </g>
+                  <g transform="translate(133.68 147.52) rotate(0) translate(-22.5 -30)">
+                    <rect width="45" height="60" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  </g>
+                  <g transform="translate(334.71 147.52) rotate(0) translate(-22.5 -30)">
+                    <rect width="45" height="60" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  </g>
+                  <g transform="translate(441.07 370.32) rotate(-90) translate(-75 -22.5)">
+                    <rect width="150" height="45" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Dresser</text>
+                  </g>
+                  <g transform="translate(66.96 394.13) rotate(-25) translate(-37.5 -37.5)">
+                    <rect width="75" height="75" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Armchair</text>
+                  </g>
+                </svg>
+                <!-- END:canvas-row2 -->
+                <div class="sd-topbar">
+                  <span class="sd-logo">SnapDraft</span>
+                  <span class="sd-planname"><span>Bedroom</span></span>
+                  <span class="sd-plansbtn">Plans <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M14 4h7"/><path d="M14 9h7"/><path d="M14 15h7"/><path d="M14 20h7"/></svg></span>
+                </div>
+                <div class="sd-panel">
+                  <p class="sd-panel-title">Box</p>
+                  <div class="sd-fields">
+                    <div class="sd-field"><span class="sd-fieldlabel">Width</span><span class="sd-input">5&#39;</span></div>
+                    <div class="sd-field"><span class="sd-fieldlabel">Length</span><span class="sd-input">6&#39; 8&quot;</span></div>
+                    <div class="sd-field"><span class="sd-fieldlabel sd-own">Rotation (&deg;)</span><span class="sd-input">0</span></div>
+                    <div class="sd-field"><span class="sd-fieldlabel sd-own">Label</span><span class="sd-input">Bed</span></div>
+                    <span class="sd-delete">Delete</span>
+                  </div>
+                </div>
+                <div class="sd-scale">1 &#9633; = 1 ft</div>
+                </div>
+            </div>
           </div>
         </div>
 
-        <!-- Row 3: Saves locally / Plans manager -->
+        <!-- Row 3: Saves locally / plans manager -->
         <div class="feature-row reveal">
           <div class="feature-row-text">
-            <p class="feature-row-eyebrow">Always available</p>
             <h3 class="feature-row-heading">Saves in your browser.<br>Nothing to install.</h3>
-            <p class="feature-row-body">SnapDraft runs entirely in your browser tab — no download, no account, no server. Your plans save automatically to local storage. Works offline after the first visit. Switch between rooms, floors, or projects with one click.</p>
+            <p class="feature-row-body">SnapDraft runs entirely in your browser tab. No download, no account, no server. Your plans save automatically to local storage. Works offline after the first visit. Keep a separate plan for every room or project and switch between them in one click.</p>
             <div class="feature-row-chips">
               <span class="feature-chip">Offline-first</span>
               <span class="feature-chip">No account</span>
@@ -973,63 +1402,134 @@
             </div>
           </div>
           <div class="feature-row-visual">
-            <svg viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <defs>
-                <pattern id="fr3-minor" width="18" height="18" patternUnits="userSpaceOnUse">
-                  <path d="M 18 0 L 0 0 0 18" fill="none" stroke="#ccd9e8" stroke-width="0.4"/>
-                </pattern>
-                <pattern id="fr3-major" width="90" height="90" patternUnits="userSpaceOnUse">
-                  <rect width="90" height="90" fill="url(#fr3-minor)"/>
-                  <path d="M 90 0 L 0 0 0 90" fill="none" stroke="#a8bcd4" stroke-width="0.6"/>
-                </pattern>
-              </defs>
-              <rect width="560" height="360" fill="#f5f0e8"/>
-              <rect width="560" height="360" fill="url(#fr3-major)"/>
-              <!-- Top bar -->
-              <rect width="560" height="30" fill="rgba(245,240,232,0.97)"/>
-              <line x1="0" y1="30" x2="560" y2="30" stroke="#d0ccc4" stroke-width="0.75"/>
-              <text x="14" y="20" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.1em" fill="#2c2c2c">SNAPDRAFT</text>
-              <text x="280" y="20" text-anchor="middle" font-family="Courier New" font-size="10" font-weight="700" fill="#2c2c2c">Bedroom</text>
-              <rect x="490" y="9" width="58" height="16" rx="3" fill="#2c2c2c"/>
-              <text x="519" y="20" text-anchor="middle" font-family="Courier New" font-size="8" font-weight="700" letter-spacing="0.04em" fill="white">PLANS ⊞</text>
-              <!-- Background canvas elements (dimmed) -->
-              <rect x="90" y="52" width="382" height="282" fill="none" stroke="#2c2c2c" stroke-width="4" stroke-linecap="square" opacity="0.25"/>
-              <!-- Plans modal overlay -->
-              <rect x="80" y="46" width="400" height="292" rx="10" fill="white" stroke="#c8c4bc" stroke-width="1"
-                    style="filter: drop-shadow(0 8px 32px rgba(0,0,0,0.14))"/>
-              <!-- Modal header -->
-              <text x="106" y="76" font-family="Courier New" font-size="13" font-weight="700" letter-spacing="0.1em" fill="#2c2c2c">PLANS</text>
-              <text x="458" y="76" text-anchor="end" font-family="Courier New" font-size="16" fill="#9a9a9a">×</text>
-              <line x1="96" y1="84" x2="464" y2="84" stroke="#e8e4dc" stroke-width="1"/>
-              <!-- Plan 1: Bedroom (active/selected) -->
-              <rect x="96" y="90" width="368" height="60" rx="6" fill="rgba(44,74,122,0.07)" stroke="rgba(44,74,122,0.22)" stroke-width="1"/>
-              <!-- Thumbnail -->
-              <rect x="106" y="98" width="52" height="42" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="0.75"/>
-              <rect x="112" y="104" width="40" height="30" fill="none" stroke="#2c2c2c" stroke-width="1.5" stroke-linecap="square"/>
-              <rect x="116" y="108" width="18" height="14" fill="rgba(45,84,144,0.1)" stroke="#2d5490" stroke-width="1" stroke-dasharray="2 1.5"/>
-              <text x="168" y="116" font-family="Courier New" font-size="13" font-weight="700" fill="#2c2c2c">Bedroom</text>
-              <text x="168" y="136" font-family="Courier New" font-size="9" fill="#6a6a6a">Last edited just now</text>
-              <path d="M 450 116 L 457 120 L 450 124" fill="none" stroke="#c8c4bc" stroke-width="1.5" stroke-linecap="round"/>
-              <!-- Plan 2: Living Room -->
-              <rect x="96" y="156" width="368" height="60" rx="6" fill="transparent"/>
-              <rect x="106" y="164" width="52" height="42" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="0.75"/>
-              <polyline points="112,202 112,168 156,168 156,202 138,202" fill="none" stroke="#2c2c2c" stroke-width="1.5" stroke-linecap="square"/>
-              <rect x="116" y="172" width="30" height="18" fill="rgba(45,84,144,0.08)" stroke="#2d5490" stroke-width="1" stroke-dasharray="2 1.5"/>
-              <text x="168" y="182" font-family="Courier New" font-size="13" font-weight="700" fill="#2c2c2c">Living Room</text>
-              <text x="168" y="202" font-family="Courier New" font-size="9" fill="#9a9a9a">Yesterday</text>
-              <path d="M 450 182 L 457 186 L 450 190" fill="none" stroke="#c8c4bc" stroke-width="1.5" stroke-linecap="round"/>
-              <!-- Plan 3: Kitchen -->
-              <rect x="96" y="222" width="368" height="60" rx="6" fill="transparent"/>
-              <rect x="106" y="230" width="52" height="42" rx="4" fill="#f5f0e8" stroke="#c8c4bc" stroke-width="0.75"/>
-              <rect x="112" y="236" width="40" height="30" fill="none" stroke="#2c2c2c" stroke-width="1.5" stroke-linecap="square"/>
-              <line x1="132" y1="236" x2="132" y2="252" stroke="#2c2c2c" stroke-width="1.5" stroke-linecap="square"/>
-              <text x="168" y="248" font-family="Courier New" font-size="13" font-weight="700" fill="#2c2c2c">Kitchen</text>
-              <text x="168" y="268" font-family="Courier New" font-size="9" fill="#9a9a9a">3 days ago</text>
-              <path d="M 450 248 L 457 252 L 450 256" fill="none" stroke="#c8c4bc" stroke-width="1.5" stroke-linecap="round"/>
-              <!-- New plan button -->
-              <line x1="96" y1="290" x2="464" y2="290" stroke="#e8e4dc" stroke-width="1"/>
-              <text x="280" y="314" text-anchor="middle" font-family="Courier New" font-size="10" font-weight="700" letter-spacing="0.07em" fill="#2d5490">+ NEW PLAN</text>
-            </svg>
+            <div class="shot-fit" style="--shot-w: 680; --shot-h: 460;" data-testid="shot-plans">
+              <div class="shot">
+                <!-- BEGIN:canvas-row3 -->
+                <svg class="shot-canvas" viewBox="0 0 680 460" width="680" height="460" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect width="680" height="460" fill="#f5f0e8"/>
+                  <line x1="5.21" y1="0" x2="5.21" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="30.01" y1="0" x2="30.01" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="54.81" y1="0" x2="54.81" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="79.61" y1="0" x2="79.61" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="104.41" y1="0" x2="104.41" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="129.21" y1="0" x2="129.21" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="154.01" y1="0" x2="154.01" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="178.81" y1="0" x2="178.81" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="203.61" y1="0" x2="203.61" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="228.41" y1="0" x2="228.41" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="253.21" y1="0" x2="253.21" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="278.01" y1="0" x2="278.01" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="302.81" y1="0" x2="302.81" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="327.61" y1="0" x2="327.61" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="352.41" y1="0" x2="352.41" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="377.21" y1="0" x2="377.21" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="402.01" y1="0" x2="402.01" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="426.81" y1="0" x2="426.81" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="451.61" y1="0" x2="451.61" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="476.41" y1="0" x2="476.41" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="501.21" y1="0" x2="501.21" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="526.01" y1="0" x2="526.01" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="550.81" y1="0" x2="550.81" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="575.61" y1="0" x2="575.61" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="600.41" y1="0" x2="600.41" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="625.21" y1="0" x2="625.21" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="650.01" y1="0" x2="650.01" y2="460" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="674.81" y1="0" x2="674.81" y2="460" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="20.41" x2="680" y2="20.41" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="45.21" x2="680" y2="45.21" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="70.01" x2="680" y2="70.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="94.81" x2="680" y2="94.81" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="119.61" x2="680" y2="119.61" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="144.41" x2="680" y2="144.41" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="169.21" x2="680" y2="169.21" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="194.01" x2="680" y2="194.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="218.81" x2="680" y2="218.81" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="243.61" x2="680" y2="243.61" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="268.41" x2="680" y2="268.41" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="293.21" x2="680" y2="293.21" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="318.01" x2="680" y2="318.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="342.81" x2="680" y2="342.81" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="367.61" x2="680" y2="367.61" stroke="#a8bcd4" stroke-width="0.75"/>
+                  <line x1="0" y1="392.41" x2="680" y2="392.41" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="417.21" x2="680" y2="417.21" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="0" y1="442.01" x2="680" y2="442.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <line x1="154.01" y1="119.61" x2="154.01" y2="211.83" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="154.01" y1="286.23" x2="154.01" y2="392.41" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="154.01" y1="392.41" x2="303.49" y2="392.41" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="377.89" y1="392.41" x2="526.01" y2="392.41" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="526.01" y1="392.41" x2="526.01" y2="119.61" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="526.01" y1="119.61" x2="154.01" y2="119.61" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
+                  <line x1="147.81" y1="211.83" x2="160.21" y2="211.83" stroke="#2c2c2c" stroke-width="2"/>
+                  <line x1="147.81" y1="286.23" x2="160.21" y2="286.23" stroke="#2c2c2c" stroke-width="2"/>
+                  <line x1="151.94" y1="211.83" x2="151.94" y2="286.23" stroke="#2c2c2c" stroke-width="1"/>
+                  <line x1="156.08" y1="211.83" x2="156.08" y2="286.23" stroke="#2c2c2c" stroke-width="1"/>
+                  <path d="M 377.89 392.41 L 303.49 392.41 A 74.4 74.4 0 0 1 377.89 318.01 Z" fill="rgba(255,255,255,0.3)" stroke="#2c2c2c" stroke-width="1.5"/>
+                  <line x1="377.89" y1="392.41" x2="377.89" y2="318.01" stroke="#2c2c2c" stroke-width="1.5"/>
+                  <g transform="translate(334.98 203.52) rotate(0) translate(-62 -82.66)">
+                    <rect width="124" height="165.33" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Bed</text>
+                  </g>
+                  <g transform="translate(252.12 145.66) rotate(0) translate(-18.6 -24.8)">
+                    <rect width="37.2" height="49.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  </g>
+                  <g transform="translate(418.31 145.66) rotate(0) translate(-18.6 -24.8)">
+                    <rect width="37.2" height="49.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  </g>
+                  <g transform="translate(506.22 329.84) rotate(-90) translate(-62 -18.6)">
+                    <rect width="124" height="37.2" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Dresser</text>
+                  </g>
+                  <g transform="translate(196.96 349.52) rotate(-25) translate(-31 -31)">
+                    <rect width="62" height="62" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Armchair</text>
+                  </g>
+                </svg>
+                <!-- END:canvas-row3 -->
+                <div class="sd-topbar">
+                  <span class="sd-logo">SnapDraft</span>
+                  <span class="sd-planname"><span>Bedroom</span></span>
+                  <span class="sd-plansbtn">Plans <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M14 4h7"/><path d="M14 9h7"/><path d="M14 15h7"/><path d="M14 20h7"/></svg></span>
+                </div>
+                <div class="sd-backdrop">
+                  <div class="sd-modal">
+                    <div class="sd-modal-head">
+                      <p class="sd-modal-title">Floor Plans</p>
+                      <span class="sd-close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+                    </div>
+                    <ul class="sd-list">
+                    <li class="sd-item is-active">
+                      <span class="sd-item-name">Bedroom</span>
+                      <span class="sd-item-actions">
+                        <span class="sd-actionbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span>
+                        <span class="sd-actionbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></span>
+                        <span class="sd-actionbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+                      </span>
+                    </li>
+                    <li class="sd-item">
+                      <span class="sd-item-name">Living Room</span>
+                      <span class="sd-item-actions">
+                        <span class="sd-actionbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span>
+                        <span class="sd-actionbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></span>
+                        <span class="sd-actionbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+                      </span>
+                    </li>
+                    <li class="sd-item">
+                      <span class="sd-item-name">Kitchen</span>
+                      <span class="sd-item-actions">
+                        <span class="sd-actionbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span>
+                        <span class="sd-actionbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></span>
+                        <span class="sd-actionbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+                      </span>
+                    </li>
+                    </ul>
+                    <div class="sd-modal-foot">
+                      <span class="sd-importbtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg> Import Plan</span>
+                      <span class="sd-createbtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg> New Floor Plan</span>
+                    </div>
+                  </div>
+                </div>
+                </div>
+            </div>
           </div>
         </div>
 
@@ -1041,33 +1541,20 @@
     <section id="how" aria-labelledby="how-heading">
       <div class="how-inner">
         <div class="reveal">
-          <p class="section-label">HOW IT WORKS</p>
           <h2 class="section-heading" id="how-heading">Open the app.<br>Start drawing.</h2>
         </div>
-        <div class="steps-grid">
+        <div class="steps-list">
           <div class="step reveal">
-            <div class="step-number" aria-hidden="true" data-target="01">00</div>
-            <div class="step-content">
-              <div class="step-label">Step 01</div>
-              <h3 class="step-title">Pick your tool</h3>
-              <div class="step-body">Seven tools, each with a keyboard shortcut. Press <strong>W</strong> for walls, <strong>B</strong> for furniture boxes, <strong>D</strong> for doors. No menus to dig through.</div>
-            </div>
+            <h3 class="step-title">Pick your tool</h3>
+            <div class="step-body">Seven tools, each with a keyboard shortcut. Press <strong>W</strong> for walls, <strong>B</strong> for furniture boxes, <strong>D</strong> for doors. No menus to dig through.</div>
           </div>
           <div class="step reveal">
-            <div class="step-number" aria-hidden="true" data-target="02">00</div>
-            <div class="step-content">
-              <div class="step-label">Step 02</div>
-              <h3 class="step-title">Draw</h3>
-              <div class="step-body">Click to place wall endpoints. Drag to create furniture boxes. Click any wall to drop a door or window. Type an exact dimension at any point.</div>
-            </div>
+            <h3 class="step-title">Draw</h3>
+            <div class="step-body">Click to place wall endpoints. Drag to create furniture boxes. Click any wall to drop a door or window. Type an exact dimension at any point.</div>
           </div>
           <div class="step reveal">
-            <div class="step-number" aria-hidden="true" data-target="03">00</div>
-            <div class="step-content">
-              <div class="step-label">Step 03</div>
-              <h3 class="step-title">Save or share</h3>
-              <div class="step-body">Your plan saves automatically to this browser. Share a link for small plans, or export and send the file.</div>
-            </div>
+            <h3 class="step-title">Save or share</h3>
+            <div class="step-body">Your plan saves automatically to this browser. Share a link for small plans, or export and send the file.</div>
           </div>
         </div>
       </div>
@@ -1077,46 +1564,48 @@
     <section id="uses" aria-labelledby="uses-heading">
       <div class="tools-inner">
         <div class="reveal">
-          <p class="section-label">WHO IT'S FOR</p>
           <h2 class="section-heading" id="uses-heading">For anyone with<br>a room to think about.</h2>
         </div>
-        <div class="steps-grid">
-          <div class="step reveal">
-            <svg class="use-case-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="6" y="14" width="28" height="16" rx="3" stroke="#2d5490" stroke-width="1.5"/>
-              <rect x="4" y="19" width="4" height="11" rx="2" stroke="#2d5490" stroke-width="1.5"/>
-              <rect x="32" y="19" width="4" height="11" rx="2" stroke="#2d5490" stroke-width="1.5"/>
-              <line x1="12" y1="30" x2="12" y2="35" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
-              <line x1="28" y1="30" x2="28" y2="35" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
-              <rect x="8" y="10" width="24" height="6" rx="2" stroke="#2d5490" stroke-width="1.5"/>
-            </svg>
-            <div class="step-label">Furniture shopping</div>
-            <h3 class="step-title">Know before you buy</h3>
-            <div class="step-body">Open your floor plan in the store. Check the dimensions, drop the piece in, and see if it fits before you commit.</div>
+        <div class="uses-row">
+          <div class="use-case reveal">
+            <div class="use-case-head">
+              <svg class="use-case-icon-inline" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="6" y="14" width="28" height="16" rx="3" stroke="#2d5490" stroke-width="1.5"/>
+                <rect x="4" y="19" width="4" height="11" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+                <rect x="32" y="19" width="4" height="11" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+                <line x1="12" y1="30" x2="12" y2="35" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="28" y1="30" x2="28" y2="35" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
+                <rect x="8" y="10" width="24" height="6" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+              </svg>
+              <h3 class="step-title">Know before you buy</h3>
+            </div>
+            <p class="step-body">Open your floor plan in the store. Check the dimensions, drop the piece in, and see if it fits before you commit.</p>
           </div>
-          <div class="step reveal">
-            <svg class="use-case-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="4" y="10" width="14" height="12" rx="2" stroke="#2d5490" stroke-width="1.5"/>
-              <rect x="22" y="18" width="14" height="12" rx="2" stroke="#2d5490" stroke-width="1.5"/>
-              <path d="M 19 12 L 24 12" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M 22 9 L 25 12 L 22 15" fill="none" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M 16 28 L 20 28" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M 18 25 L 15 28 L 18 31" fill="none" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <div class="step-label">Rearranging a room</div>
-            <h3 class="step-title">Try every layout first</h3>
-            <div class="step-body">Sketch the room, drag the furniture around, and settle on a layout before you move anything heavy.</div>
+          <div class="use-case reveal">
+            <div class="use-case-head">
+              <svg class="use-case-icon-inline" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="4" y="10" width="14" height="12" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+                <rect x="22" y="18" width="14" height="12" rx="2" stroke="#2d5490" stroke-width="1.5"/>
+                <path d="M 19 12 L 24 12" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M 22 9 L 25 12 L 22 15" fill="none" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 16 28 L 20 28" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M 18 25 L 15 28 L 18 31" fill="none" stroke="#2d5490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3 class="step-title">Try every layout first</h3>
+            </div>
+            <p class="step-body">Sketch the room, drag the furniture around, and settle on a layout before you move anything heavy.</p>
           </div>
-          <div class="step reveal">
-            <svg class="use-case-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="6" y="6" width="28" height="28" rx="1" stroke="#2d5490" stroke-width="1.5" stroke-linecap="square"/>
-              <line x1="6" y1="24" x2="6" y2="34" stroke="#f5f0e8" stroke-width="3"/>
-              <path d="M 6,24 A 10,10 0 0,1 16,34" fill="none" stroke="#2d5490" stroke-width="1.5"/>
-              <line x1="18" y1="6" x2="18" y2="18" stroke="#2d5490" stroke-width="1.5" stroke-linecap="square" stroke-dasharray="3 2"/>
-            </svg>
-            <div class="step-label">Reno planning</div>
-            <h3 class="step-title">Move walls on screen first</h3>
-            <div class="step-body">Rough out the new layout before talking to a contractor. Share it as a starting point.</div>
+          <div class="use-case reveal">
+            <div class="use-case-head">
+              <svg class="use-case-icon-inline" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="6" y="6" width="28" height="28" rx="1" stroke="#2d5490" stroke-width="1.5" stroke-linecap="square"/>
+                <line x1="6" y1="24" x2="6" y2="34" stroke="#f5f0e8" stroke-width="3"/>
+                <path d="M 6,24 A 10,10 0 0,1 16,34" fill="none" stroke="#2d5490" stroke-width="1.5"/>
+                <line x1="18" y1="6" x2="18" y2="18" stroke="#2d5490" stroke-width="1.5" stroke-linecap="square" stroke-dasharray="3 2"/>
+              </svg>
+              <h3 class="step-title">Move walls on screen first</h3>
+            </div>
+            <p class="step-body">Rough out the new layout before talking to a contractor. Share it as a starting point.</p>
           </div>
         </div>
       </div>
@@ -1126,7 +1615,6 @@
     <section id="everywhere" aria-labelledby="everywhere-heading">
       <div class="everywhere-inner">
         <div class="reveal">
-          <p class="section-label">WORKS EVERYWHERE</p>
           <h2 class="section-heading" id="everywhere-heading">Your browser<br>is the app.</h2>
           <p class="everywhere-body">No installation. No account. No catch. SnapDraft works offline after the first load. Your plans stay in your browser until you decide otherwise.</p>
         </div>
@@ -1144,7 +1632,6 @@
     <!-- FOOTER CTA -->
     <section id="cta" aria-labelledby="cta-heading">
       <div class="cta-inner">
-        <p class="section-label" style="text-align:center;">READY TO SKETCH?</p>
         <h2 class="cta-heading" id="cta-heading">Start drawing<br>in 30 seconds.</h2>
         <p class="cta-sub">No signup. No tutorial required. Just open the app and start clicking.</p>
         <a href="/app" class="btn-primary" style="font-size:14px; padding:14px 32px;">Start Drawing →</a>
@@ -1206,27 +1693,6 @@
     }, { threshold: 0.2 });
     if (heroSvg) heroObserver.observe(heroSvg);
 
-
-    // ── Step numbers count up ─────────────────────────────────
-    var stepNumbers = document.querySelectorAll('.step-number');
-    var stepObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        var el = e.target;
-        var target = parseInt(el.getAttribute('data-target'), 10);
-        var start = performance.now();
-        var duration = 500;
-        (function tick(now) {
-          var t = Math.min((now - start) / duration, 1);
-          var val = Math.floor(t * target);
-          el.textContent = val < 10 ? '0' + val : '' + val;
-          if (t < 1) requestAnimationFrame(tick);
-          else el.textContent = el.getAttribute('data-target');
-        })(start);
-        stepObserver.unobserve(el);
-      });
-    }, { threshold: 0.3 });
-    stepNumbers.forEach(function (el) { stepObserver.observe(el); });
 
   })();
   </script>
