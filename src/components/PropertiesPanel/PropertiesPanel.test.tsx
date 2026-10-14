@@ -1,10 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PropertiesPanel } from './PropertiesPanel';
 import { useFloorplanStore } from '../../store/useFloorplanStore/useFloorplanStore';
 import { useToolStore } from '../../store/useToolStore/useToolStore';
 import type { Element } from '../../types';
+import { BOX_COLOR_PRESETS } from '../../utils/colors/colors';
 
 const wall: Element = {
   id: 'w1',
@@ -145,6 +146,72 @@ describe('PropertiesPanel', () => {
       render(<PropertiesPanel />);
       await userEvent.click(screen.getByTestId('delete-element'));
       expect(useFloorplanStore.getState().activePlan()?.elements).toHaveLength(0);
+    });
+
+    it('shows the color picker with 5 presets and a custom swatch', () => {
+      selectElement(box);
+      render(<PropertiesPanel />);
+      for (let i = 0; i < 5; i++) {
+        expect(screen.getByTestId(`box-color-swatch-${i}`)).toBeInTheDocument();
+      }
+      expect(screen.getByTestId('box-color-custom')).toBeInTheDocument();
+    });
+
+    it('clicking a preset swatch calls updateElement with the new color', async () => {
+      selectElement(box);
+      render(<PropertiesPanel />);
+      await userEvent.click(screen.getByTestId('box-color-swatch-2'));
+      expect(useFloorplanStore.getState().activePlan()?.elements[0]).toMatchObject({
+        color: BOX_COLOR_PRESETS[2],
+      });
+    });
+
+    it('commits a live custom-color adjustment as one undo step', () => {
+      selectElement(box);
+      render(<PropertiesPanel />);
+      const input = screen.getByTestId('box-color-custom-input');
+      const store = useFloorplanStore.getState();
+      const before = store.past.length;
+      const original = { ...store.activePlan()!.elements[0] };
+      // A native chooser emits input while adjusting, then change on confirmation.
+      for (let i = 0; i < 60; i++) {
+        fireEvent.input(input, { target: { value: `#1234${i.toString(16).padStart(2, '0')}` } });
+      }
+      expect(useFloorplanStore.getState().past).toHaveLength(before);
+      expect(useFloorplanStore.getState().activePlan()!.elements[0]).toEqual(original);
+      fireEvent.change(input, { target: { value: '#12343b' } });
+      expect(useFloorplanStore.getState().past).toHaveLength(before + 1);
+      expect(useFloorplanStore.getState().activePlan()!.elements[0]).toMatchObject({
+        color: '#12343b',
+      });
+      act(() => useFloorplanStore.getState().undo());
+      expect(useFloorplanStore.getState().activePlan()!.elements[0]).toEqual(original);
+      act(() => useFloorplanStore.getState().redo());
+      expect(useFloorplanStore.getState().activePlan()!.elements[0]).toMatchObject({
+        color: '#12343b',
+      });
+    });
+
+    it('leaves the plan and redo history intact when a custom adjustment is not committed', () => {
+      selectElement(box);
+      const store = useFloorplanStore.getState();
+      store.updateElement(box.id, { color: '#abcdef' });
+      store.undo();
+      const before = useFloorplanStore.getState();
+      render(<PropertiesPanel />);
+      fireEvent.input(screen.getByTestId('box-color-custom-input'), {
+        target: { value: '#ffffff' },
+      });
+      const after = useFloorplanStore.getState();
+      expect(after.activePlan()).toEqual(before.activePlan());
+      expect(after.past).toEqual(before.past);
+      expect(after.future).toEqual(before.future);
+    });
+
+    it('defaults to the legacy blueprint color when box.color is undefined', () => {
+      selectElement(box);
+      render(<PropertiesPanel />);
+      expect(screen.getByTestId('box-color-swatch-0')).toHaveAttribute('aria-pressed', 'true');
     });
   });
 });

@@ -550,7 +550,13 @@ export function DrawingCanvas() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest(
+          'input, textarea, select, button, a[href], [role="button"], [contenteditable]:not([contenteditable="false"])',
+        )
+      )
+        return;
       if (e.key === ' ' && !e.repeat) {
         e.preventDefault();
         setIsSpaceDown(true);

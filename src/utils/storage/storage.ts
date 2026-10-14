@@ -1,5 +1,6 @@
 import LZString from 'lz-string';
 import type { FloorPlan } from '../../types';
+import { DEFAULT_BOX_COLOR, normalizeBoxColor } from '../colors/colors';
 
 const STORAGE_KEY = 'snapdraft_floorplans';
 const ACTIVE_KEY = 'snapdraft_active';
@@ -30,15 +31,23 @@ function normalizeFloorPlan(plan: LegacyFloorPlan): FloorPlan | null {
   }
 
   if (plan.version === 1) {
-    return {
+    return normalizeFloorPlan({
       ...plan,
       version: 2,
       elements: migrateBoxHeightToLength((plan as unknown as FloorPlan).elements),
-    } as FloorPlan;
+    });
   }
 
   if (plan.version === FLOORPLAN_VERSION) {
-    return plan as FloorPlan;
+    if (!Array.isArray(plan.elements)) return null;
+    return {
+      ...plan,
+      elements: plan.elements.map((element) =>
+        element?.type === 'box' && element.color !== undefined
+          ? { ...element, color: normalizeBoxColor(element.color) ?? DEFAULT_BOX_COLOR }
+          : element,
+      ),
+    } as FloorPlan;
   }
 
   return null;
@@ -132,6 +141,7 @@ export function parseImportedPlan(raw: unknown): FloorPlan | null {
       if (typeof boxLength !== 'number' || !isFinite(boxLength as number)) return null;
       if (typeof elem.rotation !== 'number' || !isFinite(elem.rotation as number)) return null;
       if (elem.label !== undefined && typeof elem.label !== 'string') return null;
+      if (elem.color !== undefined && normalizeBoxColor(elem.color) === null) return null;
     } else if (elem.type === 'door' || elem.type === 'window') {
       if (typeof elem.wallId !== 'string') return null;
       if (typeof elem.segmentIndex !== 'number' || !isFinite(elem.segmentIndex as number))
