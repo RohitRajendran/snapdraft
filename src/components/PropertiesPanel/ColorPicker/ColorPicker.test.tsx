@@ -61,6 +61,17 @@ describe('ColorPicker', () => {
     expect(clickSpy).toHaveBeenCalled();
   });
 
+  it('resets a cancelled adjustment and follows external color changes when reopened', async () => {
+    const { rerender } = render(<ColorPicker value="#123456" onChange={vi.fn()} />);
+    const input = screen.getByTestId('box-color-custom-input');
+    fireEvent.input(input, { target: { value: '#ffffff' } });
+    await userEvent.click(screen.getByTestId('box-color-custom'));
+    expect(input).toHaveValue('#123456');
+    rerender(<ColorPicker value="#abcdef" onChange={vi.fn()} />);
+    await userEvent.click(screen.getByTestId('box-color-custom'));
+    expect(input).toHaveValue('#abcdef');
+  });
+
   it('calls onChange when the hidden color input changes', () => {
     const onChange = vi.fn();
     render(<ColorPicker value={BOX_COLOR_PRESETS[0]} onChange={onChange} />);

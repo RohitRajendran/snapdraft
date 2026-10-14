@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Palette, Pencil } from 'lucide-react';
 import { BOX_COLOR_PRESETS, isPresetColor } from '../../../utils/colors/colors';
 import styles from './ColorPicker.module.css';
@@ -13,6 +13,23 @@ type Props = {
 export function ColorPicker({ value, onChange }: Props) {
   const isCustom = !isPresetColor(value);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    // React's onChange also fires on live input events. Listen to native change
+    // so confirming a chooser adjustment creates just one undo entry.
+    const commitColor = () => onChange(input.value);
+    input.addEventListener('change', commitColor);
+    return () => input.removeEventListener('change', commitColor);
+  }, [onChange]);
+
+  function openCustomPicker() {
+    if (!inputRef.current) return;
+    // Reset any uncommitted value left behind by a cancelled chooser.
+    inputRef.current.value = isCustom ? value : CUSTOM_SEED_COLOR;
+    inputRef.current.click();
+  }
 
   return (
     <div className={styles.row} role="group" aria-label="Box color">
@@ -36,7 +53,7 @@ export function ColorPicker({ value, onChange }: Props) {
         title="Custom color — click to change"
         aria-label="Custom color — click to change"
         aria-pressed={isCustom}
-        onClick={() => inputRef.current?.click()}
+        onClick={openCustomPicker}
         data-testid="box-color-custom"
       >
         {!isCustom && <Palette size={14} className={styles.glyph} aria-hidden="true" />}
@@ -52,8 +69,7 @@ export function ColorPicker({ value, onChange }: Props) {
         ref={inputRef}
         type="color"
         className={styles.hiddenInput}
-        value={isCustom ? value : CUSTOM_SEED_COLOR}
-        onChange={(e) => onChange(e.target.value)}
+        defaultValue={isCustom ? value : CUSTOM_SEED_COLOR}
         tabIndex={-1}
         aria-hidden="true"
         data-testid="box-color-custom-input"

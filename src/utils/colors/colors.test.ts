@@ -61,6 +61,13 @@ describe('hexToRgba', () => {
     expect(hexToRgba('#fff', 0.5)).toBe('rgba(255, 255, 255, 0.5)');
   });
 
+  it.each(['red', '#ff000080', '', '#12zz00'])(
+    'falls back safely for unsupported hex %j',
+    (hex) => {
+      expect(hexToRgba(hex, 0.1)).toBe('rgba(45, 84, 144, 0.1)');
+    },
+  );
+
   it('passes through the alpha value unchanged', () => {
     expect(hexToRgba('#000000', 1)).toBe('rgba(0, 0, 0, 1)');
   });

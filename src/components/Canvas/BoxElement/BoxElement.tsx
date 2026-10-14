@@ -122,6 +122,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
   const label = box.label || `${formatFeet(box.width)} × ${formatFeet(box.length)}`;
   const handleOffset = HANDLE_OFFSET_PX / zoom;
   const boxColor = box.color ?? DEFAULT_BOX_COLOR;
+  const labelColor = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
   const haloInset = SELECTION_HALO_INSET_PX / zoom;
 
   return (
@@ -168,7 +169,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
         text={label}
         fontSize={11 / zoom}
         fontFamily="Courier New"
-        fill={boxColor}
+        fill={labelColor}
       />
       {selected && activeTool === 'select' && (
         <>

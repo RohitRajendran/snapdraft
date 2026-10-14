@@ -30,9 +30,38 @@ describe('loadFloorPlans', () => {
     expect(loadFloorPlans()).toEqual([]);
   });
 
+  it.each([undefined, null, {}])(
+    'keeps healthy plans when another saved plan has invalid elements %j',
+    (elements) => {
+      const raw = JSON.stringify([mockPlan, { ...mockPlan, id: 'corrupt', elements }]);
+      localStorage.setItem('snapdraft_floorplans', raw);
+      expect(loadFloorPlans()).toEqual([mockPlan]);
+      expect(localStorage.getItem('snapdraft_floorplans')).toBe(raw);
+    },
+  );
+
   it('returns stored plans', () => {
     localStorage.setItem('snapdraft_floorplans', JSON.stringify([mockPlan]));
     expect(loadFloorPlans()).toEqual([mockPlan]);
+  });
+
+  it.each([
+    ['#ABC', '#aabbcc'],
+    ['red', '#2d5490'],
+    [42, '#2d5490'],
+  ])('safely loads persisted box color %j', (color, expected) => {
+    localStorage.setItem(
+      'snapdraft_floorplans',
+      JSON.stringify([
+        {
+          ...mockPlan,
+          elements: [
+            { id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0, color },
+          ],
+        },
+      ]),
+    );
+    expect(loadFloorPlans()[0].elements[0]).toMatchObject({ color: expected });
   });
 
   it('upgrades legacy plans without a per-plan version', () => {
@@ -313,6 +342,35 @@ describe('parseImportedPlan', () => {
       ],
     };
     expect(parseImportedPlan(plan)).not.toBeNull();
+  });
+
+  it.each(['', 'red', '#12', '#12345g', '#ff000080', '123456', '#123456 trailing', '#123456\n'])(
+    'rejects unsupported imported box color %j',
+    (color) => {
+      expect(
+        parseImportedPlan({
+          ...mockPlan,
+          elements: [
+            { id: 'b1', type: 'box', x: 0, y: 0, width: 4, length: 3, rotation: 0, color },
+          ],
+        }),
+      ).toBeNull();
+    },
+  );
+
+  it.each([
+    ['#ABC', '#aabbcc'],
+    ['#2D5490', '#2d5490'],
+  ])('normalizes imported hex %s for the native picker', (color, expected) => {
+    const raw = {
+      ...mockPlan,
+      elements: [
+        { id: 'b1', type: 'box' as const, x: 0, y: 0, width: 4, length: 3, rotation: 0, color },
+      ],
+    };
+    const plan = parseImportedPlan(raw);
+    expect(plan!.elements[0]).toMatchObject({ color: expected });
+    expect(raw.elements[0].color).toBe(color);
   });
 
   it('accepts a box without color field (backward compat)', () => {
