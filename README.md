@@ -20,7 +20,8 @@ Plans are saved locally in your browser with `localStorage`. If you clear site d
 
 ### Requirements
 
-- Node.js LTS (`.nvmrc` used)
+- Node.js 24.15+ or 26+ (`.nvmrc` selects the Node.js 24 LTS line)
+- Git 2.32+ (required by lint-staged)
 - npm
 
 ### Install and run

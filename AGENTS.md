@@ -37,7 +37,7 @@ npm run dev           # Vite dev server
 npm run build         # TypeScript project build + production bundle
 npm run build:preview # Production bundle only
 npm run preview       # Preview built app
-npm run type-check    # tsc --noEmit
+npm run type-check    # tsc -b --noEmit; checks all referenced projects
 npm run lint          # ESLint
 npm run test          # Vitest once
 npm run test:watch    # Vitest watch mode
