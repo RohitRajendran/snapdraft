@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   FLOORPLAN_VERSION,
   loadFloorPlans,
@@ -506,5 +508,39 @@ describe('encodePlanToUrl / decodePlanFromUrl', () => {
 
   it('returns null for malformed URL', () => {
     expect(decodePlanFromUrl('not-a-url')).toBeNull();
+  });
+});
+
+describe('native app interchange', () => {
+  // Written by the native app's encoder. The native repo pins its own copy of this file.
+  const nativeExport = JSON.parse(
+    readFileSync(
+      resolve(process.cwd(), 'src/utils/storage/fixtures/native-export.snapdraft.json'),
+      'utf8',
+    ),
+  ) as unknown;
+
+  it('imports a plan exported by the native app', () => {
+    const plan = parseImportedPlan(nativeExport);
+    expect(plan).not.toBeNull();
+    expect(plan?.version).toBe(FLOORPLAN_VERSION);
+    expect(plan?.name).toBe('Native Studio');
+    expect(plan?.elements.map((el) => el.type)).toEqual(['wall', 'door', 'window', 'box', 'box']);
+    const [wall, door, window, sofa, plain] = plan!.elements;
+    expect(wall.type === 'wall' && wall.points).toEqual([
+      { x: 0, y: 0 },
+      { x: 12, y: 0 },
+      { x: 12, y: 9.5 },
+    ]);
+    expect(door).toMatchObject({ wallId: 'w1', segmentIndex: 0, hinge: 'end', facing: 'left' });
+    expect(window).toMatchObject({ wallId: 'w1', segmentIndex: 1, offset: 1.25, width: 4 });
+    expect(window).not.toHaveProperty('hinge');
+    expect(sofa).toMatchObject({ label: 'Sofa', color: '#4a7a5a', rotation: 45, length: 3 });
+    expect(plain).not.toHaveProperty('color');
+  });
+
+  it('round-trips the native export through a share link', () => {
+    const plan = parseImportedPlan(nativeExport)!;
+    expect(decodePlanFromUrl(encodePlanToUrl(plan))).toEqual(plan);
   });
 });

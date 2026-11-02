@@ -209,3 +209,61 @@ export function openingCenter(opening: Opening, elements: Element[]): Point | nu
   const t = (opening.offset + opening.width / 2) / segLen;
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
+
+/** Wall vertices closer than this are one joint. */
+export const JOINT_TOLERANCE_FT = 0.05;
+
+/**
+ * Moves a wall's vertex to `to`. With `movesCorner`, every wall vertex joined to it at `from`
+ * moves too, so a dragged corner reshapes each wall that meets there and stays attached; without
+ * it only this wall's end moves. Returns updates to apply together in one history step.
+ */
+export function moveWallJoint(
+  elements: Element[],
+  wallId: string,
+  index: number,
+  from: Point,
+  to: Point,
+  movesCorner = true,
+): Record<string, { points: Point[] }> {
+  const updates: Record<string, { points: Point[] }> = {};
+  for (const el of elements) {
+    if (el.type !== 'wall') continue;
+    let changed = false;
+    const points = el.points.map((p, i) => {
+      if (
+        (el.id === wallId && i === index) ||
+        (movesCorner && distance(p, from) < JOINT_TOLERANCE_FT)
+      ) {
+        changed = true;
+        return to;
+      }
+      return p;
+    });
+    if (changed) updates[el.id] = { points };
+  }
+  return updates;
+}
+
+/**
+ * Snap targets for a dragged wall vertex: every other wall vertex except those moving with it.
+ * A single end (`movesCorner` false) may snap back onto the corner it left.
+ */
+export function jointSnapCandidates(
+  elements: Element[],
+  wallId: string,
+  index: number,
+  joint: Point,
+  movesCorner = true,
+): Point[] {
+  const points: Point[] = [];
+  for (const el of elements) {
+    if (el.type !== 'wall') continue;
+    el.points.forEach((p, i) => {
+      if (el.id === wallId && i === index) return;
+      if (movesCorner && distance(p, joint) < JOINT_TOLERANCE_FT) return;
+      points.push(p);
+    });
+  }
+  return points;
+}

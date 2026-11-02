@@ -4,6 +4,7 @@ import type Konva from 'konva';
 import { useToolStore } from '../../../store/useToolStore/useToolStore';
 import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplanStore';
 import type { Wall, Opening, Point } from '../../../types';
+import { moveBoxMask } from '../Grid/boxMask';
 import {
   ftToPx,
   pxToFt,
@@ -12,6 +13,8 @@ import {
   distance,
   SNAP_RADIUS_FT,
   getWallSnapIncrement,
+  jointSnapCandidates,
+  moveWallJoint,
 } from '../../../utils/geometry/geometry';
 
 // ── Gap computation ──────────────────────────────────────────────────
@@ -365,6 +368,7 @@ function moveOtherSelected(
     if (el.type === 'box') {
       other.x(ftToPx(el.x + el.width / 2 + dxFt));
       other.y(ftToPx(el.y + el.length / 2 + dyFt));
+      moveBoxMask(stage, id, other.x(), other.y());
     } else if (el.type === 'wall') {
       other.x(ftToPx(dxFt));
       other.y(ftToPx(dyFt));
@@ -400,7 +404,7 @@ export function WallElement({
   onEndpointDrag,
 }: Props) {
   const { zoom, activeTool, selectedIds } = useToolStore();
-  const { updateElement } = useFloorplanStore();
+  const { updateElement, updateElements } = useFloorplanStore();
   const [endpointSnapTarget, setEndpointSnapTarget] = useState<Point | null>(null);
   const [draggingEndpoint, setDraggingEndpoint] = useState<{ idx: number; pos: Point } | null>(
     null,
@@ -469,21 +473,6 @@ export function WallElement({
     }
 
     updateElement(wall.id, { points: finalPoints });
-  }
-
-  function getOtherEndpoints(targetIdx: number): Point[] {
-    const allElements = useFloorplanStore.getState().activePlan()?.elements ?? [];
-    const pts: Point[] = [];
-    for (const el of allElements) {
-      if (el.type === 'wall' && el.id !== wall.id) {
-        pts.push(...el.points);
-      } else if (el.type === 'wall' && el.id === wall.id) {
-        el.points.forEach((p, i) => {
-          if (i !== targetIdx) pts.push(p);
-        });
-      }
-    }
-    return pts;
   }
 
   const ghostFlatPoints = draggingEndpoint
@@ -615,83 +604,67 @@ export function WallElement({
         />
       )}
 
-      {/* Endpoint handles — visible when selected in select mode */}
-      {selected &&
-        activeTool === 'select' &&
+      {/* Vertex handles in select mode. A selected wall's handles move only its own end, so it can
+          pull away from a corner or snap back onto one. With the wall unselected, dragging one of
+          its corners moves every wall joined there; a click still selects the wall. */}
+      {activeTool === 'select' &&
+        (selected || selectedIds.size <= 1) &&
         wall.points.map((pt, idx) => {
-          const ptPxX = ftToPx(pt.x);
-          const ptPxY = ftToPx(pt.y);
-
-          const isConnected =
-            useFloorplanStore
-              .getState()
-              .activePlan()
-              ?.elements.some(
-                (el) =>
-                  el.type === 'wall' &&
-                  el.id !== wall.id &&
-                  el.points.some((p) => distance(p, pt) < 0.05),
-              ) ?? false;
-          const targetIdx = isConnected ? (idx === 0 ? wall.points.length - 1 : 0) : idx;
+          const movesCorner = !selected;
+          const candidates = () =>
+            jointSnapCandidates(
+              useFloorplanStore.getState().activePlan()?.elements ?? [],
+              wall.id,
+              idx,
+              pt,
+              movesCorner,
+            );
+          const snappedTo = (rawFt: Point, shiftKey: boolean) => {
+            const snapIncrement = getWallSnapIncrement(shiftKey);
+            return (
+              findNearestEndpoint(rawFt, candidates()) ?? {
+                x: snapToGrid(rawFt.x, snapIncrement),
+                y: snapToGrid(rawFt.y, snapIncrement),
+              }
+            );
+          };
 
           return (
             <Circle
-              key={idx}
-              x={ptPxX}
-              y={ptPxY}
-              radius={6 / zoom}
-              fill="#0066cc"
-              stroke="white"
-              strokeWidth={2 / zoom}
+              key={`${movesCorner ? 'corner' : 'end'}-${idx}`}
+              x={ftToPx(pt.x)}
+              y={ftToPx(pt.y)}
+              radius={(movesCorner ? 9 : 6) / zoom}
+              fill={movesCorner ? 'rgba(0,0,0,0)' : '#0066cc'}
+              stroke={movesCorner ? undefined : 'white'}
+              strokeWidth={movesCorner ? 0 : 2 / zoom}
               draggable
+              onClick={(e: Konva.KonvaEventObject<MouseEvent>) => {
+                if (movesCorner) onSelect(Boolean(e.evt?.shiftKey));
+              }}
+              onTap={() => {
+                if (movesCorner) onSelect(false);
+              }}
               onDragMove={(e: Konva.KonvaEventObject<DragEvent>) => {
                 const node = e.target;
                 const rawFt = { x: pxToFt(node.x()), y: pxToFt(node.y()) };
-                const otherEndpoints = getOtherEndpoints(targetIdx);
-                const nearest = findNearestEndpoint(rawFt, otherEndpoints);
-                const snapIncrement = getWallSnapIncrement(Boolean(e.evt?.shiftKey));
+                const nearest = findNearestEndpoint(rawFt, candidates());
                 setEndpointSnapTarget(nearest ?? null);
-                const snappedPos = nearest ?? {
-                  x: snapToGrid(rawFt.x, snapIncrement),
-                  y: snapToGrid(rawFt.y, snapIncrement),
-                };
-                setDraggingEndpoint({ idx: targetIdx, pos: snappedPos });
+                setDraggingEndpoint({ idx, pos: snappedTo(rawFt, Boolean(e.evt?.shiftKey)) });
               }}
               onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
                 setEndpointSnapTarget(null);
                 setDraggingEndpoint(null);
                 const node = e.target;
-                const rawFt = { x: pxToFt(node.x()), y: pxToFt(node.y()) };
-
-                const allElements = useFloorplanStore.getState().activePlan()?.elements ?? [];
-
-                const draggedPt = wall.points[idx];
-                const connected = allElements.some(
-                  (el) =>
-                    el.type === 'wall' &&
-                    el.id !== wall.id &&
-                    el.points.some((p) => distance(p, draggedPt) < 0.05),
+                const snapped = snappedTo(
+                  { x: pxToFt(node.x()), y: pxToFt(node.y()) },
+                  Boolean(e.evt?.shiftKey),
                 );
-
-                const resolvedIdx = connected ? (idx === 0 ? wall.points.length - 1 : 0) : idx;
-                const otherEndpoints = getOtherEndpoints(resolvedIdx);
-                const snapIncrement = getWallSnapIncrement(Boolean(e.evt?.shiftKey));
-
-                const snapped = findNearestEndpoint(rawFt, otherEndpoints) ?? {
-                  x: snapToGrid(rawFt.x, snapIncrement),
-                  y: snapToGrid(rawFt.y, snapIncrement),
-                };
-
-                const newPoints = wall.points.map((p, i) => (i === resolvedIdx ? snapped : p));
-                updateElement(wall.id, { points: newPoints });
-
-                if (connected) {
-                  node.position({ x: ftToPx(draggedPt.x), y: ftToPx(draggedPt.y) });
-                } else {
-                  node.position({ x: ftToPx(snapped.x), y: ftToPx(snapped.y) });
-                }
-
-                onEndpointDrag?.(wall.id, resolvedIdx, snapped);
+                const allElements = useFloorplanStore.getState().activePlan()?.elements ?? [];
+                // One history step for this wall, and for a corner every wall joined there.
+                updateElements(moveWallJoint(allElements, wall.id, idx, pt, snapped, movesCorner));
+                node.position({ x: ftToPx(snapped.x), y: ftToPx(snapped.y) });
+                onEndpointDrag?.(wall.id, idx, snapped);
               }}
               hitStrokeWidth={12 / zoom}
             />

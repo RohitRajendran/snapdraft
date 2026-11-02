@@ -998,7 +998,11 @@
       font-size: var(--text-label-size);
       letter-spacing: 0.04em;
       color: var(--ink-light);
+      flex-wrap: wrap;
+      gap: var(--space-2) var(--space-4);
     }
+    .footer-links { display: flex; gap: var(--space-4); }
+    .footer-links a { color: var(--ink-light); text-underline-offset: 3px; }
 
 
     /* ── SCROLL REVEAL ──────────────────────────── */
@@ -1646,6 +1650,10 @@
 
   <footer class="site-footer">
     <span>© 2026 SnapDraft · Built with ♥ in Arlington, VA</span>
+    <nav class="footer-links" aria-label="Site">
+      <a href="/privacy" data-testid="footer-privacy">Privacy</a>
+      <a href="/support" data-testid="footer-support">Support</a>
+    </nav>
   </footer>
 
   <!-- Tape measure overlay -->

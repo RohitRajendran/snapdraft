@@ -177,6 +177,56 @@ test.describe('Wall drawing', () => {
     expect(afterLength).toBeGreaterThan(beforeLength);
   });
 
+  async function drawU(page: import('@playwright/test').Page) {
+    const { centerX, centerY } = await canvasCenter(page);
+    // Left, bottom and right walls drawn as a U; the bottom wall is joined at both ends.
+    await drawWall(page, centerX - 80, centerY - 80, centerX - 80, centerY);
+    await drawWall(page, centerX - 80, centerY, centerX + 80, centerY);
+    await drawWall(page, centerX + 80, centerY, centerX + 80, centerY - 80);
+    await page.getByTestId('tool-select-pan').click();
+    const before = await getActivePlanElements(page);
+    expect(before[0].points[1]).toEqual(before[1].points[0]);
+    expect(before[1].points[1]).toEqual(before[2].points[0]);
+    return { centerX, centerY, before };
+  }
+
+  async function dragFrom(page: import('@playwright/test').Page, x: number, y: number, toX: number, toY: number) {
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(toX, toY, { steps: 10 });
+    await page.mouse.up();
+  }
+
+  test("a selected wall's handle moves only that wall's end", async ({ page }) => {
+    const { centerX, centerY, before } = await drawU(page);
+    const [left, bottom, right] = before;
+    await clickWallMidpoint(page, 1);
+    await dragFrom(page, centerX - 80, centerY, centerX - 120, centerY + 40);
+
+    const [leftAfter, bottomAfter, rightAfter] = await getActivePlanElements(page);
+    // The dragged end moves and detaches; the other end and both side walls stay put.
+    expect(bottomAfter.points[0].x).toBeLessThan(bottom.points[0].x);
+    expect(bottomAfter.points[0].y).toBeGreaterThan(bottom.points[0].y);
+    expect(bottomAfter.points[1]).toEqual(bottom.points[1]);
+    expect(leftAfter.points).toEqual(left.points);
+    expect(rightAfter.points).toEqual(right.points);
+  });
+
+  test('dragging a corner with nothing selected moves every wall joined there', async ({ page }) => {
+    const { centerX, centerY, before } = await drawU(page);
+    const [left, bottom, right] = before;
+    await page.keyboard.press('Escape');
+    await dragFrom(page, centerX - 80, centerY, centerX - 120, centerY + 40);
+
+    const [leftAfter, bottomAfter, rightAfter] = await getActivePlanElements(page);
+    expect(bottomAfter.points[0].x).toBeLessThan(bottom.points[0].x);
+    expect(bottomAfter.points[1]).toEqual(bottom.points[1]);
+    // The left wall followed the corner; the right wall is untouched.
+    expect(leftAfter.points[1]).toEqual(bottomAfter.points[0]);
+    expect(leftAfter.points[0]).toEqual(left.points[0]);
+    expect(rightAfter.points).toEqual(right.points);
+  });
+
   test('can edit wall length in properties panel', async ({ page }) => {
     const { centerX, centerY } = await canvasCenter(page);
     await drawWall(page, centerX - 80, centerY, centerX + 80, centerY);

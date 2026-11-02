@@ -1361,7 +1361,13 @@ export function DrawingCanvas() {
         onWheel={handleWheel}
       >
         <Layer>
-          <Grid width={size.width} height={size.height} zoom={zoom} pan={pan} />
+          <Grid
+            width={size.width}
+            height={size.height}
+            zoom={zoom}
+            pan={pan}
+            boxes={elements.filter((el): el is Box => el.type === 'box')}
+          />
         </Layer>
 
         <Layer>

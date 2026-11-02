@@ -10,6 +10,8 @@ import {
   formatFeet,
   parseFtIn,
   collectConnectedWallIds,
+  moveWallJoint,
+  jointSnapCandidates,
   findNearestWallSegment,
   openingCenter,
   PIXELS_PER_FOOT,
@@ -456,5 +458,86 @@ describe('openingCenter', () => {
     expect(center).not.toBeNull();
     expect(center!.x).toBeCloseTo(5);
     expect(center!.y).toBeCloseTo(0);
+  });
+});
+
+describe('moveWallJoint', () => {
+  const wall = (id: string, points: { x: number; y: number }[]) => ({
+    id,
+    type: 'wall' as const,
+    points,
+  });
+  // Left, bottom and right walls drawn as a U; the bottom wall is joined at both ends.
+  const u = [
+    wall('left', [
+      { x: 0, y: 10 },
+      { x: 0, y: 0 },
+    ]),
+    wall('bottom', [
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+    ]),
+    wall('right', [
+      { x: 10, y: 0 },
+      { x: 10, y: 10 },
+    ]),
+  ];
+
+  it('moves the dragged end of a U-shaped middle wall and only the walls joined there', () => {
+    const left = moveWallJoint(u, 'bottom', 0, { x: 0, y: 0 }, { x: -2, y: 1 });
+    expect(left.bottom.points).toEqual([
+      { x: -2, y: 1 },
+      { x: 10, y: 0 },
+    ]);
+    expect(left.left.points).toEqual([
+      { x: 0, y: 10 },
+      { x: -2, y: 1 },
+    ]);
+    expect(left.right).toBeUndefined();
+    const right = moveWallJoint(u, 'bottom', 1, { x: 10, y: 0 }, { x: 12, y: 1 });
+    expect(right.bottom.points).toEqual([
+      { x: 0, y: 0 },
+      { x: 12, y: 1 },
+    ]);
+    expect(right.right.points).toEqual([
+      { x: 12, y: 1 },
+      { x: 10, y: 10 },
+    ]);
+    expect(right.left).toBeUndefined();
+  });
+
+  it('moves a free end alone', () => {
+    const free = moveWallJoint(u, 'left', 0, { x: 0, y: 10 }, { x: 0, y: 12 });
+    expect(Object.keys(free)).toEqual(['left']);
+    expect(free.left.points).toEqual([
+      { x: 0, y: 12 },
+      { x: 0, y: 0 },
+    ]);
+  });
+
+  it("moves only the selected wall's end when not moving the corner", () => {
+    const end = moveWallJoint(u, 'bottom', 0, { x: 0, y: 0 }, { x: -2, y: 1 }, false);
+    expect(Object.keys(end)).toEqual(['bottom']);
+    expect(end.bottom.points).toEqual([
+      { x: -2, y: 1 },
+      { x: 10, y: 0 },
+    ]);
+    // A single end may snap back onto the corner it left.
+    expect(jointSnapCandidates(u, 'bottom', 0, { x: 0, y: 0 }, false)).toContainEqual({
+      x: 0,
+      y: 0,
+    });
+  });
+
+  it('never offers the dragged joint as its own snap target', () => {
+    const candidates = jointSnapCandidates(u, 'bottom', 0, { x: 0, y: 0 });
+    expect(candidates).not.toContainEqual({ x: 0, y: 0 });
+    expect(candidates).toEqual(
+      expect.arrayContaining([
+        { x: 0, y: 10 },
+        { x: 10, y: 0 },
+        { x: 10, y: 10 },
+      ]),
+    );
   });
 });

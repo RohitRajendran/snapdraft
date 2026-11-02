@@ -6,6 +6,13 @@ import { useFloorplanStore } from '../../../store/useFloorplanStore/useFloorplan
 import type { Box } from '../../../types';
 import { ftToPx, pxToFt, formatFeet } from '../../../utils/geometry/geometry';
 import { DEFAULT_BOX_COLOR, hexToRgba } from '../../../utils/colors/colors';
+import { moveBoxMask } from '../Grid/boxMask';
+import {
+  BOX_LABEL_FONT_FAMILY,
+  BOX_LABEL_LINE_HEIGHT,
+  fitBoxLabel,
+  measureBoxLabel,
+} from '../../../utils/boxLabel/boxLabel';
 
 const HANDLE_OFFSET_PX = 22;
 const SELECTION_ACCENT = '#0066cc';
@@ -41,13 +48,14 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
 
   function handleDragMove(e: Konva.KonvaEventObject<DragEvent>) {
     if (isRotatingRef.current) return;
-    const ids = dragSelectionRef.current;
-    if (ids.size <= 1) return;
     const node = e.target;
-    const dxFt = pxToFt(node.x()) - (box.x + box.width / 2);
-    const dyFt = pxToFt(node.y()) - (box.y + box.length / 2);
     const stage = node.getStage();
     if (!stage) return;
+    moveBoxMask(stage, box.id, node.x(), node.y());
+    const ids = dragSelectionRef.current;
+    if (ids.size <= 1) return;
+    const dxFt = pxToFt(node.x()) - (box.x + box.width / 2);
+    const dyFt = pxToFt(node.y()) - (box.y + box.length / 2);
     const allEls = useFloorplanStore.getState().activePlan()?.elements ?? [];
     for (const id of ids) {
       if (id === box.id) continue;
@@ -58,6 +66,7 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
       if (el.type === 'box') {
         other.x(ftToPx(el.x + el.width / 2 + dxFt));
         other.y(ftToPx(el.y + el.length / 2 + dyFt));
+        moveBoxMask(stage, id, other.x(), other.y());
       } else if (el.type === 'wall') {
         other.x(ftToPx(dxFt));
         other.y(ftToPx(dyFt));
@@ -124,6 +133,12 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
   const boxColor = box.color ?? DEFAULT_BOX_COLOR;
   const labelColor = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
   const haloInset = SELECTION_HALO_INSET_PX / zoom;
+  // Fitted in screen pixels, then drawn at a constant screen size by dividing by zoom.
+  const labelLayout = fitBoxLabel(label, bw * zoom, bl * zoom, box.rotation, measureBoxLabel);
+  const labelWidth = Math.max(bw, bl);
+  const labelHeight = labelLayout
+    ? (labelLayout.lines.length * labelLayout.fontSize * BOX_LABEL_LINE_HEIGHT) / zoom
+    : 0;
 
   return (
     <Group
@@ -163,14 +178,26 @@ export function BoxElement({ box, selected, onSelect, onGroupDrag }: Props) {
           listening={false}
         />
       )}
-      <Text
-        x={4 / zoom}
-        y={4 / zoom}
-        text={label}
-        fontSize={11 / zoom}
-        fontFamily="Courier New"
-        fill={labelColor}
-      />
+      {labelLayout && (
+        <Text
+          x={bw / 2}
+          y={bl / 2}
+          width={labelWidth}
+          height={labelHeight}
+          offsetX={labelWidth / 2}
+          offsetY={labelHeight / 2}
+          rotation={labelLayout.rotation}
+          text={labelLayout.lines.join('\n')}
+          fontSize={labelLayout.fontSize / zoom}
+          lineHeight={BOX_LABEL_LINE_HEIGHT}
+          fontFamily={BOX_LABEL_FONT_FAMILY}
+          align="center"
+          verticalAlign="middle"
+          wrap="none"
+          fill={labelColor}
+          listening={false}
+        />
+      )}
       {selected && activeTool === 'select' && (
         <>
           <Line

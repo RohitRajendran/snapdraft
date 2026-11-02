@@ -141,7 +141,7 @@ test.describe('Box color', () => {
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
       }, color);
-      // Inspect real rendered canvas pixels, excluding the box border and grid.
+      // Inspect real rendered canvas pixels around the centered label, away from the border.
       await expect
         .poll(() =>
           page.getByTestId('drawing-canvas').evaluate((container) => {
@@ -158,8 +158,8 @@ test.describe('Box color', () => {
               const ratio = canvas.width / bounds.width;
               const ctx = canvas.getContext('2d')!;
               const pixels = ctx.getImageData(
-                (box.x * 40 * zoom + panX + 5) * ratio,
-                (box.y * 40 * zoom + panY + 5) * ratio,
+                ((box.x + box.width / 2) * 40 * zoom + panX - 27) * ratio,
+                ((box.y + box.length / 2) * 40 * zoom + panY - 6) * ratio,
                 55 * ratio,
                 12 * ratio,
               ).data;
