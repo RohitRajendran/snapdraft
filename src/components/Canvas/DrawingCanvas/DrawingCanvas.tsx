@@ -284,6 +284,18 @@ export function DrawingCanvas() {
     isChainArmed && chainPoints.length > 0 ? chainPoints[chainPoints.length - 1] : null;
   const { snap, snapWithInfo } = useSnap(elements, chainOrigin);
 
+  // Konva finds the shape under a press from a hidden hit canvas that only redraws on the next
+  // frame. Refresh it first, so a press right after a change lands on what's already on screen
+  // rather than on what was there a frame ago: a new door, not the wall behind it.
+  useEffect(() => {
+    const stage = stageRef.current;
+    const container = stage?.container();
+    if (!stage || !container) return;
+    const refreshHitCanvas = () => stage.getLayers().forEach((layer) => layer.drawHit());
+    container.addEventListener('pointerdown', refreshHitCanvas, { capture: true });
+    return () => container.removeEventListener('pointerdown', refreshHitCanvas, { capture: true });
+  }, []);
+
   useEffect(() => {
     const ro = new ResizeObserver(() => {
       if (containerRef.current) {
