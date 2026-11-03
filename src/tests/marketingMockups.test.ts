@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { describe, expect, it } from 'vitest';
 import { PIXELS_PER_FOOT } from '../utils/geometry/geometry';
 import { createSampleElements } from '../utils/samplePlan';
+import { BOX_LABEL_FONT_FAMILY, fitBoxLabel } from '../utils/boxLabel/boxLabel';
 
 /**
  * The marketing page (public/home.html) recreates the app's UI in hand-written
@@ -230,51 +231,103 @@ describe('marketing mockups mirror the app', () => {
       expect(row).toMatch(/fill="rgba\(255,255,255,0\.3\)" stroke="#2c2c2c"/);
       // Unselected box: dashed blueprint blue
       expect(row).toMatch(/stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/);
-      // Selected box: solid selection blue with a rotation handle and no corner handles
-      expect(row).toMatch(/stroke="#0066cc" stroke-width="2"(?! stroke-dasharray)/);
+      // Selected box: solid in its own color inside a dashed selection halo, with a rotation
+      // handle and no corner handles
+      expect(row).toMatch(/fill="rgba\(45, 84, 144, 0\.1\)" stroke="#2d5490" stroke-width="2"\/>/);
+      expect(row).toMatch(/stroke="#0066cc" stroke-width="1" stroke-dasharray="3 3"/);
       expect(row).toMatch(/r="6" fill="#0066cc" stroke="white"/);
     });
 
-    it("labels boxes with the plan's real labels", () => {
+    it("labels boxes with the plan's real labels, fitted as the app fits them", () => {
       const row = canvases.find((c) => c[1] === 'row2')![2];
-      for (const label of ['Bed', 'Dresser', 'Armchair']) {
-        expect(row).toContain(`>${label}<`);
+      expect(row).toContain(`font-family="${BOX_LABEL_FONT_FAMILY}, sans-serif"`);
+      expect(row).toContain('fill="#2c2c2c" text-anchor="middle"');
+      // Half an em per character, the estimate both the generator and the app's fallback use.
+      const measure = (text: string, size: number) => text.length * size * 0.5;
+      const scale = PIXELS_PER_FOOT * 0.75;
+      for (const box of createSampleElements()) {
+        if (box.type !== 'box' || !box.label) continue;
+        const layout = fitBoxLabel(
+          box.label,
+          box.width * scale,
+          box.length * scale,
+          box.rotation,
+          measure,
+        );
+        expect(layout, `"${box.label}" should be readable in the mockup`).not.toBeNull();
+        for (const line of layout!.lines) expect(row).toContain(`>${line}<`);
       }
+      expect(row).not.toContain(
+        'font-family="Courier New, monospace" font-size="11" fill="#2d5490">Bed',
+      );
     });
 
-    it('suppresses only the one label the app cannot fit', () => {
-      // The single deliberate deviation from the app, asserted here so it stays
-      // visible. The app draws "Nightstand" (10 chars of 11px Courier, ~66px)
-      // inside a 1.5ft box (60px) and it overruns onto the bed's label. See the
-      // HIDE_LABELS note in scripts/marketing/render-canvas-svg.js.
-      const CHAR_PX = 11 * 0.6; // Courier advance is 0.6em
-      const INSET_PX = 4;
-      const hidden = ['Nightstand'];
-
-      for (const [, , body] of canvases) {
-        for (const label of hidden) expect(body).not.toContain(`>${label}<`);
+    it('boxes hide the grid, without covering walls or other boxes', () => {
+      const boxCount = createSampleElements().filter((el) => el.type === 'box').length;
+      for (const [, id, body] of canvases) {
+        const masks = [...body.matchAll(/<rect data-box-mask/g)];
+        // Row 1 is mid-draw, with the dresser and armchair not placed yet.
+        expect(masks.length, `canvas-${id}`).toBe(id === 'row1' ? boxCount - 2 : boxCount);
+        const lastMask = masks[masks.length - 1].index;
+        const firstWall = body.search(/stroke="#2c2c2c" stroke-width="3"/);
+        const lastGridLine = body.lastIndexOf('stroke="#ccd9e8"');
+        expect(lastMask, `canvas-${id}: masks go under the walls`).toBeLessThan(firstWall);
+        expect(lastMask, `canvas-${id}: masks go over the grid`).toBeGreaterThan(lastGridLine);
       }
+    });
+  });
 
-      const boxes = createSampleElements().filter((el) => el.type === 'box');
-      const usablePx = (widthFt: number) => widthFt * PIXELS_PER_FOOT - INSET_PX * 2;
+  describe('social sharing card', () => {
+    const card = read('scripts/og-image/og-image.html');
+    const png = readFileSync(resolve(root, 'public/og-image.png'));
 
-      // Every label we do draw must actually fit its box...
-      for (const box of boxes) {
-        if (box.type !== 'box' || !box.label || hidden.includes(box.label)) continue;
-        expect(
-          box.label.length * CHAR_PX,
-          `"${box.label}" overruns its ${box.width}ft box — hide it or shorten it`,
-        ).toBeLessThanOrEqual(usablePx(box.width));
-      }
+    it('draws the same real plan as the page', () => {
+      const region = card.match(/<!-- BEGIN:canvas-og -->([\s\S]*?)<!-- END:canvas-og -->/)?.[1];
+      expect(region, 'run npm run generate:marketing-canvas').toContain('<svg');
+      for (const label of ['Bed', 'Dresser', 'Armchair']) expect(region).toContain(`>${label}<`);
+      expect(region).toMatch(/fill="rgba\(255,255,255,0\.3\)" stroke="#2c2c2c"/);
+      expect(region).toContain('data-box-mask');
+      expect(card).toContain('Josefin+Sans');
+    });
 
-      // ...and everything we hide must genuinely not fit, so the list cannot
-      // quietly grow into "make the mockups prettier than the app".
-      for (const label of hidden) {
-        const box = boxes.find((b) => b.type === 'box' && b.label === label);
-        expect(box, `nothing in the sample plan is labelled "${label}"`).toBeDefined();
-        if (box?.type !== 'box') continue;
-        expect(label.length * CHAR_PX).toBeGreaterThan(usablePx(box.width));
-      }
+    it('is the size social networks expect', () => {
+      expect(png.readUInt32BE(16)).toBe(1200);
+      expect(png.readUInt32BE(20)).toBe(630);
+    });
+  });
+
+  describe('icons', () => {
+    const size = (file: string) => {
+      const png = readFileSync(resolve(root, 'public', file));
+      return [png.readUInt32BE(16), png.readUInt32BE(20)];
+    };
+
+    it.each([
+      ['icon-512.png', 512],
+      ['icon-192.png', 192],
+      ['apple-touch-icon.png', 180],
+      ['icon-maskable-512.png', 512],
+    ])('%s is %i px square', (file, pixels) => {
+      expect(size(file)).toEqual([pixels, pixels]);
+    });
+
+    it('the tab icon is the room, door and monogram as outlines, with no grid', () => {
+      const mark = read('public/brand-mark.svg');
+      expect(mark).toContain('#2d5490');
+      expect(mark).not.toContain('<text');
+      expect(mark).not.toContain('#dfe4e6');
+    });
+
+    it('favicon.ico holds 16, 32 and 48 px images', () => {
+      const icon = readFileSync(resolve(root, 'public/favicon.ico'));
+      expect(icon.readUInt16LE(4)).toBe(3);
+      expect([icon[6], icon[22], icon[38]]).toEqual([16, 32, 48]);
+    });
+
+    it('Android gets an icon made to be cropped', () => {
+      const config = read('vite.config.ts');
+      expect(config).toMatch(/src: 'icon-maskable-512\.png'[\s\S]*?purpose: 'maskable'/);
+      expect(config).not.toContain("purpose: 'any maskable'");
     });
   });
 
