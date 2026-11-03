@@ -84,10 +84,15 @@ export function parseChangelog(markdown: string): { releases: Release[]; errors:
   return { releases, errors };
 }
 
+/** Repeats until nothing changes, because removing one comment can complete another. */
+function stripComments(text: string): string {
+  const stripped = text.replace(/<!--[\s\S]*?-->/g, '');
+  return stripped === text ? text : stripComments(stripped);
+}
+
 /** Reads the `## Changelog` section of a pull request description. */
 export function parsePrChangelog(body: string): PrChangelog {
-  const lines = body
-    .replace(/<!--[\s\S]*?-->/g, '')
+  const lines = stripComments(body)
     .split(/\r?\n/)
     .map((line) => line.trimEnd());
   const start = lines.findIndex((line) => /^## changelog$/i.test(line.trim()));

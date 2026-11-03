@@ -158,6 +158,22 @@ describe('parsePrChangelog', () => {
     ).toEqual({ New: ['Draw curves'], Improved: [], Fixed: [] });
   });
 
+  it('removes a comment that only forms once another is removed', () => {
+    expect(
+      entries('## Changelog\n<!<!-- a -->-- - hidden -->\n### New\n- Draw curves').New,
+    ).toEqual(['Draw curves']);
+  });
+
+  it('rejects markup that only forms once a comment is removed', () => {
+    expect(parsePrChangelog('## Changelog\n### New\n- <<!-- a -->b>Bold</b>').status).toBe(
+      'invalid',
+    );
+  });
+
+  it('rejects an unclosed comment left in an item', () => {
+    expect(parsePrChangelog('## Changelog\n### New\n- Draw <!-- curves').status).toBe('invalid');
+  });
+
   it('joins a bullet wrapped onto an indented line', () => {
     expect(entries('## Changelog\n### New\n- Draw\n  curves').New).toEqual(['Draw curves']);
   });
