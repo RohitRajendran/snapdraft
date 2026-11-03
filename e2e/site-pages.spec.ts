@@ -12,6 +12,7 @@ test.describe('privacy and support pages', () => {
     await expect(page.getByTestId('privacy-native')).toContainText('does not collect any data');
     await expect(page.getByTestId('privacy-links')).toContainText('contains the plan itself');
     await expect(page.getByTestId('privacy-contact')).toHaveAttribute('href', /^mailto:rohit@hummingbirdtech\.xyz/);
+    await expect(page.getByText('SnapDraft is made by Hummingbird Tech, LLC')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Support' }).first()).toHaveAttribute('href', '/support');
   });
 
