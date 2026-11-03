@@ -1,0 +1,60 @@
+.release + .release {
+  margin-top: 16px;
+}
+
+.date {
+  margin: 0 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border-light);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-dark);
+}
+
+.group + .group {
+  margin-top: 8px;
+}
+
+.kind {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+}
+
+.items {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.item {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.item + .item {
+  margin-top: 4px;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  color: var(--ink-dark);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

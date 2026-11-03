@@ -60,6 +60,7 @@ src/
     geometry/geometry.ts               Coordinate conversion, snapping, dimensions, nudging
     units/units.ts                      Dimension parsing and formatting (imperial/metric)
     storage/storage.ts                 localStorage read/write helpers
+    changelog/                         Reads CHANGELOG.md and works out what a returning user hasn't seen
   store/
     useFloorplanStore/                 Plans, elements, persistence, undo/redo history
     useToolStore/                      Active tool, chain state, selection, measure, zoom, pan
@@ -81,7 +82,8 @@ src/
     PropertiesPanel/                   Single-selection editing
     PropertiesPanel/FtInInput/         Feet-and-inches field
     FloorplanManager/                  Create, rename, delete, switch plans
-    HelpOverlay/                       Help modal shown on first visit
+    HelpOverlay/                       Help modal shown on first visit; its Updates tab lists the changelog
+    WhatsNewCard/                      Tells returning users about new features
 e2e/                                   Playwright scenarios
 ```
 
@@ -216,12 +218,23 @@ Keep these covered:
 - Wall stroke width is not divided by zoom.
 - Undo pushes prior element state to `past`, and redo restores from `future`.
 
+## Changelog
+
+Every pull request needs a `## Changelog` section in its description. Write it when opening the pull request, following [the format and writing rules in `CONTRIBUTING.md`](CONTRIBUTING.md#changelog). The `Changelog section` check fails without one; Dependabot pull requests are exempt. Entries are public and describe the web app only.
+
+When a pull request merges, `.github/workflows/changelog.yml` runs `scripts/changelog/publish.mjs`. It adds the section to `CHANGELOG.md`, commits that to `main`, and creates a GitHub Release tagged `vYYYY.MM.DD` (`.2` and up for later releases that day). Netlify deploys that commit, and the app bundles `CHANGELOG.md`, so the entry reaches the app with no network request. To change the wording later, edit `CHANGELOG.md`. Edits after publishing don't update the GitHub Release.
+
+If `main` gets branch protection, let GitHub Actions push to it, or entries can't be recorded.
+
+In the app, `src/utils/changelog/whatsNew.ts` decides what's unseen using the `snapdraft_changelog_seen` key in `localStorage`. First-time visitors skip the news. People with no marker see only the latest `New` items.
+
 ## Change Workflow
 
 1. Inspect the relevant components, store, and tests before editing.
 2. Make the smallest change that satisfies the task.
 3. Add or update tests in the same session.
 4. Run the narrowest useful verification first, then broader checks if the change crosses boundaries.
+5. Add the `## Changelog` section when opening the pull request.
 
 Typical verification choices:
 

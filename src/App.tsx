@@ -3,21 +3,37 @@ import { DrawingCanvas } from './components/Canvas/DrawingCanvas/DrawingCanvas';
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { TopBar } from './components/Canvas/TopBar/TopBar';
 import { PropertiesPanel } from './components/PropertiesPanel/PropertiesPanel';
-import { HelpOverlay } from './components/HelpOverlay/HelpOverlay';
+import { HelpOverlay, type HelpTab } from './components/HelpOverlay/HelpOverlay';
+import { WhatsNewCard } from './components/WhatsNewCard/WhatsNewCard';
 import { ScaleBar } from './components/Canvas/ScaleBar/ScaleBar';
 import { MultiSelectBar } from './components/Canvas/MultiSelectBar/MultiSelectBar';
 import { MobileSelectionBar } from './components/Canvas/MobileSelectionBar/MobileSelectionBar';
 import { useFloorplanStore } from './store/useFloorplanStore/useFloorplanStore';
+import { useToolStore } from './store/useToolStore/useToolStore';
 import { decodePlanFromUrl } from './utils/storage/storage';
 import { createSampleElements } from './utils/samplePlan';
+import { markChangelogSeen, readUnseenHighlights } from './utils/changelog/whatsNew';
 import styles from './App.module.css';
 
 export default function App() {
   const [showHelp, setShowHelp] = useState(() => {
     if (localStorage.getItem('snapdraft_help_seen')) return false;
     localStorage.setItem('snapdraft_help_seen', '1');
+    // Everything is new to a first-time visitor, so only later changes count as news.
+    markChangelogSeen();
     return true;
   });
+  const [helpTab, setHelpTab] = useState<HelpTab>('help');
+  // Runs after the first-visit check above, which it relies on.
+  const [highlights, setHighlights] = useState(readUnseenHighlights);
+
+  function acknowledgeUpdates() {
+    markChangelogSeen();
+    setHighlights([]);
+  }
+
+  // The properties panel needs this space, so the card waits until the selection is cleared.
+  const hasSelection = useToolStore((s) => s.selectedIds.size > 0);
 
   const { createPlan, importPlan, activeId } = useFloorplanStore();
 
@@ -47,7 +63,10 @@ export default function App() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement) return;
-      if (e.key === '?') setShowHelp((v) => !v);
+      if (e.key === '?') {
+        setHelpTab('help');
+        setShowHelp((v) => !v);
+      }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -65,12 +84,34 @@ export default function App() {
           </div>
         )}
       </main>
-      <Toolbar onHelpOpen={() => setShowHelp(true)} />
+      <Toolbar
+        onHelpOpen={() => {
+          setHelpTab('help');
+          setShowHelp(true);
+        }}
+      />
       <PropertiesPanel />
       <ScaleBar />
       <MultiSelectBar />
       <MobileSelectionBar />
-      {showHelp && <HelpOverlay onClose={() => setShowHelp(false)} />}
+      {highlights.length > 0 && !hasSelection && (
+        <WhatsNewCard
+          items={highlights}
+          onOpen={() => {
+            acknowledgeUpdates();
+            setHelpTab('updates');
+            setShowHelp(true);
+          }}
+          onDismiss={acknowledgeUpdates}
+        />
+      )}
+      {showHelp && (
+        <HelpOverlay
+          initialTab={helpTab}
+          onClose={() => setShowHelp(false)}
+          onUpdatesViewed={acknowledgeUpdates}
+        />
+      )}
     </div>
   );
 }

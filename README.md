@@ -4,6 +4,8 @@ SnapDraft is a browser-based floor plan sketching tool. Draw walls, place boxes,
 
 Plans are saved locally in your browser with `localStorage`. If you clear site data or switch browsers/devices, your plans will not follow you.
 
+See what's changed in the [changelog](CHANGELOG.md) or on the [Releases page](https://github.com/RohitRajendran/snapdraft/releases).
+
 ## Highlights
 
 - Draw wall chains by clicking points or dragging
@@ -125,6 +127,8 @@ GitHub Actions runs:
 - `npm run test`
 - `npm run test:e2e`
 
+A separate check requires a `## Changelog` section in each pull request. See [CONTRIBUTING.md](CONTRIBUTING.md#changelog).
+
 ## Tech Stack
 
 - React 19
@@ -148,10 +152,6 @@ src/
 e2e/            Playwright tests
 ```
 
-## Contributing Notes
+## Contributing
 
-- Keep persisted geometry in feet, not pixels.
-- Keep persisted plan schema changes backward-compatible when possible.
-- If you make a breaking change to persisted plan data, bump the plan version and add a tested migration path in `src/utils/storage/storage.ts`.
-- Use `stage.getRelativePointerPosition()` for world-coordinate math.
-- Prefer `data-testid` selectors for UI tests.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, checks and how to write a changelog entry.

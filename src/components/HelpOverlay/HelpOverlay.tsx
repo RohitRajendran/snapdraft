@@ -2,10 +2,16 @@ import { useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap/useFocusTrap';
 import { useToolStore } from '../../store/useToolStore/useToolStore';
+import { RELEASES } from '../../utils/changelog/whatsNew';
+import { ChangelogList } from './ChangelogList/ChangelogList';
 import styles from './HelpOverlay.module.css';
+
+export type HelpTab = 'help' | 'updates' | 'preferences' | 'about';
 
 type Props = {
   onClose: () => void;
+  initialTab?: HelpTab;
+  onUpdatesViewed?: () => void;
 };
 
 type PlatformKind = 'mac' | 'windows' | 'other';
@@ -200,9 +206,9 @@ function getHelpContent(profile: InputProfile) {
 
 const titleId = 'help-overlay-title';
 
-export function HelpOverlay({ onClose }: Props) {
+export function HelpOverlay({ onClose, initialTab = 'help', onUpdatesViewed }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<'help' | 'about' | 'preferences'>('help');
+  const [activeTab, setActiveTab] = useState<HelpTab>(initialTab);
   const unit = useToolStore((s) => s.unit);
   const setUnit = useToolStore((s) => s.setUnit);
   const { gettingStarted, advancedShortcuts, dismissHint } = getHelpContent(detectInputProfile());
@@ -239,6 +245,18 @@ export function HelpOverlay({ onClose }: Props) {
             onClick={() => setActiveTab('help')}
           >
             Help
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'updates'}
+            className={`${styles.tab} ${activeTab === 'updates' ? styles.tabActive : ''}`}
+            onClick={() => {
+              setActiveTab('updates');
+              onUpdatesViewed?.();
+            }}
+            data-testid="tab-updates"
+          >
+            Updates
           </button>
           <button
             role="tab"
@@ -296,6 +314,8 @@ export function HelpOverlay({ onClose }: Props) {
               </details>
             </>
           )}
+
+          {activeTab === 'updates' && <ChangelogList releases={RELEASES} />}
 
           {activeTab === 'preferences' && (
             <div className={styles.preferences}>
