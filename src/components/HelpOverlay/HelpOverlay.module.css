@@ -381,6 +381,19 @@
     padding: 20px;
   }
 
+  /* Four tabs fit a 375px phone at this size, and scroll on anything narrower. */
+  .tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tab {
+    flex: none;
+    padding: 8px 6px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
   .row {
     grid-template-columns: 1fr;
     gap: 4px;

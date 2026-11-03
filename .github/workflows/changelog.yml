@@ -1,0 +1,52 @@
+name: Changelog
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Changelog section
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/changelog/check-pr.mjs
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+
+  publish:
+    name: Record and publish
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    # One at a time, so two quick merges can't both claim the same release ID.
+    concurrency:
+      group: changelog-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898283+github-actions[bot]@users.noreply.github.com'
+      # Netlify deploys the commit this pushes, which is how an entry reaches the app. Don't
+      # add [skip ci] to it: Netlify honours that too.
+      - run: node scripts/changelog/publish.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
