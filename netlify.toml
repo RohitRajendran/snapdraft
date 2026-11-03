@@ -25,6 +25,17 @@
   status = 200
   force = true
 
+# Privacy policy and support pages (App Store links point here)
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/support"
+  to = "/support.html"
+  status = 200
+
 [[redirects]]
   from = "/app"
   to = "/index.html"

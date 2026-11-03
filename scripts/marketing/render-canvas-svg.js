@@ -1,6 +1,7 @@
 // Usage: npm run generate:marketing-canvas
 //
-// Regenerates the floor-plan canvas artwork embedded in public/home.html.
+// Regenerates the floor-plan canvas artwork embedded in public/home.html, and the plan on the
+// social sharing card (scripts/og-image/og-image.html; then run npm run generate:og-image).
 //
 // The marketing page fakes the app UI. The *chrome* (top bar, toolbar, panels)
 // is hand-written HTML/CSS that mirrors the component CSS modules; the *canvas*
@@ -9,17 +10,24 @@
 //
 // Node 26 strips TypeScript types on import, so we read the real source directly.
 //
-// Output: the marked regions in public/home.html
+// Output: the marked regions in those two files
 //           <!-- BEGIN:canvas-<id> --> ... <!-- END:canvas-<id> -->
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createSampleElements } from '../../src/utils/samplePlan.ts';
-import { PIXELS_PER_FOOT } from '../../src/utils/geometry/geometry.ts';
+import { PIXELS_PER_FOOT, formatFeet } from '../../src/utils/geometry/geometry.ts';
+import { DEFAULT_BOX_COLOR, hexToRgba } from '../../src/utils/colors/colors.ts';
+import {
+  BOX_LABEL_FONT_FAMILY,
+  BOX_LABEL_LINE_HEIGHT,
+  fitBoxLabel,
+} from '../../src/utils/boxLabel/boxLabel.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const HOME_HTML = path.resolve(__dirname, '../../public/home.html');
+const OG_HTML = path.resolve(__dirname, '../og-image/og-image.html');
 
 // ── Render constants, copied from the components that own them ──────────────
 // Every stroke width and font size below is a *screen* pixel value in the app:
@@ -41,18 +49,18 @@ const R = {
   doorFill: 'rgba(255,255,255,0.3)',
   // BoxElement.tsx
   box: {
-    stroke: '#2d5490',
     width: 1.5,
-    fill: 'rgba(74,111,165,0.06)',
+    selectedWidth: 2,
+    fillOpacity: 0.06,
+    selectedFillOpacity: 0.1,
     dash: '4 3',
     radius: 1,
-    labelSize: 11,
-    labelInset: 4,
-  },
-  boxSelected: {
-    stroke: '#0066cc',
-    width: 2,
-    fill: 'rgba(0,102,204,0.06)',
+    labelFill: '#2c2c2c', // --ink
+    accent: '#0066cc', // SELECTION_ACCENT
+    haloInset: 3,
+    haloWidth: 1,
+    haloDash: '3 3',
+    haloRadius: 2,
     handleOffset: 22, // HANDLE_OFFSET_PX
     handleRadius: 6,
     handleLineWidth: 1.5,
@@ -240,12 +248,53 @@ function renderDoor(view, opening, wall) {
   ];
 }
 
-function renderBox(view, box, selected, cls, hideLabel) {
+// Node has no canvas to measure text, so this uses the same half-em estimate as
+// measureBoxLabel's fallback. Josefin Sans is close to it.
+const measureLabel = (text, fontSize) => text.length * fontSize * 0.5;
+
+function boxPlacement(view, box) {
   const w = view.len(box.width);
   const h = view.len(box.length);
   const cx = view.x(box.x + box.width / 2);
   const cy = view.y(box.y + box.length / 2);
-  const style = selected ? { ...R.box, ...R.boxSelected } : R.box;
+  return {
+    w,
+    h,
+    transform: `translate(${cx} ${cy}) rotate(${n(box.rotation)}) translate(${n(-w / 2)} ${n(-h / 2)})`,
+  };
+}
+
+// Grid.tsx: boxes hide the grid. Masks sit under the whole plan so they never cover walls or
+// other boxes. They fade in with their box, so the hero never shows a hole in the grid.
+function renderBoxMask(view, box, cls) {
+  const { w, h, transform } = boxPlacement(view, box);
+  const mask = `<rect data-box-mask transform="${transform}" width="${w}" height="${h}" fill="${R.gridBg}"/>`;
+  return cls ? [`<g class="${cls}">${mask}</g>`] : [mask];
+}
+
+function renderBoxLabel(box, w, h) {
+  const label = box.label || `${formatFeet(box.width)} × ${formatFeet(box.length)}`;
+  const layout = fitBoxLabel(label, w, h, box.rotation, measureLabel);
+  if (!layout) return [];
+  const lineHeight = layout.fontSize * BOX_LABEL_LINE_HEIGHT;
+  const out = [
+    `  <g transform="translate(${n(w / 2)} ${n(h / 2)}) rotate(${n(layout.rotation)})" ` +
+      `font-family="${BOX_LABEL_FONT_FAMILY}, sans-serif" font-size="${layout.fontSize}" ` +
+      `fill="${R.box.labelFill}" text-anchor="middle" dominant-baseline="central">`,
+  ];
+  layout.lines.forEach((line, i) => {
+    const y = n((i - (layout.lines.length - 1) / 2) * lineHeight);
+    out.push(`    <text y="${y}">${esc(line)}</text>`);
+  });
+  out.push('  </g>');
+  return out;
+}
+
+function renderBox(view, box, selected, cls) {
+  const { w, h, transform } = boxPlacement(view, box);
+  const color = box.color ?? DEFAULT_BOX_COLOR;
+  const fill = hexToRgba(color, selected ? R.box.selectedFillOpacity : R.box.fillOpacity);
+  const width = selected ? R.box.selectedWidth : R.box.width;
   const dash = selected ? '' : ` stroke-dasharray="${R.box.dash}"`;
 
   // The animated class goes on an outer, untransformed <g>: the hero's
@@ -254,21 +303,23 @@ function renderBox(view, box, selected, cls, hideLabel) {
   const parts = [];
   if (cls) parts.push(`<g class="${cls}">`);
   parts.push(
-    `<g transform="translate(${cx} ${cy}) rotate(${n(box.rotation)}) translate(${n(-w / 2)} ${n(-h / 2)})">`,
-    `  <rect width="${w}" height="${h}" rx="${R.box.radius}" fill="${style.fill}" ` +
-      `stroke="${style.stroke}" stroke-width="${style.width}"${dash}/>`,
+    `<g transform="${transform}">`,
+    `  <rect width="${w}" height="${h}" rx="${R.box.radius}" fill="${fill}" ` +
+      `stroke="${color}" stroke-width="${width}"${dash}/>`,
   );
-  if (box.label && !hideLabel) {
+  if (selected) {
+    const inset = R.box.haloInset;
     parts.push(
-      `  <text x="${R.box.labelInset}" y="${R.box.labelInset + R.box.labelSize * 0.8}" ` +
-        `font-family="Courier New, monospace" font-size="${R.box.labelSize}" fill="${style.stroke}">${esc(box.label)}</text>`,
+      `  <rect x="${-inset}" y="${-inset}" width="${n(w + inset * 2)}" height="${n(h + inset * 2)}" rx="${R.box.haloRadius}" ` +
+        `fill="none" stroke="${R.box.accent}" stroke-width="${R.box.haloWidth}" stroke-dasharray="${R.box.haloDash}"/>`,
     );
   }
+  parts.push(...renderBoxLabel(box, w, h));
   if (selected) {
-    const off = R.boxSelected.handleOffset;
+    const off = R.box.handleOffset;
     parts.push(
-      `  <line x1="${n(w / 2)}" y1="0" x2="${n(w / 2)}" y2="${-off}" stroke="${R.boxSelected.stroke}" stroke-width="${R.boxSelected.handleLineWidth}"/>`,
-      `  <circle cx="${n(w / 2)}" cy="${-off}" r="${R.boxSelected.handleRadius}" fill="${R.boxSelected.stroke}" stroke="white" stroke-width="${R.boxSelected.handleRingWidth}"/>`,
+      `  <line x1="${n(w / 2)}" y1="0" x2="${n(w / 2)}" y2="${-off}" stroke="${R.box.accent}" stroke-width="${R.box.handleLineWidth}"/>`,
+      `  <circle cx="${n(w / 2)}" cy="${-off}" r="${R.box.handleRadius}" fill="${R.box.accent}" stroke="white" stroke-width="${R.box.handleRingWidth}"/>`,
     );
   }
   parts.push('</g>');
@@ -321,7 +372,6 @@ function renderDrawingState(view, state) {
  * @param {number[]} [opts.omitWalls]  wall indexes to leave undrawn (mid-draw shots);
  *                                     openings on an omitted wall are dropped too
  * @param {string[]} [opts.omitBoxes]  boxes (by label) to leave out entirely
- * @param {string[]} [opts.hideLabels] boxes (by label) to draw without their name
  * @param {string} [opts.selectedLabel] box label to render in the selected state
  * @param {object} [opts.drawingState] in-progress wall chain decorations
  * @param {number} [opts.dim]         opacity applied to the whole plan (modal shots)
@@ -336,7 +386,6 @@ function renderCanvas(opts) {
     originFt,
     omitWalls = [],
     omitBoxes = [],
-    hideLabels = [],
     selectedLabel,
     drawingState,
     dim,
@@ -354,6 +403,9 @@ function renderCanvas(opts) {
     .filter((op) => walls.some((w) => w.id === op.wallId));
   const boxes = elements.filter((el) => el.type === 'box' && !omitBoxes.includes(el.label));
 
+  const boxClass = (i) => (animateBoxes ? `furniture-item fi-${i}` : '');
+  const masks = boxes.flatMap((box, i) => renderBoxMask(view, box, boxClass(i)));
+
   const plan = [];
   for (const wall of walls) plan.push(...renderWall(view, wall, openings, null));
   for (const opening of openings) {
@@ -365,15 +417,7 @@ function renderCanvas(opts) {
     );
   }
   boxes.forEach((box, i) => {
-    plan.push(
-      ...renderBox(
-        view,
-        box,
-        box.label === selectedLabel,
-        animateBoxes ? `furniture-item fi-${i}` : '',
-        hideLabels.includes(box.label),
-      ),
-    );
+    plan.push(...renderBox(view, box, box.label === selectedLabel, boxClass(i)));
   });
   plan.push(...renderDrawingState(view, drawingState));
 
@@ -384,6 +428,7 @@ function renderCanvas(opts) {
     `<svg class="shot-canvas" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" ` +
       (ariaLabel ? `role="img" aria-label="${esc(ariaLabel)}">` : 'aria-hidden="true">'),
     ...renderGrid(view, width, height).map((l) => `  ${l}`),
+    ...masks.map((l) => `  ${l}`),
     ...body.map((l) => `  ${l}`),
     '</svg>',
   ].join('\n');
@@ -392,20 +437,6 @@ function renderCanvas(opts) {
 // ── The four canvases embedded in home.html ─────────────────────────────────
 // Frame sizes are the `.shot` dimensions declared in home.html's CSS.
 
-// A DELIBERATE DEVIATION FROM THE APP.
-// The app draws box labels at a constant 11px Courier and does not clip them to
-// the box (BoxElement.tsx), so a name wider than its box overruns its
-// neighbours. The sample plan's nightstands are the only case: "Nightstand" is
-// 10 characters -> ~66px of Courier against a 60px-wide box, and it collides
-// with the bed's label. Removing the name in samplePlan.ts does not help,
-// because BoxElement falls back to the dimensions ("1' 6\" x 2'", also 10
-// characters). So the marketing shots suppress that one label.
-//
-// This is the only place these mockups knowingly differ from the app. If
-// BoxElement ever clips labels (width + wrap="none" + ellipsis), delete this
-// and let the shots show what the app shows.
-const HIDE_LABELS = ['Nightstand'];
-
 const CANVASES = {
   // Hero: the finished plan, centred, no chrome. Boxes carry the fade-in classes.
   hero: renderCanvas({
@@ -413,7 +444,6 @@ const CANVASES = {
     height: 460,
     zoom: 0.72,
     originFt: { x: -2.222, y: -2.486 },
-    hideLabels: HIDE_LABELS,
     animateBoxes: true,
     ariaLabel: 'Floor plan sketch of a bedroom with furniture',
   }),
@@ -426,7 +456,6 @@ const CANVASES = {
     height: 640,
     zoom: 0.85,
     originFt: { x: -4.794, y: -3.912 },
-    hideLabels: HIDE_LABELS,
     omitWalls: [1], // bottom wall (and therefore its door)
     omitBoxes: ['Dresser', 'Armchair'],
     drawingState: {
@@ -442,7 +471,6 @@ const CANVASES = {
     height: 560,
     zoom: 0.75,
     originFt: { x: -0.5, y: -3.867 },
-    hideLabels: HIDE_LABELS,
     selectedLabel: 'Bed',
   }),
 
@@ -453,31 +481,46 @@ const CANVASES = {
     height: 460,
     zoom: 0.62,
     originFt: { x: -6.21, y: -4.823 },
-    hideLabels: HIDE_LABELS,
+  }),
+
+  // The social sharing card: the whole finished plan at the app's own scale.
+  og: renderCanvas({
+    width: 700,
+    height: 630,
+    zoom: 1,
+    originFt: { x: -1.25, y: -2.375 },
+    ariaLabel: 'Floor plan sketch of a bedroom with furniture',
   }),
 };
 
-// ── Splice into home.html ───────────────────────────────────────────────────
+// ── Splice into the two pages ───────────────────────────────────────────────
 
-let html = fs.readFileSync(HOME_HTML, 'utf8');
-let updated = 0;
+const PAGES = [
+  { file: HOME_HTML, ids: ['hero', 'row1', 'row2', 'row3'] },
+  { file: OG_HTML, ids: ['og'] },
+];
 
-for (const [id, svg] of Object.entries(CANVASES)) {
-  const begin = `<!-- BEGIN:canvas-${id} -->`;
-  const end = `<!-- END:canvas-${id} -->`;
-  const re = new RegExp(`([ \\t]*)${begin}[\\s\\S]*?${end}`);
-  const match = html.match(re);
-  if (!match) {
-    console.error(`✗ no ${begin} ... ${end} region in public/home.html`);
-    process.exitCode = 1;
-    continue;
+for (const { file, ids } of PAGES) {
+  let html = fs.readFileSync(file, 'utf8');
+  let updated = 0;
+  for (const id of ids) {
+    const begin = `<!-- BEGIN:canvas-${id} -->`;
+    const end = `<!-- END:canvas-${id} -->`;
+    const re = new RegExp(`([ \\t]*)${begin}[\\s\\S]*?${end}`);
+    const match = html.match(re);
+    if (!match) {
+      console.error(`✗ no ${begin} ... ${end} region in ${path.basename(file)}`);
+      process.exitCode = 1;
+      continue;
+    }
+    const indent = match[1];
+    const block = [begin, ...CANVASES[id].split('\n'), end]
+      .map((l) => (l ? indent + l : l))
+      .join('\n');
+    html = html.replace(re, () => block);
+    updated++;
+    console.log(`✓ canvas-${id}`);
   }
-  const indent = match[1];
-  const block = [begin, ...svg.split('\n'), end].map((l) => (l ? indent + l : l)).join('\n');
-  html = html.replace(re, () => block);
-  updated++;
-  console.log(`✓ canvas-${id}`);
+  fs.writeFileSync(file, html);
+  console.log(`${updated} canvas region(s) written to ${path.basename(file)}\n`);
 }
-
-fs.writeFileSync(HOME_HTML, html);
-console.log(`\n${updated} canvas region(s) written to public/home.html`);

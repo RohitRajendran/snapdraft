@@ -1,0 +1,66 @@
+{
+  "createdAt" : "2026-10-27T00:00:00Z",
+  "elements" : [
+    {
+      "id" : "w1",
+      "points" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 12,
+          "y" : 0
+        },
+        {
+          "x" : 12,
+          "y" : 9.5
+        }
+      ],
+      "type" : "wall"
+    },
+    {
+      "facing" : "left",
+      "hinge" : "end",
+      "id" : "d1",
+      "offset" : 2,
+      "segmentIndex" : 0,
+      "type" : "door",
+      "wallId" : "w1",
+      "width" : 3
+    },
+    {
+      "facing" : "right",
+      "id" : "n1",
+      "offset" : 1.25,
+      "segmentIndex" : 1,
+      "type" : "window",
+      "wallId" : "w1",
+      "width" : 4
+    },
+    {
+      "color" : "#4a7a5a",
+      "id" : "b1",
+      "label" : "Sofa",
+      "length" : 3,
+      "rotation" : 45,
+      "type" : "box",
+      "width" : 6.5,
+      "x" : 3,
+      "y" : 2.5
+    },
+    {
+      "id" : "b2",
+      "length" : 2,
+      "rotation" : 0,
+      "type" : "box",
+      "width" : 2,
+      "x" : 1,
+      "y" : 6
+    }
+  ],
+  "id" : "native-fixture",
+  "name" : "Native Studio",
+  "updatedAt" : "2026-10-27T00:00:00Z",
+  "version" : 2
+}

@@ -8,6 +8,16 @@ import { test, expect } from '@playwright/test';
 const HOME = '/home.html';
 
 test.describe('marketing home page', () => {
+  test('names Hummingbird Tech, LLC as the owner', async ({ page }) => {
+    await page.goto(HOME);
+    await expect(page.getByText('© 2026 Hummingbird Tech, LLC')).toBeVisible();
+    const data = await page.locator('script[type="application/ld+json"]').first().textContent();
+    expect(JSON.parse(data!).author).toEqual({
+      '@type': 'Organization',
+      name: 'Hummingbird Tech, LLC',
+    });
+  });
+
   test('renders all three app mockups', async ({ page }) => {
     await page.goto(HOME);
 

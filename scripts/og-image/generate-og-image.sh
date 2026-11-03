@@ -15,6 +15,7 @@ sleep 0.5
 npx playwright screenshot \
   --browser chromium \
   --viewport-size "1200,630" \
+  --wait-for-timeout 1000 \
   "http://localhost:$PORT/og-image.html" \
   "$REPO_ROOT/public/og-image.png"
 

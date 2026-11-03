@@ -1,19 +1,22 @@
 import { Line, Rect } from 'react-konva';
 import { useMemo } from 'react';
-import { PIXELS_PER_FOOT } from '../../../utils/geometry/geometry';
+import { ftToPx, PIXELS_PER_FOOT } from '../../../utils/geometry/geometry';
+import type { Box } from '../../../types';
+import { boxMaskId } from './boxMask';
 
 type Props = {
   width: number;
   height: number;
   zoom: number;
   pan: { x: number; y: number };
+  boxes: Box[];
 };
 
 const GRID_STEP_FT = 1; // 1 square = 1 ft, always
 const MAJOR_EVERY = 5; // bold line every 5 ft
 const MIN_PX_BETWEEN = 4; // hide minor lines below this screen-pixel density
 
-export function Grid({ width, height, zoom, pan }: Props) {
+export function Grid({ width, height, zoom, pan, boxes }: Props) {
   const lines = useMemo(() => {
     const result: { points: number[]; key: string; major: boolean }[] = [];
 
@@ -73,6 +76,22 @@ export function Grid({ width, height, zoom, pan }: Props) {
           strokeWidth={(major ? 0.75 : 0.5) / zoom}
           listening={false}
           perfectDrawEnabled={false}
+        />
+      ))}
+      {/* Boxes hide the grid. Masks live in this layer so they never cover walls or other boxes. */}
+      {boxes.map((box) => (
+        <Rect
+          key={box.id}
+          id={boxMaskId(box.id)}
+          x={ftToPx(box.x + box.width / 2)}
+          y={ftToPx(box.y + box.length / 2)}
+          width={ftToPx(box.width)}
+          height={ftToPx(box.length)}
+          offsetX={ftToPx(box.width) / 2}
+          offsetY={ftToPx(box.length) / 2}
+          rotation={box.rotation}
+          fill="#f5f0e8"
+          listening={false}
         />
       ))}
     </>

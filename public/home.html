@@ -36,7 +36,7 @@
     "operatingSystem": "Web",
     "description": "Browser-based floor plan sketching tool. No account needed.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-    "author": { "@type": "Person", "name": "Rohit Rajendran" },
+    "author": { "@type": "Organization", "name": "Hummingbird Tech, LLC" },
     "_note": "thanks for reading the source. the app is at /"
   }
   </script>
@@ -998,7 +998,11 @@
       font-size: var(--text-label-size);
       letter-spacing: 0.04em;
       color: var(--ink-light);
+      flex-wrap: wrap;
+      gap: var(--space-2) var(--space-4);
     }
+    .footer-links { display: flex; gap: var(--space-4); }
+    .footer-links a { color: var(--ink-light); text-underline-offset: 3px; }
 
 
     /* ── SCROLL REVEAL ──────────────────────────── */
@@ -1113,6 +1117,11 @@
           <line x1="0" y1="388.4" x2="560" y2="388.4" stroke="#ccd9e8" stroke-width="0.5"/>
           <line x1="0" y1="417.2" x2="560" y2="417.2" stroke="#ccd9e8" stroke-width="0.5"/>
           <line x1="0" y1="446" x2="560" y2="446" stroke="#ccd9e8" stroke-width="0.5"/>
+          <g class="furniture-item fi-0"><rect data-box-mask transform="translate(274.16 169.04) rotate(0) translate(-72 -96)" width="144" height="192" fill="#f5f0e8"/></g>
+          <g class="furniture-item fi-1"><rect data-box-mask transform="translate(177.93 101.84) rotate(0) translate(-21.6 -28.8)" width="43.2" height="57.6" fill="#f5f0e8"/></g>
+          <g class="furniture-item fi-2"><rect data-box-mask transform="translate(370.92 101.84) rotate(0) translate(-21.6 -28.8)" width="43.2" height="57.6" fill="#f5f0e8"/></g>
+          <g class="furniture-item fi-3"><rect data-box-mask transform="translate(473.02 315.74) rotate(-90) translate(-72 -21.6)" width="144" height="43.2" fill="#f5f0e8"/></g>
+          <g class="furniture-item fi-4"><rect data-box-mask transform="translate(113.88 338.59) rotate(-25) translate(-36 -36)" width="72" height="72" fill="#f5f0e8"/></g>
           <line x1="63.99" y1="71.6" x2="63.99" y2="178.69" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
           <line x1="63.99" y1="265.09" x2="63.99" y2="388.4" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
           <line x1="63.99" y1="388.4" x2="237.58" y2="388.4" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
@@ -1127,30 +1136,42 @@
           <line x1="323.98" y1="388.4" x2="323.98" y2="302" stroke="#2c2c2c" stroke-width="1.5"/>
           <g class="furniture-item fi-0">
           <g transform="translate(274.16 169.04) rotate(0) translate(-72 -96)">
-            <rect width="144" height="192" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Bed</text>
+            <rect width="144" height="192" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <g transform="translate(72 96) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="12" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+              <text y="0">Bed</text>
+            </g>
           </g>
           </g>
           <g class="furniture-item fi-1">
           <g transform="translate(177.93 101.84) rotate(0) translate(-21.6 -28.8)">
-            <rect width="43.2" height="57.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <rect width="43.2" height="57.6" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <g transform="translate(21.6 28.8) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="9" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+              <text y="0">Nights…</text>
+            </g>
           </g>
           </g>
           <g class="furniture-item fi-2">
           <g transform="translate(370.92 101.84) rotate(0) translate(-21.6 -28.8)">
-            <rect width="43.2" height="57.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <rect width="43.2" height="57.6" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <g transform="translate(21.6 28.8) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="9" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+              <text y="0">Nights…</text>
+            </g>
           </g>
           </g>
           <g class="furniture-item fi-3">
           <g transform="translate(473.02 315.74) rotate(-90) translate(-72 -21.6)">
-            <rect width="144" height="43.2" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Dresser</text>
+            <rect width="144" height="43.2" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <g transform="translate(72 21.6) rotate(90)" font-family="Josefin Sans, sans-serif" font-size="10" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+              <text y="0">Dresser</text>
+            </g>
           </g>
           </g>
           <g class="furniture-item fi-4">
           <g transform="translate(113.88 338.59) rotate(-25) translate(-36 -36)">
-            <rect width="72" height="72" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Armchair</text>
+            <rect width="72" height="72" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <g transform="translate(36 36) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="12" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+              <text y="0">Armchair</text>
+            </g>
           </g>
           </g>
         </svg>
@@ -1223,6 +1244,9 @@
                   <line x1="0" y1="541.01" x2="720" y2="541.01" stroke="#ccd9e8" stroke-width="0.5"/>
                   <line x1="0" y1="575.01" x2="720" y2="575.01" stroke="#ccd9e8" stroke-width="0.5"/>
                   <line x1="0" y1="609.01" x2="720" y2="609.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <rect data-box-mask transform="translate(411.1 248.05) rotate(0) translate(-85 -113.33)" width="170" height="226.67" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(297.5 168.72) rotate(0) translate(-25.5 -34)" width="51" height="68" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(525.34 168.72) rotate(0) translate(-25.5 -34)" width="51" height="68" fill="#f5f0e8"/>
                   <line x1="163" y1="133.01" x2="163" y2="259.43" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
                   <line x1="163" y1="361.43" x2="163" y2="507.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
                   <line x1="673" y1="507.01" x2="673" y2="133.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
@@ -1232,14 +1256,22 @@
                   <line x1="160.17" y1="259.43" x2="160.17" y2="361.43" stroke="#2c2c2c" stroke-width="1"/>
                   <line x1="165.83" y1="259.43" x2="165.83" y2="361.43" stroke="#2c2c2c" stroke-width="1"/>
                   <g transform="translate(411.1 248.05) rotate(0) translate(-85 -113.33)">
-                    <rect width="170" height="226.67" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Bed</text>
+                    <rect width="170" height="226.67" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(85 113.34) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="12" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Bed</text>
+                    </g>
                   </g>
                   <g transform="translate(297.5 168.72) rotate(0) translate(-25.5 -34)">
-                    <rect width="51" height="68" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <rect width="51" height="68" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(25.5 34) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="9" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Nightsta…</text>
+                    </g>
                   </g>
                   <g transform="translate(525.34 168.72) rotate(0) translate(-25.5 -34)">
-                    <rect width="51" height="68" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <rect width="51" height="68" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(25.5 34) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="9" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Nightsta…</text>
+                    </g>
                   </g>
                   <line x1="673" y1="507.01" x2="163" y2="507.01" stroke="#b8c9e0" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="square"/>
                   <circle cx="673" cy="507.01" r="5" fill="#2c2c2c"/>
@@ -1335,6 +1367,11 @@
                   <line x1="0" y1="476.01" x2="720" y2="476.01" stroke="#ccd9e8" stroke-width="0.5"/>
                   <line x1="0" y1="506.01" x2="720" y2="506.01" stroke="#ccd9e8" stroke-width="0.5"/>
                   <line x1="0" y1="536.01" x2="720" y2="536.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <rect data-box-mask transform="translate(233.92 217.52) rotate(0) translate(-75 -100)" width="150" height="200" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(133.68 147.52) rotate(0) translate(-22.5 -30)" width="45" height="60" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(334.71 147.52) rotate(0) translate(-22.5 -30)" width="45" height="60" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(441.07 370.32) rotate(-90) translate(-75 -22.5)" width="150" height="45" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(66.96 394.13) rotate(-25) translate(-37.5 -37.5)" width="75" height="75" fill="#f5f0e8"/>
                   <line x1="15" y1="116.01" x2="15" y2="227.56" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
                   <line x1="15" y1="317.56" x2="15" y2="446.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
                   <line x1="15" y1="446.01" x2="195.82" y2="446.01" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
@@ -1348,24 +1385,37 @@
                   <path d="M 285.82 446.01 L 195.82 446.01 A 90 90 0 0 1 285.82 356.01 Z" fill="rgba(255,255,255,0.3)" stroke="#2c2c2c" stroke-width="1.5"/>
                   <line x1="285.82" y1="446.01" x2="285.82" y2="356.01" stroke="#2c2c2c" stroke-width="1.5"/>
                   <g transform="translate(233.92 217.52) rotate(0) translate(-75 -100)">
-                    <rect width="150" height="200" rx="1" fill="rgba(0,102,204,0.06)" stroke="#0066cc" stroke-width="2"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#0066cc">Bed</text>
+                    <rect width="150" height="200" rx="1" fill="rgba(45, 84, 144, 0.1)" stroke="#2d5490" stroke-width="2"/>
+                    <rect x="-3" y="-3" width="156" height="206" rx="2" fill="none" stroke="#0066cc" stroke-width="1" stroke-dasharray="3 3"/>
+                    <g transform="translate(75 100) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="12" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Bed</text>
+                    </g>
                     <line x1="75" y1="0" x2="75" y2="-22" stroke="#0066cc" stroke-width="1.5"/>
                     <circle cx="75" cy="-22" r="6" fill="#0066cc" stroke="white" stroke-width="2"/>
                   </g>
                   <g transform="translate(133.68 147.52) rotate(0) translate(-22.5 -30)">
-                    <rect width="45" height="60" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <rect width="45" height="60" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(22.5 30) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="9" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Nightst…</text>
+                    </g>
                   </g>
                   <g transform="translate(334.71 147.52) rotate(0) translate(-22.5 -30)">
-                    <rect width="45" height="60" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <rect width="45" height="60" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(22.5 30) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="9" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Nightst…</text>
+                    </g>
                   </g>
                   <g transform="translate(441.07 370.32) rotate(-90) translate(-75 -22.5)">
-                    <rect width="150" height="45" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Dresser</text>
+                    <rect width="150" height="45" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(75 22.5) rotate(90)" font-family="Josefin Sans, sans-serif" font-size="10.5" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Dresser</text>
+                    </g>
                   </g>
                   <g transform="translate(66.96 394.13) rotate(-25) translate(-37.5 -37.5)">
-                    <rect width="75" height="75" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Armchair</text>
+                    <rect width="75" height="75" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(37.5 37.5) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="12" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Armchair</text>
+                    </g>
                   </g>
                 </svg>
                 <!-- END:canvas-row2 -->
@@ -1453,6 +1503,11 @@
                   <line x1="0" y1="392.41" x2="680" y2="392.41" stroke="#ccd9e8" stroke-width="0.5"/>
                   <line x1="0" y1="417.21" x2="680" y2="417.21" stroke="#ccd9e8" stroke-width="0.5"/>
                   <line x1="0" y1="442.01" x2="680" y2="442.01" stroke="#ccd9e8" stroke-width="0.5"/>
+                  <rect data-box-mask transform="translate(334.98 203.52) rotate(0) translate(-62 -82.66)" width="124" height="165.33" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(252.12 145.66) rotate(0) translate(-18.6 -24.8)" width="37.2" height="49.6" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(418.31 145.66) rotate(0) translate(-18.6 -24.8)" width="37.2" height="49.6" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(506.22 329.84) rotate(-90) translate(-62 -18.6)" width="124" height="37.2" fill="#f5f0e8"/>
+                  <rect data-box-mask transform="translate(196.96 349.52) rotate(-25) translate(-31 -31)" width="62" height="62" fill="#f5f0e8"/>
                   <line x1="154.01" y1="119.61" x2="154.01" y2="211.83" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
                   <line x1="154.01" y1="286.23" x2="154.01" y2="392.41" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
                   <line x1="154.01" y1="392.41" x2="303.49" y2="392.41" stroke="#2c2c2c" stroke-width="3" stroke-linecap="square"/>
@@ -1466,22 +1521,34 @@
                   <path d="M 377.89 392.41 L 303.49 392.41 A 74.4 74.4 0 0 1 377.89 318.01 Z" fill="rgba(255,255,255,0.3)" stroke="#2c2c2c" stroke-width="1.5"/>
                   <line x1="377.89" y1="392.41" x2="377.89" y2="318.01" stroke="#2c2c2c" stroke-width="1.5"/>
                   <g transform="translate(334.98 203.52) rotate(0) translate(-62 -82.66)">
-                    <rect width="124" height="165.33" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Bed</text>
+                    <rect width="124" height="165.33" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(62 82.67) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="12" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Bed</text>
+                    </g>
                   </g>
                   <g transform="translate(252.12 145.66) rotate(0) translate(-18.6 -24.8)">
-                    <rect width="37.2" height="49.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <rect width="37.2" height="49.6" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(18.6 24.8) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="9" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Night…</text>
+                    </g>
                   </g>
                   <g transform="translate(418.31 145.66) rotate(0) translate(-18.6 -24.8)">
-                    <rect width="37.2" height="49.6" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <rect width="37.2" height="49.6" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(18.6 24.8) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="9" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Night…</text>
+                    </g>
                   </g>
                   <g transform="translate(506.22 329.84) rotate(-90) translate(-62 -18.6)">
-                    <rect width="124" height="37.2" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Dresser</text>
+                    <rect width="124" height="37.2" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(62 18.6) rotate(90)" font-family="Josefin Sans, sans-serif" font-size="9" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Dress…</text>
+                    </g>
                   </g>
                   <g transform="translate(196.96 349.52) rotate(-25) translate(-31 -31)">
-                    <rect width="62" height="62" rx="1" fill="rgba(74,111,165,0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <text x="4" y="12.8" font-family="Courier New, monospace" font-size="11" fill="#2d5490">Armchair</text>
+                    <rect width="62" height="62" rx="1" fill="rgba(45, 84, 144, 0.06)" stroke="#2d5490" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <g transform="translate(31 31) rotate(0)" font-family="Josefin Sans, sans-serif" font-size="12" fill="#2c2c2c" text-anchor="middle" dominant-baseline="central">
+                      <text y="0">Armchair</text>
+                    </g>
                   </g>
                 </svg>
                 <!-- END:canvas-row3 -->
@@ -1645,7 +1712,11 @@
   </main>
 
   <footer class="site-footer">
-    <span>© 2026 SnapDraft · Built with ♥ in Arlington, VA</span>
+    <span>© 2026 Hummingbird Tech, LLC · Built with ♥ in Arlington, VA</span>
+    <nav class="footer-links" aria-label="Site">
+      <a href="/privacy" data-testid="footer-privacy">Privacy</a>
+      <a href="/support" data-testid="footer-support">Support</a>
+    </nav>
   </footer>
 
   <!-- Tape measure overlay -->
