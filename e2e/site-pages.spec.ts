@@ -13,6 +13,7 @@ test.describe('privacy and support pages', () => {
     await expect(page.getByTestId('privacy-links')).toContainText('contains the plan itself');
     await expect(page.getByTestId('privacy-contact')).toHaveAttribute('href', /^mailto:rohit@hummingbirdtech\.xyz/);
     await expect(page.getByText('SnapDraft is made by Hummingbird Tech, LLC')).toBeVisible();
+    await expect(page.getByText('© 2026 Hummingbird Tech, LLC')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Support' }).first()).toHaveAttribute('href', '/support');
   });
 
@@ -21,6 +22,7 @@ test.describe('privacy and support pages', () => {
     await expect(page).toHaveTitle('Support · SnapDraft');
     await expect(page.getByRole('heading', { level: 1, name: 'Support' })).toBeVisible();
     await expect(page.getByTestId('support-contact')).toHaveAttribute('href', /^mailto:rohit@hummingbirdtech\.xyz/);
+    await expect(page.getByText('© 2026 Hummingbird Tech, LLC')).toBeVisible();
     for (const question of ['Where are my plans saved?', 'How do I share a plan?', 'How do I add doors and windows?']) {
       await expect(page.getByRole('heading', { level: 3, name: question })).toBeVisible();
     }
