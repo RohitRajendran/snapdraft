@@ -86,8 +86,13 @@ export function parseChangelog(markdown: string): { releases: Release[]; errors:
 
 /** Repeats until nothing changes, because removing one comment can complete another. */
 function stripComments(text: string): string {
-  const stripped = text.replace(/<!--[\s\S]*?-->/g, '');
-  return stripped === text ? text : stripComments(stripped);
+  let stripped = text;
+  let previous: string;
+  do {
+    previous = stripped;
+    stripped = previous.replace(/<!--[\s\S]*?-->/g, '');
+  } while (stripped !== previous);
+  return stripped;
 }
 
 /** Reads the `## Changelog` section of a pull request description. */
