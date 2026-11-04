@@ -3,9 +3,14 @@
 // CHANGELOG.md, then creates a GitHub Release for any entry that doesn't have one yet.
 // Safe to re-run: neither step repeats work that's already done.
 //
-// Needs GITHUB_REPOSITORY, GITHUB_SHA and GH_TOKEN. With --dry-run it only reads and prints.
+// main only accepts changes through a pull request, so the entry goes in through a small
+// pull request that this script opens and merges itself.
+//
+// Needs GITHUB_REPOSITORY, TARGET_SHA and GH_TOKEN. TARGET_SHA is the merge commit to process.
+// With --dry-run it only reads and prints.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { setTimeout as sleep } from 'node:timers/promises';
 import {
   compareReleaseIds,
   formatReleaseDate,
@@ -20,11 +25,13 @@ const CHANGELOG = 'CHANGELOG.md';
 // Older entries stay in CHANGELOG.md only, so the first run doesn't publish a burst of
 // releases with today's date on them.
 const FIRST_GITHUB_RELEASE = '2026.11.03';
-const PUSH_ATTEMPTS = 3;
+// GitHub needs a moment to work out whether a new pull request can be merged.
+const MERGE_ATTEMPTS = 6;
+const MERGE_RETRY_MS = 5000;
 
 const dryRun = process.argv.includes('--dry-run');
 const repo = process.env.GITHUB_REPOSITORY;
-const sha = process.env.GITHUB_SHA;
+const sha = process.env.TARGET_SHA;
 
 const run = (command, args) => execFileSync(command, args, { encoding: 'utf8' }).trim();
 const readReleases = () => parseChangelog(readFileSync(CHANGELOG, 'utf8')).releases;
@@ -34,7 +41,47 @@ function mergedPullRequest() {
   return pulls.find((pull) => pull.merged_at && pull.base.ref === 'main');
 }
 
-function recordPullRequest(pull) {
+function returnToMain() {
+  run('git', ['fetch', 'origin', 'main']);
+  run('git', ['checkout', '--force', '-B', 'main', 'FETCH_HEAD']);
+}
+
+function openPullRequest(branch, number) {
+  const open = JSON.parse(
+    run('gh', ['pr', 'list', '--repo', repo, '--head', branch, '--state', 'open', '--json', 'number']),
+  );
+  if (open.length > 0) return open[0].number; // Left by an earlier run that failed to merge it.
+
+  const url = run('gh', [
+    'pr',
+    'create',
+    '--repo',
+    repo,
+    '--base',
+    'main',
+    '--head',
+    branch,
+    '--title',
+    `Record changelog for #${number}`,
+    '--body',
+    `Adds the entry for #${number} to CHANGELOG.md.\n\n## Changelog\n\nNone\n`,
+  ]);
+  return Number(url.split('/').pop());
+}
+
+async function mergePullRequest(number) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      run('gh', ['pr', 'merge', String(number), '--repo', repo, '--squash']);
+      return;
+    } catch (error) {
+      if (attempt === MERGE_ATTEMPTS) throw error;
+      await sleep(MERGE_RETRY_MS);
+    }
+  }
+}
+
+async function recordPullRequest(pull) {
   // Dependency bumps have no changelog section and need none.
   if (pull.user?.login === 'dependabot[bot]') return console.log(`#${pull.number}: Dependabot.`);
 
@@ -45,33 +92,29 @@ function recordPullRequest(pull) {
     return console.log(`::warning::#${pull.number} not recorded: ${parsed.errors.join(' ')}`);
   }
 
-  for (let attempt = 1; attempt <= PUSH_ATTEMPTS; attempt++) {
-    const markdown = readFileSync(CHANGELOG, 'utf8');
-    const { releases } = parseChangelog(markdown);
-    if (releases.some((release) => release.pr === pull.number)) {
-      return console.log(`#${pull.number}: already recorded.`);
-    }
-
-    const id = nextReleaseId(
-      pull.merged_at,
-      releases.map((release) => release.id),
-    );
-    const release = { id, pr: pull.number, changes: parsed.changes };
-    if (dryRun) return console.log(`Would record ${id}:\n${renderReleaseNotes(release)}`);
-
-    writeFileSync(CHANGELOG, insertRelease(markdown, release));
-    run('git', ['add', CHANGELOG]);
-    run('git', ['commit', '-m', `Record changelog for #${pull.number}`]);
-    try {
-      run('git', ['push', 'origin', 'HEAD:main']);
-      return console.log(`#${pull.number}: recorded as ${id}.`);
-    } catch (error) {
-      // Someone else pushed first. Start again from their commit.
-      if (attempt === PUSH_ATTEMPTS) throw error;
-      run('git', ['fetch', 'origin', 'main']);
-      run('git', ['reset', '--hard', 'origin/main']);
-    }
+  const markdown = readFileSync(CHANGELOG, 'utf8');
+  const { releases } = parseChangelog(markdown);
+  if (releases.some((release) => release.pr === pull.number)) {
+    return console.log(`#${pull.number}: already recorded.`);
   }
+
+  const id = nextReleaseId(
+    pull.merged_at,
+    releases.map((release) => release.id),
+  );
+  const release = { id, pr: pull.number, changes: parsed.changes };
+  if (dryRun) return console.log(`Would record ${id}:\n${renderReleaseNotes(release)}`);
+
+  const branch = `changelog/pr-${pull.number}`;
+  run('git', ['checkout', '-B', branch]);
+  writeFileSync(CHANGELOG, insertRelease(markdown, release));
+  run('git', ['add', CHANGELOG]);
+  run('git', ['commit', '-m', `Record changelog for #${pull.number}`]);
+  run('git', ['push', '--force', 'origin', `HEAD:refs/heads/${branch}`]);
+
+  await mergePullRequest(openPullRequest(branch, pull.number));
+  console.log(`#${pull.number}: recorded as ${id}.`);
+  returnToMain();
 }
 
 function publishMissingReleases() {
@@ -112,7 +155,17 @@ function publishMissingReleases() {
   }
 }
 
-const pull = mergedPullRequest();
-if (pull) recordPullRequest(pull);
-else console.log(`${sha}: not from a pull request, so there is nothing to record.`);
+// A failed recording shouldn't hold back releases for entries already on main, and only
+// entries that reached main may be published.
+let recordError;
+try {
+  const pull = mergedPullRequest();
+  if (pull) await recordPullRequest(pull);
+  else console.log(`${sha}: not from a pull request, so there is nothing to record.`);
+} catch (error) {
+  recordError = error;
+  if (!dryRun) returnToMain();
+}
+
 publishMissingReleases();
+if (recordError) throw recordError;

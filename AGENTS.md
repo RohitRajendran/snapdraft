@@ -222,9 +222,13 @@ Keep these covered:
 
 Every pull request needs a `## Changelog` section in its description. Write it when opening the pull request, following [the format and writing rules in `CONTRIBUTING.md`](CONTRIBUTING.md#changelog). The `Changelog section` check fails without one; Dependabot pull requests are exempt. Entries are public and describe the web app only.
 
-When a pull request merges, `.github/workflows/changelog.yml` runs `scripts/changelog/publish.mjs`. It adds the section to `CHANGELOG.md`, commits that to `main`, and creates a GitHub Release tagged `vYYYY.MM.DD` (`.2` and up for later releases that day). Netlify deploys that commit, and the app bundles `CHANGELOG.md`, so the entry reaches the app with no network request. To change the wording later, edit `CHANGELOG.md`. Edits after publishing don't update the GitHub Release.
+When a pull request merges, `.github/workflows/changelog.yml` runs `scripts/changelog/publish.mjs`. It adds the section to `CHANGELOG.md` and creates a GitHub Release tagged `vYYYY.MM.DD` (`.2` and up for later releases that day). Netlify deploys the result, and the app bundles `CHANGELOG.md`, so the entry reaches the app with no network request. To change the wording later, edit `CHANGELOG.md` in a pull request. Edits after publishing don't update the GitHub Release.
 
-If `main` gets branch protection, let GitHub Actions push to it, or entries can't be recorded.
+The `Main` ruleset only accepts changes to `main` through a pull request and has no bypass, so the workflow opens a `Record changelog for #N` pull request on a `changelog/pr-N` branch and merges it itself. This needs "Allow GitHub Actions to create and approve pull requests" on in the repo's Actions settings. If a merge wasn't recorded, run the Changelog workflow by hand with that merge's commit SHA:
+
+```bash
+gh workflow run changelog.yml -f sha=<merge commit>
+```
 
 In the app, `src/utils/changelog/whatsNew.ts` decides what's unseen using the `snapdraft_changelog_seen` key in `localStorage`. First-time visitors skip the news. People with no marker see only the latest `New` items.
 
