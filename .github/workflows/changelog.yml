@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
     types: [opened, edited, reopened, synchronize]
+  # To record a merge whose run failed, or that happened before a fix.
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Merge commit to record
+        required: true
 
 permissions:
   contents: read
@@ -26,11 +32,11 @@ jobs:
 
   publish:
     name: Record and publish
-    if: github.event_name == 'push'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: read
+      pull-requests: write
     # One at a time, so two quick merges can't both claim the same release ID.
     concurrency:
       group: changelog-publish
@@ -45,8 +51,11 @@ jobs:
       - run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898283+github-actions[bot]@users.noreply.github.com'
-      # Netlify deploys the commit this pushes, which is how an entry reaches the app. Don't
-      # add [skip ci] to it: Netlify honours that too.
+      # The Main ruleset only accepts pull requests, so this opens one and merges it. It needs
+      # "Allow GitHub Actions to create and approve pull requests" in the repo's Actions
+      # settings. Netlify deploys the merge, which is how an entry reaches the app, so don't add
+      # [skip ci] to its commit: Netlify honours that too.
       - run: node scripts/changelog/publish.mjs
         env:
           GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ inputs.sha || github.sha }}
