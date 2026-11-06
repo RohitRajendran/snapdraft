@@ -4,6 +4,12 @@ What's changed in the SnapDraft web app at [snapdraftapp.com](https://snapdrafta
 
 New entries are added automatically when a pull request merges. See [how the changelog works](CONTRIBUTING.md#changelog).
 
+## 2026.11.03.2 ([#20](https://github.com/RohitRajendran/snapdraft/pull/20))
+
+### Improved
+
+- The Help window has a new Updates tab that lists recent changes.
+
 ## 2026.11.03 ([#19](https://github.com/RohitRajendran/snapdraft/pull/19))
 
 ### New
